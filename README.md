@@ -45,7 +45,7 @@ Although there are indeed numerous tools doing tcp connect test, I wrote this ne
     * Nowadays, network data path are mostly redundant, technologies like [ECMP] are widely used in the modern data center.
     * Because of this, if one network link is having trouble, we will see intermediate packet drop/latency, instead of seeing full connectivity drop. Hence, we need a tool to help us scan all possible network paths and find out the bad links.
   * Friendly to SNAT:
-    * If you are using load balancers in cloud for making outbound connections, we must be familiar with SNAT port allocation failure / exhaustion. It is because our backend instances are sharing the small set of public ips for making outbound connections. And the load balancer manages the port allocation on those IPs the and tracks all connections for doing SNAT.
+    * If you are using load balancers in cloud for making outbound connections, you must be familiar with SNAT port allocation failure / exhaustion. It is because our backend instances are sharing the small set of public ips for making outbound connections. And the load balancer manages the port allocation on those IPs the and tracks all connections for doing SNAT.
     * Since the tcp connect test tools are essentially creating new connections all the time to a unique endpoint, it can easily trigger SNAT port allocation failures.
     * Whenever a connection hits port allocation failures, the packet could never go out and causing the test tools reporting timeout failures. These are purely noises and making our testing hard to do.
 * A language with light-weighted & GC-free runtime to avoid unstable measurements.
@@ -197,6 +197,8 @@ ARGS:
 ```
 
 ## Contributes
+Thanks a lot in being interested in this project and all contributions are welcomed!
+
 To contribute to the project, please feel free to open issues and discuss. Then submit a pull request for review and merge into main branch.
 
 ### How to build
