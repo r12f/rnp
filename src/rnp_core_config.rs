@@ -32,6 +32,7 @@ pub struct PingClientConfig {
 pub struct PingWorkerSchedulerConfig {
     pub source_port_min: u16,
     pub source_port_max: u16,
+    pub source_port_list: Option<Vec<u16>>,
     pub ping_count: Option<u32>,
     pub parallel_ping_count: u32,
 }

@@ -1,5 +1,8 @@
-use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig};
 use rand::Rng;
+use rnp::{
+    PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
+    RnpCoreConfig,
+};
 use socket2::Protocol;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
@@ -11,14 +14,22 @@ use structopt::StructOpt;
 pub struct RnpCliOptions {
     pub target: SocketAddr,
 
-    #[structopt(short = "s", long = "src-ip", default_value = "0.0.0.0", help = "Source IP address.")]
+    #[structopt(
+        short = "s",
+        long = "src-ip",
+        default_value = "0.0.0.0",
+        help = "Source IP address."
+    )]
     pub source_ip: IpAddr,
 
-    #[structopt(long = "src-port-min", help = "First source port we try to use in ping.")]
+    #[structopt(long = "src-port-min", help = "First source port to use in ping.")]
     pub source_port_min: Option<u16>,
 
-    #[structopt(long = "src-port-max", help = "Last source port we try to use in ping.")]
+    #[structopt(long = "src-port-max", help = "Last source port to use in ping.")]
     pub source_port_max: Option<u16>,
+
+    #[structopt(long = "src-port", use_delimiter = true, help = "Source port list to use in ping.")]
+    pub source_port_list: Option<Vec<u16>>,
 
     #[structopt(short = "n", long = "count", default_value = "4", help = "Ping count.")]
     pub ping_count: u32,
@@ -53,26 +64,54 @@ pub struct RnpCliOptions {
     )]
     pub parallel_ping_count: u32,
 
-    #[structopt(short = "q", long, help = "Don't log each ping result to console. Summary and other things will still be written to console.")]
+    #[structopt(
+        short = "q",
+        long,
+        help = "Don't log each ping result to console. Summary and other things will still be written to console."
+    )]
     pub no_console_log: bool,
 
-    #[structopt(long = "log-csv", parse(from_os_str), help = "Log ping results a csv file.")]
+    #[structopt(
+        long = "log-csv",
+        parse(from_os_str),
+        help = "Log ping results a csv file."
+    )]
     pub csv_log_path: Option<PathBuf>,
 
-    #[structopt(long = "log-json", parse(from_os_str), help = "Log ping results to a json file.")]
+    #[structopt(
+        long = "log-json",
+        parse(from_os_str),
+        help = "Log ping results to a json file."
+    )]
     pub json_log_path: Option<PathBuf>,
 
-    #[structopt(long = "log-text", parse(from_os_str), help = "Log ping results to a text file.")]
+    #[structopt(
+        long = "log-text",
+        parse(from_os_str),
+        help = "Log ping results to a text file."
+    )]
     pub text_log_path: Option<PathBuf>,
 
-    #[structopt(short = "r", long, help = "Show ping result scatter map after ping is done.")]
+    #[structopt(
+        short = "r",
+        long,
+        help = "Show ping result scatter map after ping is done."
+    )]
     pub show_result_scatter: bool,
 
-    #[structopt(short = "l", long, help = "Show latency scatter map after ping is done.")]
+    #[structopt(
+        short = "l",
+        long,
+        help = "Show latency scatter map after ping is done."
+    )]
     pub show_latency_scatter: bool,
 
     // TODO: Need some more thoughts. This is too naive.
-    #[structopt(short = "h", long, help = "Show bucketed latency hit count after ping is done.")]
+    #[structopt(
+        short = "h",
+        long,
+        help = "Show bucketed latency hit count after ping is done."
+    )]
     pub show_latency_heatmap: bool,
 
     #[structopt(
@@ -124,6 +163,10 @@ impl RnpCliOptions {
             worker_scheduler_config: PingWorkerSchedulerConfig {
                 source_port_min: self.source_port_min.unwrap(),
                 source_port_max: self.source_port_max.unwrap(),
+                source_port_list: match &self.source_port_list {
+                    Some(port_list) => Some(port_list.clone()),
+                    None => None,
+                },
                 ping_count: None,
                 parallel_ping_count: self.parallel_ping_count,
             },
@@ -152,9 +195,10 @@ impl RnpCliOptions {
 
 #[cfg(test)]
 mod tests {
-    use crate::rnp_cli_options::RnpCliOptions;
+    use super::*;
     use rnp::{
-        PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig,
+        PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
+        RnpCoreConfig,
     };
     use socket2::Protocol;
     use std::path::PathBuf;
@@ -169,6 +213,7 @@ mod tests {
                 source_ip: "0.0.0.0".parse().unwrap(),
                 source_port_min: None,
                 source_port_max: None,
+                source_port_list: None,
                 ping_count: 4,
                 ping_until_stopped: false,
                 wait_timeout_in_ms: 1000,
@@ -194,8 +239,9 @@ mod tests {
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
                 source_ip: "10.0.0.2".parse().unwrap(),
-                source_port_min: Some(1024),
-                source_port_max: Some(2048),
+                source_port_min: None,
+                source_port_max: None,
+                source_port_list: None,
                 ping_count: 10,
                 ping_until_stopped: true,
                 wait_timeout_in_ms: 2000,
@@ -216,10 +262,6 @@ mod tests {
                 "10.0.0.1:443",
                 "-s",
                 "10.0.0.2",
-                "--src-port-min",
-                "1024",
-                "--src-port-max",
-                "2048",
                 "-n",
                 "10",
                 "-t",
@@ -245,6 +287,7 @@ mod tests {
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2048),
+                source_port_list: Some(vec![1024, 1025, 1026]),
                 ping_count: 10,
                 ping_until_stopped: false,
                 wait_timeout_in_ms: 2000,
@@ -269,6 +312,8 @@ mod tests {
                 "1024",
                 "--src-port-max",
                 "2048",
+                "--src-port",
+                "1024,1025,1026",
                 "--count",
                 "10",
                 "--timeout",
@@ -312,6 +357,7 @@ mod tests {
                 worker_scheduler_config: PingWorkerSchedulerConfig {
                     source_port_min: 1024,
                     source_port_max: 2047,
+                    source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: Some(4),
                     parallel_ping_count: 1,
                 },
@@ -332,6 +378,7 @@ mod tests {
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2047),
+                source_port_list: Some(vec![1024, 1025, 1026]),
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
@@ -363,6 +410,7 @@ mod tests {
                 worker_scheduler_config: PingWorkerSchedulerConfig {
                     source_port_min: 1024,
                     source_port_max: 2047,
+                    source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: None,
                     parallel_ping_count: 1,
                 },
@@ -383,6 +431,7 @@ mod tests {
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2047),
+                source_port_list: Some(vec![1024, 1025, 1026]),
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
@@ -407,7 +456,10 @@ mod tests {
 
         assert!(opts.source_port_min.is_some());
         assert!(opts.source_port_max.is_some());
-        assert_eq!(10000, opts.source_port_max.unwrap() - opts.source_port_min.unwrap());
+        assert_eq!(
+            10000,
+            opts.source_port_max.unwrap() - opts.source_port_min.unwrap()
+        );
     }
 
     #[test]

@@ -68,9 +68,10 @@ impl RnpCore {
         let mut worker_join_handles = Vec::new();
 
         let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
+            self.config.worker_scheduler_config.ping_count,
             self.config.worker_scheduler_config.source_port_min,
             self.config.worker_scheduler_config.source_port_max,
-            self.config.worker_scheduler_config.ping_count,
+            &self.config.worker_scheduler_config.source_port_list,
         )));
 
         let worker_count = self.config.worker_scheduler_config.parallel_ping_count;

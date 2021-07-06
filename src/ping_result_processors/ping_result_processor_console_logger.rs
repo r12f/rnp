@@ -101,7 +101,7 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
             self.ping_count,
             self.success_count,
             self.failure_count,
-            (self.failure_count + self.success_count) as f64 / 100.0
+            (self.failure_count as f64 * 100.0) / (self.ping_count as f64),
         );
 
         println!(
