@@ -1,9 +1,9 @@
 use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::PingResult;
-use std::net::SocketAddr;
-use tracing;
 use std::io::{stdout, Write};
+use std::net::SocketAddr;
 use std::time::Instant;
+use tracing;
 
 pub struct PingResultProcessorConsoleLogger {
     no_console_log: bool,
@@ -41,18 +41,23 @@ impl PingResultProcessorConsoleLogger {
         }
 
         self.ping_count += 1;
-        if let Some(_) = ping_result.error() {
-            self.failure_count += 1;
-            return;
+        match ping_result.error() {
+            Some(_) => self.failure_count += 1,
+            None => self.success_count += 1,
         }
-        self.success_count += 1;
 
         let latency_in_us = ping_result.round_trip_time().as_micros();
+        if latency_in_us == 0 {
+            // Latency data not set.
+            return;
+        }
+
         self.min_latency_in_us = std::cmp::min(latency_in_us, self.min_latency_in_us);
         self.max_latency_in_us = std::cmp::max(latency_in_us, self.max_latency_in_us);
 
         // Calculate moving average. Ping count already added 1 above.
-        self.average_latency_in_us += (latency_in_us as f64 - self.average_latency_in_us) / (self.ping_count as f64);
+        self.average_latency_in_us +=
+            (latency_in_us as f64 - self.average_latency_in_us) / (self.ping_count as f64);
     }
 
     fn output_result_to_console(&mut self, ping_result: &PingResult) {
@@ -94,7 +99,10 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
             return;
         }
 
-        println!("\n=== TCP connect statistics for {:?} ===", self.target.unwrap());
+        println!(
+            "\n=== TCP connect statistics for {:?} ===",
+            self.target.unwrap()
+        );
 
         println!(
             "- Packets: Sent = {}, Received = {}, Lost = {} ({:.2}% loss).",
@@ -104,11 +112,17 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
             (self.failure_count as f64 * 100.0) / (self.ping_count as f64),
         );
 
-        println!(
-            "- Round trip time: Minimum = {:.2}ms, Maximum = {:.2}ms, Average = {:.2}ms.",
-            self.min_latency_in_us as f64 / 1000.0,
-            self.max_latency_in_us as f64 / 1000.0,
-            self.average_latency_in_us / 1000.0
-        );
+        // If we haven't received any data, the min/max/average data won't be updated correctly,
+        // os we output the data differently.
+        if self.min_latency_in_us == u128::MAX {
+            println!("- Round trip time: Minimum = 0ms, Maximum = 0ms, Average = 0ms.");
+        } else {
+            println!(
+                "- Round trip time: Minimum = {:.2}ms, Maximum = {:.2}ms, Average = {:.2}ms.",
+                self.min_latency_in_us as f64 / 1000.0,
+                self.max_latency_in_us as f64 / 1000.0,
+                self.average_latency_in_us / 1000.0
+            );
+        }
     }
 }
