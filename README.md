@@ -229,7 +229,7 @@ $ cargo build --target=aarch64-pc-windows-msvc --release
 * [Azure Load Balancer][AzureLB], [SNAT port exhaustion][AzureLBSnatPortExhaustion] and [outbound connectivity troubleshooting][AzureLBOutboundTroubleshoot]
 
 ## License
-MPL-2.0: https://www.mozilla.org/en-US/MPL/2.0/
+Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 
 [ECMP]: https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing
 [AWSNatGateways]: https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html#nat-gateway-limits
