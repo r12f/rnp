@@ -1,5 +1,7 @@
 # Rnp - A simple cloud-friendly tool for testing network reachability.
 
+[![Crates.io](https://img.shields.io/crates/v/rnp?color=green&style=for-the-badge)](https://crates.io/crates/rnp)
+
 > **NOTE:** This project is in early stage and might not be stable yet.
 
 ```bash
