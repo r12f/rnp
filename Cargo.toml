@@ -1,0 +1,25 @@
+[package]
+name = "rnp"
+version = "0.1.0"
+authors = ["r12f <r12f.code@gmail.com>"]
+edition = "2018"
+license = "MPL-2.0"
+keywords = ["network", "utility", "ping", "tcpping", "tcp"]
+categories = ["command-line-utilities", "network-programming"]
+repository = "https://github.com/r12f/rnp-lib/"
+
+[dependencies]
+log = "0.4"
+tracing = { version = "0.1", features = ["log"] }
+structopt = "0.3"
+socket2 = "0.4.0"
+futures-intrusive = "0.4"
+tokio = { version = "1", features = ["rt-multi-thread", "time", "sync"] }
+contracts = "0.6.0"
+chrono = "0.4"
+
+[profile.release]
+opt-level = 'z'     # Optimize for size.
+lto = true          # Enable link time optimization
+codegen-units = 1   # Using 1 codegen units to help getting more optimization on binary size.
+panic = 'abort'     # Avoid generating stack unwind code.
