@@ -12,15 +12,21 @@ repository = "https://github.com/r12f/rnp-lib/"
 [dependencies]
 log = "0.4"
 tracing = { version = "0.1", features = ["log"] }
+env_logger = "0.8"
 structopt = "0.3"
+ctrlc = "3.1.9"
 socket2 = "0.4.0"
 futures-intrusive = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "time", "sync"] }
 contracts = "0.6.0"
 chrono = "0.4"
+rand = "0.8"
 
 [profile.release]
 opt-level = 'z'     # Optimize for size.
 lto = true          # Enable link time optimization
 codegen-units = 1   # Using 1 codegen units to help getting more optimization on binary size.
 panic = 'abort'     # Avoid generating stack unwind code.
+
+[[bin]]
+name = "rnp"
