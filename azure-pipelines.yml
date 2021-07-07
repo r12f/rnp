@@ -57,6 +57,9 @@ steps:
     rustup update $RUSTUP_TOOLCHAIN
   displayName: "Set correct Rust version"
 
+- script: rustup target install $(TARGET)
+  displayName: rustup install target
+
 - script: cargo build --release --all --target $(TARGET)
   displayName: Cargo build
 
