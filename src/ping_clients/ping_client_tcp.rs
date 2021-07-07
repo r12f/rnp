@@ -44,7 +44,7 @@ mod tests {
     use std::net::SocketAddr;
 
     #[test]
-    fn ping_client_tcp_should_fail_on_not_existing_host()
+    fn ping_client_tcp_should_fail_when_pinging_non_existing_host()
     {
         let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("1.1.1.1:11111".parse::<SocketAddr>().unwrap());
@@ -57,10 +57,12 @@ mod tests {
         assert!(result.as_ref().err().is_some());
         assert!(result.as_ref().err().as_ref().unwrap().inner_error.is_some());
         assert_eq!(io::ErrorKind::TimedOut, result.as_ref().err().as_ref().unwrap().inner_error.as_ref().unwrap().kind());
+
+        assert!(result.as_ref().err().as_ref().unwrap().round_trip_time.as_millis() > 200);
     }
 
     #[test]
-    fn ping_client_tcp_should_fail_on_not_existing_port()
+    fn ping_client_tcp_should_fail_when_pinging_non_existing_port()
     {
         let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
@@ -73,5 +75,23 @@ mod tests {
         assert!(result.as_ref().err().is_some());
         assert!(result.as_ref().err().as_ref().unwrap().inner_error.is_some());
         assert_eq!(io::ErrorKind::TimedOut, result.as_ref().err().as_ref().unwrap().inner_error.as_ref().unwrap().kind());
+
+        assert!(result.as_ref().err().as_ref().unwrap().round_trip_time.as_millis() > 200);
+    }
+
+    #[test]
+    fn ping_client_tcp_should_fail_when_binding_invalid_source_ip()
+    {
+        let source = SockAddr::from("1.1.1.1:1111".parse::<SocketAddr>().unwrap());
+        let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
+
+        let config = PingClientConfig { wait_timeout: Duration::from_millis(300), time_to_live: None };
+        let ping_client = PingClientTcp::new(&config);
+        let result = ping_client.ping(&source, &target);
+
+        assert!(result.is_err());
+        assert!(result.as_ref().err().is_some());
+        assert!(result.as_ref().err().as_ref().unwrap().inner_error.is_some());
+        assert_eq!(io::ErrorKind::AddrNotAvailable, result.as_ref().err().as_ref().unwrap().inner_error.as_ref().unwrap().kind());
     }
 }
