@@ -97,10 +97,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
 
 #[cfg(test)]
 mod tests {
-    use crate::ping_result_processors::ping_result_processor_latency_scatter_logger::COUNT_PER_ROW;
-    use crate::ping_result_processors::ping_result_processor_latency_scatter_logger::{
-        LatencyHits, PingResultProcessorLatencyScatterLogger,
-    };
+    use super::*;
 
     #[test]
     fn convert_result_info_to_string_should_work() {

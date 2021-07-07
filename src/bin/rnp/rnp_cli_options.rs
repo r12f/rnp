@@ -28,7 +28,11 @@ pub struct RnpCliOptions {
     #[structopt(long = "src-port-max", help = "Last source port to use in ping.")]
     pub source_port_max: Option<u16>,
 
-    #[structopt(long = "src-port", use_delimiter = true, help = "Source port list to use in ping.")]
+    #[structopt(
+        long = "src-port",
+        use_delimiter = true,
+        help = "Source port list to use in ping."
+    )]
     pub source_port_list: Option<Vec<u16>>,
 
     #[structopt(short = "n", long = "count", default_value = "4", help = "Ping count.")]
@@ -102,24 +106,17 @@ pub struct RnpCliOptions {
     #[structopt(
         short = "l",
         long,
-        help = "Show latency scatter map after ping is done."
+        help = "Show latency (round trip time) scatter map after ping is done."
     )]
     pub show_latency_scatter: bool,
 
-    // TODO: Need some more thoughts. This is too naive.
     #[structopt(
-        short = "h",
-        long,
-        help = "Show bucketed latency hit count after ping is done."
-    )]
-    pub show_latency_heatmap: bool,
-
-    #[structopt(
+        short = "b",
         long = "latency-buckets",
-        default_value = "10",
-        help = "Set the number of buckets to use for bucketing latency."
+        use_delimiter = true,
+        help = "If set, bucket ping latency (round trip time) after ping is done. Set to 0.0 to use the default one: [0.1,0.5,1.0,10.0,50.0,100.0,300.0,500.0]"
     )]
-    pub latency_heatmap_bucket_count: usize,
+    pub latency_buckets: Option<Vec<f64>>,
 }
 
 impl RnpCliOptions {
@@ -145,6 +142,13 @@ impl RnpCliOptions {
         if self.parallel_ping_count < 1 {
             tracing::warn!("Parallel ping count cannot be 0. Setting to 1 as minimum.");
             self.parallel_ping_count = 1;
+        }
+
+        if let Some(latency_buckets) = &mut self.latency_buckets {
+            tracing::debug!("Latency bucket set to 0. Use default one.");
+            if latency_buckets.len() == 1 && latency_buckets[0] == 0.0 {
+                *latency_buckets = vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0];
+            }
         }
     }
 
@@ -177,10 +181,9 @@ impl RnpCliOptions {
                 text_log_path: self.text_log_path.clone(),
                 show_result_scatter: self.show_result_scatter,
                 show_latency_scatter: self.show_latency_scatter,
-                latency_heatmap_bucket_count: if self.show_latency_heatmap {
-                    Some(self.latency_heatmap_bucket_count)
-                } else {
-                    None
+                latency_buckets: match &self.latency_buckets {
+                    Some(buckets) => Some(buckets.clone()),
+                    None => None,
                 },
             },
         };
@@ -226,8 +229,7 @@ mod tests {
                 text_log_path: None,
                 show_result_scatter: false,
                 show_latency_scatter: false,
-                show_latency_heatmap: false,
-                latency_heatmap_bucket_count: 10,
+                latency_buckets: None,
             },
             RnpCliOptions::from_iter(&["tp.exe", "10.0.0.1:443"])
         );
@@ -254,8 +256,7 @@ mod tests {
                 text_log_path: None,
                 show_result_scatter: true,
                 show_latency_scatter: true,
-                show_latency_heatmap: true,
-                latency_heatmap_bucket_count: 10,
+                latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
             },
             RnpCliOptions::from_iter(&[
                 "tp.exe",
@@ -274,7 +275,8 @@ mod tests {
                 "-q",
                 "-r",
                 "-l",
-                "-h",
+                "-b",
+                "0.1,0.5,1.0,10.0",
             ])
         );
     }
@@ -300,8 +302,7 @@ mod tests {
                 text_log_path: Some(PathBuf::from("log.txt")),
                 show_result_scatter: true,
                 show_latency_scatter: true,
-                show_latency_heatmap: true,
-                latency_heatmap_bucket_count: 20,
+                latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
             },
             RnpCliOptions::from_iter(&[
                 "tp.exe",
@@ -333,9 +334,8 @@ mod tests {
                 "log.txt",
                 "--show-result-scatter",
                 "--show-latency-scatter",
-                "--show-latency-heatmap",
                 "--latency-buckets",
-                "20",
+                "0.1,0.5,1.0,10.0",
             ])
         );
     }
@@ -368,7 +368,7 @@ mod tests {
                     text_log_path: None,
                     show_result_scatter: false,
                     show_latency_scatter: false,
-                    latency_heatmap_bucket_count: None,
+                    latency_buckets: None,
                 },
             },
             RnpCliOptions {
@@ -389,8 +389,7 @@ mod tests {
                 text_log_path: None,
                 show_result_scatter: false,
                 show_latency_scatter: false,
-                show_latency_heatmap: false,
-                latency_heatmap_bucket_count: 10,
+                latency_buckets: None,
             }
             .to_rnp_core_config()
         );
@@ -421,7 +420,7 @@ mod tests {
                     text_log_path: Some(PathBuf::from("log.txt")),
                     show_result_scatter: true,
                     show_latency_scatter: true,
-                    latency_heatmap_bucket_count: Some(20),
+                    latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
                 },
             },
             RnpCliOptions {
@@ -442,8 +441,7 @@ mod tests {
                 text_log_path: Some(PathBuf::from("log.txt")),
                 show_result_scatter: true,
                 show_latency_scatter: true,
-                show_latency_heatmap: true,
-                latency_heatmap_bucket_count: 20,
+                latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
             }
             .to_rnp_core_config()
         );
@@ -469,11 +467,16 @@ mod tests {
         opts.source_port_max = Some(1024);
         opts.ping_count = 0;
         opts.parallel_ping_count = 0;
+        opts.latency_buckets = Some(vec![0.0]);
         opts.prepare_to_use();
 
         assert_eq!(1024, opts.source_port_min.unwrap());
         assert_eq!(2048, opts.source_port_max.unwrap());
         assert_eq!(1, opts.ping_count);
         assert_eq!(1, opts.parallel_ping_count);
+        assert_eq!(
+            Some(vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0]),
+            opts.latency_buckets
+        )
     }
 }

@@ -2,6 +2,7 @@ use crate::ping_result_processors::ping_result_processor_console_logger::PingRes
 use crate::ping_result_processors::ping_result_processor_csv_logger::PingResultProcessorCsvLogger;
 use crate::ping_result_processors::ping_result_processor_json_logger::PingResultProcessorJsonLogger;
 use crate::ping_result_processors::ping_result_processor_latency_scatter_logger::PingResultProcessorLatencyScatterLogger;
+use crate::ping_result_processors::ping_result_processor_latency_bucket_logger::PingResultProcessorLatencyBucketLogger;
 use crate::ping_result_processors::ping_result_processor_result_scatter_logger::PingResultProcessorResultScatterLogger;
 use crate::ping_result_processors::ping_result_processor_text_logger::PingResultProcessorTextLogger;
 use crate::{PingResultProcessor, PingResultProcessorConfig};
@@ -44,6 +45,12 @@ pub fn new(config: &PingResultProcessorConfig) -> Vec<Box<dyn PingResultProcesso
         processors.push(latency_scatter_logger);
     }
 
+    if let Some(latency_buckets) = &config.latency_buckets {
+        let latency_bucket_logger: Box<dyn PingResultProcessor + Send + Sync> =
+            Box::new(PingResultProcessorLatencyBucketLogger::new(latency_buckets));
+        processors.push(latency_bucket_logger);
+    }
+
     return processors;
 }
 
@@ -62,7 +69,7 @@ mod tests {
             text_log_path: None,
             show_result_scatter: false,
             show_latency_scatter: false,
-            latency_heatmap_bucket_count: None,
+            latency_buckets: None,
         };
 
         let ping_clients = new(&config);
@@ -78,10 +85,10 @@ mod tests {
             text_log_path: Some(PathBuf::from("log.txt")),
             show_result_scatter: true,
             show_latency_scatter: true,
-            latency_heatmap_bucket_count: Some(20),
+            latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
         };
 
         let ping_clients = new(&config);
-        assert_eq!(6, ping_clients.len());
+        assert_eq!(7, ping_clients.len());
     }
 }

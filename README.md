@@ -218,7 +218,7 @@ $ cargo build --target=aarch64-pc-windows-msvc --release
 ```
 
 ### Future plans and issue tracking
-- Bucketized latency summary
+- [x] Bucketized latency summary
 - IPv6 (not tested)
 - Maybe other protocol support? (ICMP is bad for checking all possible paths, because there are no variations for routing in the packet. And UDP has no uniformed handshake.).
 - ...
