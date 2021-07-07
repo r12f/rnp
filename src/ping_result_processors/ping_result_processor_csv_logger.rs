@@ -1,6 +1,6 @@
 use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::{rnp_utils, PingResult};
-use std::{fs::File, io::prelude::*, path::PathBuf};
+use std::{fs::File, io::prelude::*, path::PathBuf, io};
 use tracing;
 
 pub struct PingResultProcessorCsvLogger {
@@ -16,13 +16,20 @@ impl PingResultProcessorCsvLogger {
             log_file: rnp_utils::create_log_file(log_path_buf),
         };
     }
+
+    fn log_result_as_csv(&mut self, ping_result: &PingResult) -> io::Result<()> {
+        let log_content = ping_result.format_as_csv_string();
+        self.log_file.write(log_content.as_bytes())?;
+        self.log_file.write("\n".as_bytes())?;
+        return Ok(());
+    }
 }
 
 impl PingResultProcessor for PingResultProcessorCsvLogger {
     fn prepare(&mut self) {
         // Writer CSV header
         self.log_file
-            .write("UTCTime,WorkerId,Protocol,Target,Source,RTTInMs,Error\n".as_bytes())
+            .write("UTCTime,WorkerId,Protocol,TargetIP,TargetPort,SourceIP,SourcePort,RTTInMs,Error\n".as_bytes())
             .expect(&format!(
                 "Failed to write logs to csv file! Path = {}",
                 self.log_path.display()
@@ -30,23 +37,7 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     }
 
     fn process(&mut self, ping_result: &PingResult) {
-        let mut error_message: String = String::from("");
-        if let Some(e) = ping_result.error() {
-            error_message = format!("{}", e);
-        };
-
-        let log_content = &format!(
-            "{:?},{},{},{},{},{:.2},\"{}\"\n",
-            ping_result.utc_time(),
-            ping_result.protocol_string(),
-            ping_result.worker_id(),
-            ping_result.target(),
-            ping_result.source(),
-            ping_result.round_trip_time().as_micros() as f64 / 1000.0,
-            error_message,
-        );
-
-        self.log_file.write(log_content.as_bytes()).expect(&format!(
+        self.log_result_as_csv(ping_result).expect(&format!(
             "Failed to write logs to csv file! Path = {}",
             self.log_path.display()
         ));
