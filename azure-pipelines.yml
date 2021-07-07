@@ -42,7 +42,7 @@ steps:
     rustup update $RUSTUP_TOOLCHAIN
   displayName: "Set correct Rust version"
 
-- script: cargo build -release
+- script: cargo build --release
   displayName: Cargo build
 
 - script: cargo test --release
