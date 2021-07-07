@@ -66,7 +66,7 @@ steps:
 - script: rustup target install $(TARGET)
   displayName: rustup install target
 
-- bash: sed 's/^version = "0.0.0"$/version = "$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"/' Cargo.toml > Cargo.toml
+- bash: sed -i 's/^version = "0.1.0"$/version = "$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"/' Cargo.toml
   displayName: Update crate version
 
 - script: cargo build --release --all --target $(TARGET)
