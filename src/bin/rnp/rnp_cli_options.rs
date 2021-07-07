@@ -4,7 +4,7 @@ use rnp::{
     RnpCoreConfig,
 };
 use socket2::Protocol;
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, SocketAddr, Ipv6Addr, Ipv4Addr};
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -121,6 +121,13 @@ pub struct RnpCliOptions {
 
 impl RnpCliOptions {
     pub fn prepare_to_use(&mut self) {
+        if self.target.is_ipv4() != self.source_ip.is_ipv4() {
+            match &self.source_ip {
+                IpAddr::V4(source_ip_v4) if *source_ip_v4 == Ipv4Addr::UNSPECIFIED => self.source_ip = IpAddr::V6(Ipv6Addr::UNSPECIFIED),
+                IpAddr::V6(source_ip_v6) if *source_ip_v6 == Ipv6Addr::UNSPECIFIED => self.source_ip = IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                _ => panic!("Source IP and Target IP are not both IPv4 or IPv6!"),
+            }
+        }
         if self.source_port_min.is_none() {
             self.source_port_min = Some(rand::thread_rng().gen_range(1024..20000));
         }
@@ -259,7 +266,7 @@ mod tests {
                 latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
             },
             RnpCliOptions::from_iter(&[
-                "tp.exe",
+                "rnp.exe",
                 "10.0.0.1:443",
                 "-s",
                 "10.0.0.2",
@@ -305,7 +312,7 @@ mod tests {
                 latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
             },
             RnpCliOptions::from_iter(&[
-                "tp.exe",
+                "rnp.exe",
                 "10.0.0.1:443",
                 "--src-ip",
                 "10.0.0.2",
@@ -449,7 +456,7 @@ mod tests {
 
     #[test]
     fn empty_source_port_in_options_should_be_fixed() {
-        let mut opts = RnpCliOptions::from_iter(&["tp.exe", "10.0.0.1:443"]);
+        let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
         opts.prepare_to_use();
 
         assert!(opts.source_port_min.is_some());
@@ -461,8 +468,8 @@ mod tests {
     }
 
     #[test]
-    fn invalid_options_should_be_fixed() {
-        let mut opts = RnpCliOptions::from_iter(&["tp.exe", "10.0.0.1:443"]);
+    fn invalid_options_for_ipv4_should_be_fixed() {
+        let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
         opts.source_port_min = Some(2048);
         opts.source_port_max = Some(1024);
         opts.ping_count = 0;
@@ -478,5 +485,15 @@ mod tests {
             Some(vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0]),
             opts.latency_buckets
         )
+    }
+
+    #[test]
+    fn invalid_options_for_ipv6_should_be_fixed() {
+        let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "[2607:f8b0:400a:80a::200e]:443"]);
+        opts.prepare_to_use();
+
+        // If source ip is not set (unspecified/any), we update the IP accordingly to match our target.
+        assert!(opts.source_ip.is_ipv6());
+        assert_eq!(Ipv6Addr::UNSPECIFIED, opts.source_ip);
     }
 }
