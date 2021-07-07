@@ -61,12 +61,13 @@ steps:
 - bash: |
     rustup default $RUSTUP_TOOLCHAIN
     rustup update $RUSTUP_TOOLCHAIN
-  displayName: "rustup update default toolchain"
+  displayName: rustup update default toolchain
 
 - script: rustup target install $(TARGET)
   displayName: rustup install target
 
-# TODO: update version here
+- bash: sed 's/^version = "0.0.0"$/version = "$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"/' Cargo.toml > Cargo.toml
+  displayName: Update crate version
 
 - script: cargo build --release --all --target $(TARGET)
   displayName: Cargo build
