@@ -20,12 +20,12 @@ strategy:
     #  rustup_toolchain: stable
     #  target: x86_64-pc-windows-msvc
     #  is_cross_compile: false
-    windows-arm64:
-      poolName: Azure Pipelines
-      imageName: 'windows-latest'
-      rustup_toolchain: stable
-      target: aarch64-pc-windows-msvc
-      is_cross_compile: true
+    #windows-arm64:
+    #  poolName: Azure Pipelines
+    #  imageName: 'windows-latest'
+    #  rustup_toolchain: stable
+    #  target: aarch64-pc-windows-msvc
+    #  is_cross_compile: true
     #mac-x64:
     #  poolName: Azure Pipelines
     #  imageName: 'macos-latest'
@@ -38,12 +38,12 @@ strategy:
     #  rustup_toolchain: stable
     #  target: x86_64-unknown-linux-gnu
     #  is_cross_compile: false
-    #linux-arm64:
-    #  poolName: Azure Pipelines
-    #  imageName: 'ubuntu-latest'
-    #  rustup_toolchain: stable
-    #  target: aarch64-unknown-linux-gnu
-    #  is_cross_compile: false
+    linux-arm64:
+      poolName: r12f-arm64
+      imageName: 
+      rustup_toolchain: stable
+      target: aarch64-unknown-linux-gnu
+      is_cross_compile: false
 
 pool:
   name: $(poolName)
