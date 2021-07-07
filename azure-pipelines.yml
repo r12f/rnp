@@ -9,37 +9,44 @@ trigger:
 strategy:
   matrix:
     #windows-x86:
+    #  poolName: Azure Pipelines
     #  imageName: 'windows-latest'
     #  rustup_toolchain: stable
     #  target: i686-pc-windows-msvc
     #  is_cross_compile: false
     #windows-x64:
+    #  poolName: Azure Pipelines
     #  imageName: 'windows-latest'
     #  rustup_toolchain: stable
     #  target: x86_64-pc-windows-msvc
     #  is_cross_compile: false
     windows-arm64:
+      poolName: Azure Pipelines
       imageName: 'windows-latest'
       rustup_toolchain: stable
       target: aarch64-pc-windows-msvc
       is_cross_compile: true
     #mac-x64:
+    #  poolName: Azure Pipelines
     #  imageName: 'macos-latest'
     #  rustup_toolchain: stable
     #  target: x86_64-apple-darwin
     #  is_cross_compile: false
     #linux-x64:
+    #  poolName: Azure Pipelines
     #  imageName: 'ubuntu-latest'
     #  rustup_toolchain: stable
     #  target: x86_64-unknown-linux-gnu
     #  is_cross_compile: false
     #linux-arm64:
+    #  poolName: Azure Pipelines
     #  imageName: 'ubuntu-latest'
     #  rustup_toolchain: stable
     #  target: aarch64-unknown-linux-gnu
     #  is_cross_compile: false
 
 pool:
+  name: $(poolName)
   vmImage: $(imageName)
 
 steps:
@@ -71,4 +78,4 @@ steps:
 
 - script: cargo test --release --all --target $(TARGET)
   displayName: Cargo test
-  condition: eq(variables[is_cross_compile], false)
+  condition: eq(variables['is_cross_compile'], false)
