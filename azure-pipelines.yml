@@ -8,30 +8,36 @@ trigger:
 
 strategy:
   matrix:
-    windows-x86:
-      imageName: 'windows-latest'
-      rustup_toolchain: stable
-      target: i686-pc-windows-msvc
-    windows-x64:
-      imageName: 'windows-latest'
-      rustup_toolchain: stable
-      target: x86_64-pc-windows-msvc
+    #windows-x86:
+    #  imageName: 'windows-latest'
+    #  rustup_toolchain: stable
+    #  target: i686-pc-windows-msvc
+    #  is_cross_compile: false
+    #windows-x64:
+    #  imageName: 'windows-latest'
+    #  rustup_toolchain: stable
+    #  target: x86_64-pc-windows-msvc
+    #  is_cross_compile: false
     windows-arm64:
       imageName: 'windows-latest'
       rustup_toolchain: stable
       target: aarch64-pc-windows-msvc
-    mac-x64:
-      imageName: 'macos-latest'
-      rustup_toolchain: stable
-      target: x86_64-apple-darwin
-    linux-x64:
-      imageName: 'ubuntu-latest'
-      rustup_toolchain: stable
-      target: x86_64-unknown-linux-gnu
-    linux-arm64:
-      imageName: 'ubuntu-latest'
-      rustup_toolchain: stable
-      target: aarch64-unknown-linux-gnu
+      is_cross_compile: true
+    #mac-x64:
+    #  imageName: 'macos-latest'
+    #  rustup_toolchain: stable
+    #  target: x86_64-apple-darwin
+    #  is_cross_compile: false
+    #linux-x64:
+    #  imageName: 'ubuntu-latest'
+    #  rustup_toolchain: stable
+    #  target: x86_64-unknown-linux-gnu
+    #  is_cross_compile: false
+    #linux-arm64:
+    #  imageName: 'ubuntu-latest'
+    #  rustup_toolchain: stable
+    #  target: aarch64-unknown-linux-gnu
+    #  is_cross_compile: false
 
 pool:
   vmImage: $(imageName)
@@ -65,3 +71,4 @@ steps:
 
 - script: cargo test --release --all --target $(TARGET)
   displayName: Cargo test
+  condition: eq(variables[is_cross_compile], false)
