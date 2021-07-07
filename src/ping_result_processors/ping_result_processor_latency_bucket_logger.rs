@@ -28,7 +28,7 @@ impl PingResultProcessorLatencyBucketLogger {
         let mut normalized_buckets = vec![];
         buckets
             .into_iter()
-            .for_each(|x| normalized_buckets.push((*x as u128) * 1000));
+            .for_each(|x| normalized_buckets.push((x * 1000.0) as u128));
         normalized_buckets.push(u128::MAX);
 
         let normalized_bucket_count = normalized_buckets.len();
