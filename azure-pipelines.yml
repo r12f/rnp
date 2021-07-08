@@ -100,7 +100,7 @@ steps:
   inputs:
     rootFolderOrFile: '$(Build.SourcesDirectory)'
     archiveType: '7z'
-    archiveFile: '$(Build.BinariesDirectory)/crate/rnp.$(build.tag).$(TARGET_SHORT).7z'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.$(build.tag).7z'
 
 - script: cargo build --release --all --target $(TARGET)
   displayName: Cargo build
@@ -150,7 +150,7 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)
 
 - bash: |
-    dotnet pack target/$(TARGET)/release/rnp_nupkg.csproj -o $(Build.ArtifactStagingDirectory)\nuget
+    dotnet pack target/$(TARGET)/release/rnp_nupkg.csproj -o $(Build.ArtifactStagingDirectory)/nuget
   displayName: Generate nuget package
   workingDirectory: $(Build.SourcesDirectory)
 
