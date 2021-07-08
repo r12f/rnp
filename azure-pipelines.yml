@@ -16,13 +16,13 @@ name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
 
 strategy:
   matrix:
-    # windows-x86:
-    #   poolName: Azure Pipelines
-    #   imageName: 'windows-latest'
-    #   rustup_toolchain: stable
-    #   target: i686-pc-windows-msvc
-    #   target_short: windows.x86
-    #   is_cross_compile: true
+    windows-x86:
+      poolName: Azure Pipelines
+      imageName: 'windows-latest'
+      rustup_toolchain: stable
+      target: i686-pc-windows-msvc
+      target_short: windows.x86
+      is_cross_compile: true
     windows-x64:
       poolName: Azure Pipelines
       imageName: 'windows-latest'
@@ -30,41 +30,41 @@ strategy:
       target: x86_64-pc-windows-msvc
       target_short: windows.x64
       is_cross_compile: false
-    # windows-arm64:
-    #   poolName: Azure Pipelines
-    #   imageName: 'windows-latest'
-    #   rustup_toolchain: stable
-    #   target: aarch64-pc-windows-msvc
-    #   target_short: windows.arm64
-    #   is_cross_compile: true
-    # linux-x86:
-    #   poolName: r12f-cross
-    #   imageName:
-    #   rustup_toolchain: stable
-    #   target: i686-unknown-linux-gnu
-    #   target_short: linux.x86
-    #   is_cross_compile: true
-    # linux-x64:
-    #   poolName: r12f-cross
-    #   imageName:
-    #   rustup_toolchain: stable
-    #   target: x86_64-unknown-linux-gnu
-    #   target_short: linux.x64
-    #   is_cross_compile: false
-    # linux-arm:
-    #   poolName: r12f-cross
-    #   imageName:
-    #   rustup_toolchain: stable
-    #   target: arm-unknown-linux-gnueabi
-    #   target_short: linux.arm
-    #   is_cross_compile: true
-    # linux-arm64:
-    #   poolName: r12f-cross
-    #   imageName:
-    #   rustup_toolchain: stable
-    #   target: aarch64-unknown-linux-gnu
-    #   target_short: linux.arm64
-    #   is_cross_compile: true
+    windows-arm64:
+      poolName: Azure Pipelines
+      imageName: 'windows-latest'
+      rustup_toolchain: stable
+      target: aarch64-pc-windows-msvc
+      target_short: windows.arm64
+      is_cross_compile: true
+    linux-x86:
+      poolName: r12f-cross
+      imageName:
+      rustup_toolchain: stable
+      target: i686-unknown-linux-gnu
+      target_short: linux.x86
+      is_cross_compile: true
+    linux-x64:
+      poolName: r12f-cross
+      imageName:
+      rustup_toolchain: stable
+      target: x86_64-unknown-linux-gnu
+      target_short: linux.x64
+      is_cross_compile: false
+    linux-arm:
+      poolName: r12f-cross
+      imageName:
+      rustup_toolchain: stable
+      target: arm-unknown-linux-gnueabi
+      target_short: linux.arm
+      is_cross_compile: true
+    linux-arm64:
+      poolName: r12f-cross
+      imageName:
+      rustup_toolchain: stable
+      target: aarch64-unknown-linux-gnu
+      target_short: linux.arm64
+      is_cross_compile: true
 
 pool:
   name: $(poolName)
@@ -147,8 +147,8 @@ steps:
 # We cannot use the source directory in the command directly, because Azure Pipeline will give them incorrect values
 # on windows machines, like this: D:a1s/target/..... However it seems fine on Linux.
 - bash: |
-    cp /f README.md target/$(TARGET)/release
-    cp /f LICENSE.txt target/$(TARGET)/release
+    cp -f README.md target/$(TARGET)/release
+    cp -f LICENSE.txt target/$(TARGET)/release
     sed -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' build/nuget_package.template > target/$(TARGET)/release/rnp.nuspec
   displayName: Prepare nuget package files
   workingDirectory: $(Build.SourcesDirectory)
