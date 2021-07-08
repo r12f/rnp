@@ -147,8 +147,8 @@ steps:
 # We cannot use the source directory in the command directly, because Azure Pipeline will give them incorrect values
 # on windows machines, like this: D:a1s/target/..... However it seems fine on Linux.
 - bash: |
-    cp /f README.md $(Build.SourcesDirectory)/target/$(TARGET)/release
-    cp /f LICENSE.txt $(Build.SourcesDirectory)/target/$(TARGET)/release
+    cp /f README.md target/$(TARGET)/release
+    cp /f LICENSE.txt target/$(TARGET)/release
     sed -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' build/nuget_package.template > target/$(TARGET)/release/rnp.nuspec
   displayName: Prepare nuget package files
   workingDirectory: $(Build.SourcesDirectory)
