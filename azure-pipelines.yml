@@ -135,11 +135,4 @@ steps:
   inputs:
     rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
     archiveType: '7z'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).zip'
-
-- task: ArchiveFiles@2
-  displayName: Pack binary to 7z
-  inputs:
-    rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
-    archiveType: '7z'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).7z'
