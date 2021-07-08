@@ -150,3 +150,12 @@ steps:
     rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
     archiveType: '7z'
     archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET_SHORT).7z'
+
+- task: PublishPipelineArtifact@1
+  displayName: Publish pipeline artifact
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+
+# TODO: Nuget package
+
+# TODO: Github release.
