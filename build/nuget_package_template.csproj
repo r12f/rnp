@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>rnp.{build_tag}.{target_short}</PackageId>
+    <Title>rnp {build_tag} {target_short} ({target})</Title>
+    <Version>{version}</Version>
+    <Authors>r12f</Authors>
+    <Company>r12f</Company>
+    <Copyright>Copyright ©2021 r12f</Copyright>
+    <PackageTags>network;utility;ping;tcpping;tcp</PackageTags>
+    <License>Apache-2.0</License>
+    <ProjectUrl>http://github.com/r12f/rnp</ProjectUrl>
+    <Description>A simple cloud-friendly tool for testing network reachability.</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="rnp*" Exclude="**\*.d;**\*.csproj;">
+      <PackagePath>content</PackagePath>
+    </Content>
+    <Content Include="README.md">
+      <PackagePath>content</PackagePath>
+    </Content>
+    <Content Include="LICENSE.txt">
+      <PackagePath>content</PackagePath>
+    </Content>
+  </ItemGroup>
+</Project>
