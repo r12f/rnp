@@ -144,11 +144,17 @@ steps:
     archiveType: '7z'
     archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET_SHORT).7z'
 
+- bash: |
+    cp /f $(Build.SourcesDirectory)/README.md $(Build.SourcesDirectory)/target/$(TARGET)/release/README.md
+    cp /f $(Build.SourcesDirectory)/LICENSE.txt $(Build.SourcesDirectory)/target/$(TARGET)/release/LICENSE.txt
+    sed -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' $(Build.SourcesDirectory)/build/nuget_package.template > $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.nuspec
+  displayName: Prepare nuget package files
+
+- bash: |
+    nuget pack $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.nuspec -Verbosity detailed -OutputDirectory $(Build.ArtifactStagingDirectory)
+  displayName: Generate nuget package
+
 - task: PublishPipelineArtifact@1
   displayName: Publish pipeline artifact
   inputs:
     targetPath: '$(Build.ArtifactStagingDirectory)'
-
-# TODO: Nuget package
-
-# TODO: Github release.
