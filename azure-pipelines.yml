@@ -37,13 +37,6 @@ strategy:
       target: aarch64-pc-windows-msvc
       target_short: windows.arm64
       is_cross_compile: true
-    mac-x64:
-      poolName: Azure Pipelines
-      imageName: 'macos-latest'
-      rustup_toolchain: stable
-      target: x86_64-apple-darwin
-      target_short: mac.x64
-      is_cross_compile: false
     linux-x86:
       poolName: r12f-cross
       imageName:
