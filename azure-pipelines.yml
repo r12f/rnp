@@ -3,9 +3,15 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
+#
+# CI triggers
+#
 # Limited resource, cannot afford CI for now.
 trigger: none
 
+#
+# Version and jobs
+#
 variables:
   buildVersionMajor: 0
   buildVersionMinor: 1
@@ -14,6 +20,9 @@ variables:
 # Job
 name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
 
+#
+# Build flavors
+#
 strategy:
   matrix:
     # windows-x86:
@@ -70,6 +79,9 @@ pool:
   name: $(poolName)
   vmImage: $(imageName)
 
+#
+# Environment variable updates
+#
 steps:
 - bash: |
     BUILD_BRANCH_NAME="$(Build.SourceBranch)"
@@ -82,6 +94,9 @@ steps:
     echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
   displayName: Update build environment variables
 
+#
+# Update build environment
+#
 - bash: |
     rustup default $RUSTUP_TOOLCHAIN
     rustup update $RUSTUP_TOOLCHAIN
@@ -90,6 +105,9 @@ steps:
 - script: rustup target install $(TARGET)
   displayName: rustup install target
 
+#
+# Update version files and pack all source code for crate publishing
+#
 - bash: |
     sed -i 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
   displayName: Update crate version
@@ -102,13 +120,22 @@ steps:
     archiveType: '7z'
     archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.$(build.tag).7z'
 
+#
+# Build
+#
 - script: cargo build --release --all --target $(TARGET)
   displayName: Cargo build
 
+#
+# Running all tests
+#
 - script: cargo test --release --all --target $(TARGET)
   displayName: Cargo test
   condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
+#
+# Pack files for github releases
+#
 - task: CopyFiles@2
   displayName: Copy binary to output
   inputs:
@@ -140,7 +167,10 @@ steps:
     archiveType: '7z'
     archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).7z'
 
-# We cannot use the source directory in the command directly, because Azure Pipeline will give them incorrect values
+#
+# Nuget package generation
+#
+# We cannot use the source directory in the bash command directly, because Azure Pipeline will give them incorrect values
 # on windows machines, like this: D:a1s/target/..... However it seems fine on Linux.
 - bash: |
     cp -f README.md target/$(TARGET)/release
@@ -150,10 +180,21 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)
 
 - bash: |
-    dotnet pack target/$(TARGET)/release/rnp_nupkg.csproj -o $(Build.ArtifactStagingDirectory)/nuget
+    dotnet pack target/$(TARGET)/release/rnp_nupkg.csproj -o target/$(TARGET)/release
   displayName: Generate nuget package
   workingDirectory: $(Build.SourcesDirectory)
 
+- task: CopyFiles@2
+  displayName: Copy nuget package to output
+  inputs:
+    sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
+    contents: |
+      *.nupkg
+    targetFolder: '$(Build.ArtifactStagingDirectory)/nuget'
+
+#
+# Publish all pipeline artifacts
+#
 - task: PublishPipelineArtifact@1
   displayName: Publish pipeline artifact
   inputs:
