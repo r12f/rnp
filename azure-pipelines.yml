@@ -46,12 +46,18 @@ strategy:
     #  rustup_toolchain: stable
     #  target: x86_64-unknown-linux-gnu
     #  is_cross_compile: false
+    linux-arm:
+      poolName: r12f-cross
+      imageName:
+      rustup_toolchain: stable
+      target: arm-unknown-linux-gnueabi
+      is_cross_compile: true
     linux-arm64:
-      poolName: r12f-arm64
+      poolName: r12f-cross
       imageName: 
       rustup_toolchain: stable
       target: aarch64-unknown-linux-gnu
-      is_cross_compile: false
+      is_cross_compile: true
 
 pool:
   name: $(poolName)
