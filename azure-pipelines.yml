@@ -144,11 +144,14 @@ steps:
     archiveType: '7z'
     archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET_SHORT).7z'
 
+# We cannot use the source directory in the command directly, because Azure Pipeline will give them incorrect values
+# on windows machines, like this: D:a1s/target/..... However it seems fine on Linux.
 - bash: |
     cp /f $(Build.SourcesDirectory)/README.md $(Build.SourcesDirectory)/target/$(TARGET)/release
     cp /f $(Build.SourcesDirectory)/LICENSE.txt $(Build.SourcesDirectory)/target/$(TARGET)/release
     sed -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' $(Build.SourcesDirectory)/build/nuget_package.template > $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.nuspec
   displayName: Prepare nuget package files
+  workingDirectory: $(Build.SourcesDirectory)
 
 - bash: |
     nuget pack $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.nuspec -Verbosity detailed -OutputDirectory $(Build.ArtifactStagingDirectory)
