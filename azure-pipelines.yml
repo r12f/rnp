@@ -40,12 +40,12 @@ strategy:
     #  rustup_toolchain: stable
     #  target: x86_64-apple-darwin
     #  is_cross_compile: false
-    #linux-x64:
-    #  poolName: Azure Pipelines
-    #  imageName: 'ubuntu-latest'
-    #  rustup_toolchain: stable
-    #  target: x86_64-unknown-linux-gnu
-    #  is_cross_compile: false
+    linux-x64:
+      poolName: r12f-cross
+      imageName:
+      rustup_toolchain: stable
+      target: x86_64-unknown-linux-gnu
+      is_cross_compile: false
     linux-arm:
       poolName: r12f-cross
       imageName:
@@ -64,6 +64,29 @@ pool:
   vmImage: $(imageName)
 
 steps:
+- checkout: self
+  persistCredentials: true
+  clean: true
+
+- bash: |
+    BUILD_BRANCH_NAME="$(Build.SourceBranch)"
+    BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
+    BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
+    BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
+    echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
+    echo "##vso[task.setvariable variable=build.version]$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"
+    BUILD_TAG=$BUILD_BRANCH_NAME.$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
+    echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
+  displayName: Update build environment variables
+
+- script: |
+    git config --global user.name "BuildService"
+    git config --global user.email "r12f.code@gmail.com"
+    git tag $(build.tag)
+    git push origin $(build.tag)
+  workingDirectory: $(Build.SourcesDirectory)
+  condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+
 - bash: |
     rustup default $RUSTUP_TOOLCHAIN
     rustup update $RUSTUP_TOOLCHAIN
@@ -72,7 +95,8 @@ steps:
 - script: rustup target install $(TARGET)
   displayName: rustup install target
 
-- bash: sed -i 's/^version = "0.1.0"$/version = "$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"/' Cargo.toml
+- bash: |
+    sed -i 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
   displayName: Update crate version
 
 - script: cargo build --release --all --target $(TARGET)
@@ -80,4 +104,42 @@ steps:
 
 - script: cargo test --release --all --target $(TARGET)
   displayName: Cargo test
-  condition: eq(variables['is_cross_compile'], false)
+  condition: and(succeeded(), eq(variables['is_cross_compile'], false))
+
+- task: CopyFiles@2
+  displayName: Copy binary to output
+  inputs:
+    sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
+    contents: |
+      rnp*
+      !rnp.d
+    targetFolder: '$(Build.BinariesDirectory)/rnp'
+
+- task: ArchiveFiles@2
+  displayName: Pack binary to tar.gz
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
+    archiveType: 'tar'
+    tarCompression: 'gz'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).tar.gz'
+
+- task: ArchiveFiles@2
+  displayName: Pack binary to zip
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).zip'
+
+- task: ArchiveFiles@2
+  displayName: Pack binary to 7z
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
+    archiveType: '7z'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).zip'
+
+- task: ArchiveFiles@2
+  displayName: Pack binary to 7z
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
+    archiveType: '7z'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/rnp.$(build.tag).$(TARGET).zip'
