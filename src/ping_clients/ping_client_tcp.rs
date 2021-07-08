@@ -74,9 +74,15 @@ mod tests {
         assert!(result.is_err());
         assert!(result.as_ref().err().is_some());
         assert!(result.as_ref().err().as_ref().unwrap().inner_error.is_some());
-        assert_eq!(io::ErrorKind::TimedOut, result.as_ref().err().as_ref().unwrap().inner_error.as_ref().unwrap().kind());
 
-        assert!(result.as_ref().err().as_ref().unwrap().round_trip_time.as_millis() > 200);
+        // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
+        if cfg!(windows) {
+            assert_eq!(io::ErrorKind::TimedOut, result.as_ref().err().as_ref().unwrap().inner_error.as_ref().unwrap().kind());
+            assert!(result.as_ref().err().as_ref().unwrap().round_trip_time.as_millis() > 200);
+        } else {
+            assert_eq!(io::ErrorKind::ConnectionRefused, result.as_ref().err().as_ref().unwrap().inner_error.as_ref().unwrap().kind());
+            assert_eq!(0, result.as_ref().err().as_ref().unwrap().round_trip_time.as_millis())
+        }
     }
 
     #[test]
