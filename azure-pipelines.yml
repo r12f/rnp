@@ -94,6 +94,7 @@ steps:
 #
 - checkout: self
   clean: true
+  workspace: all
 
 #
 # Environment variable updates
@@ -165,6 +166,7 @@ steps:
       rnp*
       !rnp.d
     targetFolder: '$(Build.BinariesDirectory)/rnp'
+    overWrite: true
 
 - task: ArchiveFiles@2
   displayName: Pack binary to tar.gz
