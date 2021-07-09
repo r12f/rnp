@@ -173,13 +173,6 @@ steps:
     archiveType: 'zip'
     archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).zip'
 
-- task: ArchiveFiles@2
-  displayName: Pack binary to 7z
-  inputs:
-    rootFolderOrFile: '$(Build.BinariesDirectory)/rnp'
-    archiveType: '7z'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).7z'
-
 #
 # Nuget package generation
 #
