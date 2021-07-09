@@ -1,16 +1,10 @@
 # Rnp - A simple cloud-friendly tool for testing network reachability.
 
-[![Crates.io](https://img.shields.io/crates/v/rnp?color=green&style=for-the-badge)](https://crates.io/crates/rnp)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?style=for-the-badge)
-
-Nuget Packages:
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.windows.x86?color=green&label=windows.x86)
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.windows.x64?color=green&label=windows.x64)
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.windows.arm64?color=green&label=windows.arm64)
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.x86?color=green&label=linux.x86)
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.x64?color=green&label=linux.x64)
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.arm?color=green&label=linux.arm)
-![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.arm64?color=green&label=linux.arm64)
+| Release | Status |
+|:---:|---|
+| Crates.io | [![Crates.io](https://img.shields.io/crates/v/rnp?color=green&style=for-the-badge)](https://crates.io/crates/rnp) |
+| Github release | [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?style=for-the-badge)](https://github.com/r12f/rnp/releases) |
+| Nuget packages | [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.windows.x86?style=for-the-badge&color=green&label=windows.x86)](https://www.nuget.org/packages/rnp.0.1.34.main.windows.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.windows.x64?style=for-the-badge&color=green&label=windows.x64)](https://www.nuget.org/packages/rnp.0.1.34.main.windows.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.windows.arm64?style=for-the-badge&color=green&label=windows.arm64)](https://www.nuget.org/packages/rnp.0.1.34.main.windows.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.x86?style=for-the-badge&color=green&label=linux.x86)](https://www.nuget.org/packages/rnp.0.1.34.main.linux.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.x64?style=for-the-badge&color=green&label=linux.x64)](https://www.nuget.org/packages/rnp.0.1.34.main.linux.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.arm?style=for-the-badge&color=green&label=linux.arm)](https://www.nuget.org/packages/rnp.0.1.34.main.linux.arm/) [![Nuget](https://img.shields.io/nuget/v/rnp.0.1.34.main.linux.arm64?style=for-the-badge&color=green&label=linux.arm64)](https://www.nuget.org/packages/rnp.0.1.34.main.linux.arm64/) |
 
 > **NOTE:** This project is in early stage and might not be stable yet.
 
