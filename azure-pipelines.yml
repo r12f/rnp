@@ -25,55 +25,62 @@ name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
 #
 strategy:
   matrix:
-    windows-x86:
+    # windows-x86:
+    #   poolName: Azure Pipelines
+    #   imageName: 'windows-latest'
+    #   rustup_toolchain: stable
+    #   target: i686-pc-windows-msvc
+    #   target_short: windows.x86
+    #   is_cross_compile: true
+    # windows-x64:
+    #   poolName: Azure Pipelines
+    #   imageName: 'windows-latest'
+    #   rustup_toolchain: stable
+    #   target: x86_64-pc-windows-msvc
+    #   target_short: windows.x64
+    #   is_cross_compile: false
+    # windows-arm64:
+    #   poolName: Azure Pipelines
+    #   imageName: 'windows-latest'
+    #   rustup_toolchain: stable
+    #   target: aarch64-pc-windows-msvc
+    #   target_short: windows.arm64
+    #   is_cross_compile: true
+    # linux-x86:
+    #   poolName: r12f-cross
+    #   imageName:
+    #   rustup_toolchain: stable
+    #   target: i686-unknown-linux-gnu
+    #   target_short: linux.x86
+    #   is_cross_compile: true
+    # linux-x64:
+    #   poolName: r12f-cross
+    #   imageName:
+    #   rustup_toolchain: stable
+    #   target: x86_64-unknown-linux-gnu
+    #   target_short: linux.x64
+    #   is_cross_compile: false
+    # linux-arm:
+    #   poolName: r12f-cross
+    #   imageName:
+    #   rustup_toolchain: stable
+    #   target: arm-unknown-linux-gnueabi
+    #   target_short: linux.arm
+    #   is_cross_compile: true
+    # linux-arm64:
+    #   poolName: r12f-cross
+    #   imageName:
+    #   rustup_toolchain: stable
+    #   target: aarch64-unknown-linux-gnu
+    #   target_short: linux.arm64
+    #   is_cross_compile: true
+    mac-x64:
       poolName: Azure Pipelines
-      imageName: 'windows-latest'
+      imageName: 'macos-latest'
       rustup_toolchain: stable
-      target: i686-pc-windows-msvc
-      target_short: windows.x86
-      is_cross_compile: true
-    windows-x64:
-      poolName: Azure Pipelines
-      imageName: 'windows-latest'
-      rustup_toolchain: stable
-      target: x86_64-pc-windows-msvc
-      target_short: windows.x64
+      target: x86_64-apple-darwin
+      target_short: mac.x64
       is_cross_compile: false
-    windows-arm64:
-      poolName: Azure Pipelines
-      imageName: 'windows-latest'
-      rustup_toolchain: stable
-      target: aarch64-pc-windows-msvc
-      target_short: windows.arm64
-      is_cross_compile: true
-    linux-x86:
-      poolName: r12f-cross
-      imageName:
-      rustup_toolchain: stable
-      target: i686-unknown-linux-gnu
-      target_short: linux.x86
-      is_cross_compile: true
-    linux-x64:
-      poolName: r12f-cross
-      imageName:
-      rustup_toolchain: stable
-      target: x86_64-unknown-linux-gnu
-      target_short: linux.x64
-      is_cross_compile: false
-    linux-arm:
-      poolName: r12f-cross
-      imageName:
-      rustup_toolchain: stable
-      target: arm-unknown-linux-gnueabi
-      target_short: linux.arm
-      is_cross_compile: true
-    linux-arm64:
-      poolName: r12f-cross
-      imageName:
-      rustup_toolchain: stable
-      target: aarch64-unknown-linux-gnu
-      target_short: linux.arm64
-      is_cross_compile: true
 
 pool:
   name: $(poolName)
