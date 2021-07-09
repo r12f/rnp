@@ -181,7 +181,7 @@ steps:
 - bash: |
     cp -f README.md target/$(TARGET)/release
     cp -f LICENSE.txt target/$(TARGET)/release
-    sed -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' build/nuget_package_template.csproj > target/$(TARGET)/release/rnp_nupkg.csproj
+    sed -e 's/{build_branch_name}/$(build.branch_name)/g' -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' build/nuget_package_template.csproj > target/$(TARGET)/release/rnp_nupkg.csproj
   displayName: Prepare nuget package files
   workingDirectory: $(Build.SourcesDirectory)
 

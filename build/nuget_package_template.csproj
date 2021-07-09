@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>rnp.{build_tag}.{target_short}</PackageId>
+    <PackageId>rnp.{build_branch_name}.{target_short}</PackageId>
     <Title>rnp {build_tag} {target_short} ({target})</Title>
     <Version>{version}</Version>
     <Authors>r12f</Authors>
