@@ -9,31 +9,31 @@
 > **NOTE:** This project is in early stage and might not be stable yet.
 
 ```bash
-$ rnp.exe 8.8.8.8:443 -r -l
-rnp - r12f (r12f.com, github.com/r12f) - A simple tool for testing network reachability.
+$ rnp 8.8.8.8:443 -r -l
+rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
 
 Start testing TCP 8.8.8.8:443:
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:6261 succeeded: RTT=10.82ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:6262 succeeded: RTT=11.63ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:6263 succeeded: RTT=10.67ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:6264 succeeded: RTT=12.21ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:8940 succeeded: RTT=12.95ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:8941 succeeded: RTT=11.24ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:8942 succeeded: RTT=10.96ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:8943 succeeded: RTT=12.43ms
 
 === TCP connect statistics for 8.8.8.8:443 ===
-- Packets: Sent = 4, Received = 4, Lost = 0 (0.04% loss).
-- Round trip time: Minimum = 10.67ms, Maximum = 12.21ms, Average = 11.33ms.
+- Packets: Sent = 4, Received = 4, Lost = 0 (0.00% loss).
+- Round trip time: Minimum = 10.96ms, Maximum = 12.95ms, Average = 11.90ms.
 
 === Ping result scatter map ===
 
     Src | Results
    Port | ("1" = Ok, "0" = Fail, "-" = Not Tested)
 --------+-0---4-5---9-0---4-5---9-------------------
-   6260 | -1111 ----- ----- -----
+   8940 | 1111- ----- ----- -----
 
 === Latency scatter map (in milliseconds) ===
 
   Src Port | Results ("X" = Fail, "-" = Not Tested)
 -----------+----0------1------2------3------4------5------6------7------8------9---
-      6260 |    -    10.82  11.63  10.67  12.21    -      -      -      -      -
+      8940 |  12.95  11.24  10.96  12.43    -      -      -      -      -      -
 ```
 
 ## Why Rnp?
@@ -84,80 +84,90 @@ Ok, let's check some real cases to get started!
 
 The simplest case - regular TCP connect test. Works just like ping.
 ```bash
-$ rnp.exe 8.8.8.8:443
-rnp - r12f (r12f.com, github.com/r12f) - A simple tool for testing network reachability.
+rnp 8.8.8.8:443
+rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
 
 Start testing TCP 8.8.8.8:443:
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:15837 succeeded: RTT=11.19ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:15838 succeeded: RTT=11.24ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:15839 succeeded: RTT=10.47ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:15840 succeeded: RTT=10.69ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:10401 succeeded: RTT=11.17ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:10402 succeeded: RTT=13.36ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:10403 succeeded: RTT=14.27ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:10404 succeeded: RTT=12.39ms
 
 === TCP connect statistics for 8.8.8.8:443 ===
-- Packets: Sent = 4, Received = 4, Lost = 0 (0.04% loss).
-- Round trip time: Minimum = 10.47ms, Maximum = 11.24ms, Average = 10.90ms.
+- Packets: Sent = 4, Received = 4, Lost = 0 (0.00% loss).
+- Round trip time: Minimum = 11.17ms, Maximum = 14.27ms, Average = 12.80ms.
 ```
 
 Now let's make our ping faster by adding `-p 10` to spawn 10 workers and `-i 0` to remove the intervals we wait between each ping, then run 100 pings. And to avoid abusing our console, we disable the regular output (`-q`), enable the result scatter map (`-r`) and log the details to a json file for later use (`--log-json log.json`).
 ```bash
 $ rnp.exe 8.8.8.8:443 -p 10 -i 0 -n 100 -q -r --log-json log.json
-rnp - r12f (r12f.com, github.com/r12f) - A simple tool for testing network reachability.
+rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
 
 Start testing TCP 8.8.8.8:443:
 97 pings finished.
 === TCP connect statistics for 8.8.8.8:443 ===
-- Packets: Sent = 100, Received = 86, Lost = 14 (1.00% loss).
-- Round trip time: Minimum = 10.57ms, Maximum = 23.56ms, Average = 16.22ms.
+- Packets: Sent = 100, Received = 96, Lost = 4 (4.00% loss).
+- Round trip time: Minimum = 10.91ms, Maximum = 999.43ms, Average = 55.16ms.
 
 === Ping result scatter map ===
 
     Src | Results
    Port | ("1" = Ok, "0" = Fail, "-" = Not Tested)
 --------+-0---4-5---9-0---4-5---9-------------------
-  19580 | ----- ----- ----- -1111
-  19600 | 11111 11111 11111 11111
-  19620 | 11111 11111 11111 11111
-  19640 | 11111 11111 11101 01101
-  19660 | 11110 10001 11111 11001
-  19680 | 11001 01111 00111 1----
+  18180 | ----- ----1 11111 11111
+  18200 | 11111 11111 11111 11111
+  18220 | 11111 11111 11111 11111
+  18240 | 11111 11111 11111 11111
+  18260 | 11111 11111 11111 11111
+  18280 | 10000 1111- ----- -----
 ```
 
 We will see the test will complete almost immediately, and the details will be logged into the json file:
 ```json
 [
-  {"utcTime":"2021-07-06T03:21:35.767617100Z","protocol":"TCP","workerId":6,"target":"8.8.8.8:443","source":"0.0.0.0:19680","roundTripTimeInMs":11.997,"error":""},
-  {"utcTime":"2021-07-06T03:21:35.780537400Z","protocol":"TCP","workerId":6,"target":"8.8.8.8:443","source":"0.0.0.0:19681","roundTripTimeInMs":13.735,"error":""},
-  {"utcTime":"2021-07-06T03:21:35.654530600Z","protocol":"TCP","workerId":3,"target":"8.8.8.8:443","source":"0.0.0.0:19653","roundTripTimeInMs":998.895,"error":"timed out"}
+  {"utcTime":"2021-07-09T04:54:50.465178Z","protocol":"TCP","workerId":4,"targetIP":"8.8.8.8","targetPort":"443","sourceIP":"192.168.50.153","sourcePort":"18285","roundTripTimeInMs":17.14,"error":""},
+  {"utcTime":"2021-07-09T04:54:50.465430300Z","protocol":"TCP","workerId":8,"targetIP":"8.8.8.8","targetPort":"443","sourceIP":"192.168.50.153","sourcePort":"18288","roundTripTimeInMs":23.25,"error":""},
+  {"utcTime":"2021-07-09T04:54:50.458698800Z","protocol":"TCP","workerId":6,"targetIP":"8.8.8.8","targetPort":"443","sourceIP":"0.0.0.0","sourcePort":"18282","roundTripTimeInMs":998.91,"error":"timed out"},
 ]
 ```
 
 And now, we can see our ping failed on port 19653, then we can start a continuous ping to rerun the bad ports. And we can see a fairly high failure rate on this port as below.
 ```bash
-$ rnp.exe 8.8.8.8:443 --src-port-min 4820 --src-port-max 4820 -t
-rnp - r12f (r12f.com, github.com/r12f) - A simple tool for testing network reachability.
+$ rnp.exe 8.8.8.8:443 --src-port 18282 -t
+rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
 
 Start testing TCP 8.8.8.8:443:
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:4820 failed: Timed out, RTT = 999.75ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:4820 succeeded: RTT=12.22ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:4820 succeeded: RTT=11.50ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:4820 failed: Timed out, RTT = 999.36ms
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:4820 succeeded: RTT=13.28ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18282 succeeded: RTT=11.65ms
+Reaching TCP 8.8.8.8:443 from 0.0.0.0:18282 failed: Timed out, RTT = 999.24ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18282 succeeded: RTT=12.24ms
+.....
 ```
 
 Also, we can easily try all failure ports again and see how they look like. Here is an example using powershell, and on non-windows platform, we can easily do the same thing with tools like [jq]:
 ```bash
-$ gc .\log.json | ConvertFrom-Json | ? { $_.error -eq "timed out" } | % { $_ } | % { $port = ($_.source -split ":")[1]; & target\debug\rnp.exe 8.8.8.8:443 --src-port-min $port --src-port-max $port -n 1 }
-rnp - r12f (r12f.com, github.com/r12f) - A simple tool for testing network reachability.
+# Extract the failure ports
+$ $ports = (gc .\log.json | ConvertFrom-Json | % { $_ } | ? { $_.error -eq "timed out" } | % { $_.sourcePort }) -join ","
+$ $ports
+18282,18281,18284,18283
+
+# Retry
+$ rnp.exe 8.8.8.8:443 --src-port $ports -t
+rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
 
 Start testing TCP 8.8.8.8:443:
-Reaching TCP 8.8.8.8:443 from 0.0.0.0:19599 succeeded: RTT=14.05ms
-
-=== TCP connect statistics for 8.8.8.8:443 ===
-- Packets: Sent = 1, Received = 1, Lost = 0 (0.01% loss).
-- Round trip time: Minimum = 14.05ms, Maximum = 14.05ms, Average = 14.05ms.
-
-......
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18284 succeeded: RTT=11.24ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18283 succeeded: RTT=11.15ms
+Reaching TCP 8.8.8.8:443 from 0.0.0.0:18282 failed: Timed out, RTT = 999.14ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18281 succeeded: RTT=11.53ms
+Reaching TCP 8.8.8.8:443 from 0.0.0.0:18284 failed: Timed out, RTT = 999.50ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18283 succeeded: RTT=11.88ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18282 succeeded: RTT=10.90ms
+Reaching TCP 8.8.8.8:443 from 0.0.0.0:18281 failed: Timed out, RTT = 999.38ms
+Reaching TCP 8.8.8.8:443 from 192.168.50.153:18284 succeeded: RTT=14.40ms
+.....
 ```
+
+And rnp will start to rotate the ping within all the specified source ports for testing.
 
 ### More in help
 To see more on this tool, we can try `--help` option.
@@ -165,36 +175,36 @@ To see more on this tool, we can try `--help` option.
 $ rnp.exe --help
 rnp 0.1.0
 r12f (r12f.com, github.com/r12f)
-A simple tool for testing network reachability.
+A simple cloud-friendly tool for testing network reachability.
 
 USAGE:
     rnp.exe [FLAGS] [OPTIONS] <target>
 
 FLAGS:
-        --help                    Prints help information
+    -h, --help                    Prints help information
     -q, --no-console-log          Don't log each ping result to console. Summary and other things will still be written
                                   to console.
     -t                            Ping until stopped.
-    -h, --show-latency-heatmap    Show bucketed latency hit count after ping is done.
-    -l, --show-latency-scatter    Show latency scatter map after ping is done.
+    -l, --show-latency-scatter    Show latency (round trip time) scatter map after ping is done.
     -r, --show-result-scatter     Show ping result scatter map after ping is done.
     -V, --version                 Prints version information
 
 OPTIONS:
-        --log-csv <csv-log-path>                            Log ping results a csv file.
-        --log-json <json-log-path>                          Log ping results to a json file.
-        --latency-buckets <latency-heatmap-bucket-count>
-            Set the number of buckets to use for bucketing latency. [default: 10]
-
-    -p, --parallel <parallel-ping-count>                    Count of pings running in parallel. [default: 1]
-    -n, --count <ping-count>                                Ping count. [default: 4]
-    -i, --interval <ping-interval-in-ms>                    Sleep between each ping in milliseconds. [default: 1000]
-    -s, --src-ip <source-ip>                                Source IP address. [default: 0.0.0.0]
-        --src-port-max <source-port-max>                    Last source port we try to use in ping.
-        --src-port-min <source-port-min>                    First source port we try to use in ping.
-        --log-text <text-log-path>                          Log ping results to a text file.
-        --ttl <time-to-live>                                Time to live.
-    -w, --timeout <wait-timeout-in-ms>                      Wait time for each ping in milliseconds. [default: 1000]
+        --log-csv <csv-log-path>                  Log ping results a csv file.
+        --log-json <json-log-path>                Log ping results to a json file.
+    -b, --latency-buckets <latency-buckets>...
+            If set, bucket ping latency (round trip time) after ping is done. Set to 0.0 to use the default one:
+            [0.1,0.5,1.0,10.0,50.0,100.0,300.0,500.0]
+    -p, --parallel <parallel-ping-count>          Count of pings running in parallel. [default: 1]
+    -n, --count <ping-count>                      Ping count. [default: 4]
+    -i, --interval <ping-interval-in-ms>          Sleep between each ping in milliseconds. [default: 1000]
+    -s, --src-ip <source-ip>                      Source IP address. [default: 0.0.0.0]
+        --src-port <source-port-list>...          Source port list to use in ping.
+        --src-port-max <source-port-max>          Last source port to use in ping.
+        --src-port-min <source-port-min>          First source port to use in ping.
+        --log-text <text-log-path>                Log ping results to a text file.
+        --ttl <time-to-live>                      Time to live.
+    -w, --timeout <wait-timeout-in-ms>            Wait time for each ping in milliseconds. [default: 1000]
 
 ARGS:
     <target>
@@ -222,7 +232,6 @@ $ cargo build --target=aarch64-pc-windows-msvc --release
 ```
 
 ### Future plans and issue tracking
-- [x] Bucketized latency summary
 - IPv6 (not tested)
 - Maybe other protocol support? (ICMP is bad for checking all possible paths, because there are no variations for routing in the packet. And UDP has no uniformed handshake.).
 - ...
