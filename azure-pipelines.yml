@@ -86,6 +86,9 @@ pool:
   name: $(poolName)
   vmImage: $(imageName)
 
+workspace:
+  clean: all
+
 steps:
 #
 # Force cleanup.
@@ -94,7 +97,6 @@ steps:
 #
 - checkout: self
   clean: true
-  workspace: all
 
 #
 # Environment variable updates
