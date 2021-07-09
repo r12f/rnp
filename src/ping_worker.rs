@@ -86,12 +86,17 @@ impl PingWorker {
             }
         }
 
+        let mut local_addr: Option<SocketAddr> = ping_result.actual_local_addr.and_then(|x| x.as_socket());
+        if local_addr.is_none() {
+            local_addr = Some(SocketAddr::new(self.config.source_ip, src_port));
+        }
+
         let result = PingResult::new(
             ping_time,
             self.id,
             self.config.protocol,
             self.config.target,
-            SocketAddr::new(self.config.source_ip, src_port),
+            local_addr.unwrap(),
             ping_result.round_trip_time,
             ping_result.inner_error,
         );

@@ -153,7 +153,7 @@ impl RnpCliOptions {
 
         if let Some(latency_buckets) = &mut self.latency_buckets {
             tracing::debug!("Latency bucket set to 0. Use default one.");
-            if latency_buckets.len() == 1 && latency_buckets[0] == 0.0 {
+            if latency_buckets.len() == 0 || (latency_buckets.len() == 1 && latency_buckets[0] == 0.0) {
                 *latency_buckets = vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0];
             }
         }

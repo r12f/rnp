@@ -30,10 +30,14 @@ impl PingClient for PingClientTcp {
         let connect_result = socket.connect_timeout(&target, self.config.wait_timeout);
         let rtt = Instant::now().duration_since(start_time);
         if let Err(e) = connect_result {
-            return Err(PingClientPingResultDetails::new(rtt, Some(e)));
+            return Err(PingClientPingResultDetails::new(None, rtt, Some(e)));
         }
 
-        return Ok(PingClientPingResultDetails::new(rtt, None));
+        let local_addr = socket.local_addr();
+        return match local_addr {
+            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr), rtt, None)),
+            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, None)),
+        };
     }
 }
 
@@ -42,6 +46,24 @@ mod tests {
     use super::*;
     use std::io;
     use std::net::SocketAddr;
+
+    // #[test]
+    // fn ping_client_tcp_should_success_when_pinging_good_target()
+    // {
+    //     // Need to create a local server for testing.
+    //     let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
+    //     let target = SockAddr::from("8.8.8.8:443".parse::<SocketAddr>().unwrap());
+
+    //     let config = PingClientConfig { wait_timeout: Duration::from_millis(300), time_to_live: None };
+    //     let ping_client = PingClientTcp::new(&config);
+    //     let result = ping_client.ping(&source, &target);
+
+    //     assert!(result.is_ok());
+    //     assert!(result.as_ref().ok().is_some());
+    //     assert!(result.as_ref().ok().as_ref().unwrap().inner_error.is_none());
+    //     assert!(result.as_ref().ok().as_ref().unwrap().round_trip_time.as_micros() > 0);
+    //     assert!(result.as_ref().ok().as_ref().unwrap().actual_local_addr.is_some());
+    // }
 
     #[test]
     fn ping_client_tcp_should_fail_when_pinging_non_existing_host()

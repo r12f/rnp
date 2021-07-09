@@ -3,6 +3,7 @@ use crate::PingResult;
 use std::io;
 use std::time::Duration;
 use tracing;
+use contracts::requires;
 
 pub struct PingResultProcessorLatencyBucketLogger {
     buckets_in_us: Vec<u128>,
@@ -15,6 +16,7 @@ pub struct PingResultProcessorLatencyBucketLogger {
 
 impl PingResultProcessorLatencyBucketLogger {
     #[tracing::instrument(name = "Creating ping result latency bucket logger", level = "debug")]
+    #[requires(buckets.len() >= 1)]
     pub fn new(buckets: &Vec<f64>) -> PingResultProcessorLatencyBucketLogger {
         // The buckets from settings are treated as separators, so the real buckets are:
         // - 0->The first bucket defined in settings
