@@ -86,10 +86,18 @@ pool:
   name: $(poolName)
   vmImage: $(imageName)
 
+steps:
+#
+# Force cleanup.
+# Self-hosted agents must be cleaned up, otherwise it might carry the previous result to the latest build.
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/repos/pipeline-options-for-git?view=azure-devops&tabs=yaml#clean-the-local-repo-on-the-agent
+#
+- checkout: self
+  clean: true
+
 #
 # Environment variable updates
 #
-steps:
 - bash: |
     BUILD_BRANCH_NAME="$(Build.SourceBranch)"
     BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
