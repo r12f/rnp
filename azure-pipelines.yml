@@ -163,7 +163,15 @@ steps:
     $(GCC_PREFIX)strip --strip-debug --strip-unneeded -p rnp
     $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.symbols rnp
   displayName: Generate GCC symbol files
-  condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
+  condition: and(succeeded(), startsWith(variables['target_short'], 'linux.'))
+  workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
+
+- bash: |
+    gobjcopy --only-keep-debug rnp rnp.symbols
+    strip --strip-debug --strip-unneeded -p rnp
+    gobjcopy --add-gnu-debuglink=rnp.symbols rnp
+  displayName: Generate GCC symbol files
+  condition: and(succeeded(), startsWith(variables['target_short'], 'macos.'))
   workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
 
 #
