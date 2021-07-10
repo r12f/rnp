@@ -158,7 +158,7 @@ steps:
   condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
 #
-# Pack files for github releases
+# Publish files for release
 #
 - task: CopyFiles@2
   displayName: Copy binary to output
@@ -178,6 +178,16 @@ steps:
     contents: |
       rnp.pdb
     targetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
+    overWrite: true
+
+- task: CopyFiles@2
+  displayName: Copy docs to output
+  inputs:
+    sourceFolder: '$(Build.SourcesDirectory)'
+    contents: |
+      README.md
+      LICENSE.txt
+    targetFolder: '$(Build.ArtifactStagingDirectory)/doc'
     overWrite: true
 
 - task: ArchiveFiles@2
