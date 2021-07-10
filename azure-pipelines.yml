@@ -167,9 +167,9 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
 
 - bash: |
-    gobjcopy --only-keep-debug rnp rnp.symbols
-    strip --strip-debug --strip-unneeded -p rnp
-    gobjcopy --add-gnu-debuglink=rnp.symbols rnp
+    llvm-objcopy --only-keep-debug rnp rnp.symbols
+    llvm-strip --strip-debug --strip-unneeded -p rnp
+    llvm-objcopy --add-gnu-debuglink=rnp.symbols rnp
   displayName: Generate GCC symbol files
   condition: and(succeeded(), startsWith(variables['target_short'], 'macos.'))
   workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
