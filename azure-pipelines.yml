@@ -184,6 +184,7 @@ steps:
   displayName: Pack binary to tar.gz
   inputs:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/bin'
+    includeRootFolder: false
     archiveType: 'tar'
     tarCompression: 'gz'
     archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).tar.gz'
@@ -192,6 +193,7 @@ steps:
   displayName: Pack binary to zip
   inputs:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/bin'
+    includeRootFolder: false
     archiveType: 'zip'
     archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).zip'
 
