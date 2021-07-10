@@ -159,7 +159,7 @@ steps:
   displayName: Cargo build
 
 - bash: |
-    $(GCC_PREFIX)aarch64-linux-gnu-objcopy --only-keep-debug rnp rnp.symbols
+    $(GCC_PREFIX)objcopy --only-keep-debug rnp rnp.symbols
     $(GCC_PREFIX)strip --strip-debug --strip-unneeded -p rnp
     $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.symbols rnp
   displayName: Generate GCC symbol files
