@@ -167,6 +167,7 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
 
 - bash: |
+    brew install binutils
     gobjcopy --only-keep-debug rnp rnp.symbols
     strip -S rnp
     gobjcopy --add-gnu-debuglink=rnp.symbols rnp
