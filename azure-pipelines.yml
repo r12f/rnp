@@ -163,7 +163,7 @@ steps:
     $(GCC_PREFIX)strip --strip-debug --strip-unneeded -p rnp
     $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.symbols rnp
   displayName: Generate GCC symbol files
-  condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.'))
+  condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
   workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
 
 #
@@ -210,7 +210,6 @@ steps:
   condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
   inputs:
     sourceFolder: '$(Build.SourcesDirectory)/build/templates'
-    contents: *
     targetFolder: '$(Build.ArtifactStagingDirectory)/templates'
 
 #
