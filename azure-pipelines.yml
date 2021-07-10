@@ -32,6 +32,7 @@ strategy:
       target: i686-pc-windows-msvc
       target_short: windows.x86
       is_cross_compile: true
+      gcc_prefix:
     windows-x64:
       poolName: Azure Pipelines
       imageName: 'windows-latest'
@@ -39,6 +40,7 @@ strategy:
       target: x86_64-pc-windows-msvc
       target_short: windows.x64
       is_cross_compile: false
+      gcc_prefix:
     windows-arm64:
       poolName: Azure Pipelines
       imageName: 'windows-latest'
@@ -46,6 +48,7 @@ strategy:
       target: aarch64-pc-windows-msvc
       target_short: windows.arm64
       is_cross_compile: true
+      gcc_prefix:
     linux-x86:
       poolName: r12f-cross
       imageName:
@@ -53,6 +56,7 @@ strategy:
       target: i686-unknown-linux-gnu
       target_short: linux.x86
       is_cross_compile: true
+      gcc_prefix: i686-linux-gnu-
     linux-x64:
       poolName: r12f-cross
       imageName:
@@ -60,6 +64,7 @@ strategy:
       target: x86_64-unknown-linux-gnu
       target_short: linux.x64
       is_cross_compile: false
+      gcc_prefix:
     linux-arm:
       poolName: r12f-cross
       imageName:
@@ -67,6 +72,7 @@ strategy:
       target: arm-unknown-linux-gnueabi
       target_short: linux.arm
       is_cross_compile: true
+      gcc_prefix: arm-linux-gnueabi-
     linux-arm64:
       poolName: r12f-cross
       imageName:
@@ -74,6 +80,7 @@ strategy:
       target: aarch64-unknown-linux-gnu
       target_short: linux.arm64
       is_cross_compile: true
+      gcc_prefix: aarch64-linux-gnu-
     macos-x64:
       poolName: Azure Pipelines
       imageName: 'macos-latest'
@@ -81,6 +88,7 @@ strategy:
       target: x86_64-apple-darwin
       target_short: macos.x64
       is_cross_compile: false
+      gcc_prefix:
 
 pool:
   name: $(poolName)
@@ -150,6 +158,14 @@ steps:
 - script: cargo build --release --all --target $(TARGET)
   displayName: Cargo build
 
+- bash: |
+    $(GCC_PREFIX)aarch64-linux-gnu-objcopy --only-keep-debug rnp rnp.symbols
+    $(GCC_PREFIX)strip --strip-debug --strip-unneeded -p rnp
+    $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.symbols rnp
+  displayName: Generate GCC symbol files
+  condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.'))
+  workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
+
 #
 # Running all tests
 #
@@ -167,18 +183,9 @@ steps:
     contents: |
       rnp*
       !rnp.pdb
+      !rnp.symbols
       !rnp.d
     targetFolder: '$(Build.ArtifactStagingDirectory)/bin'
-    overWrite: true
-
-- task: CopyFiles@2
-  displayName: Copy symbols to output
-  inputs:
-    sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
-    contents: |
-      rnp.pdb
-    targetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
-    overWrite: true
 
 - task: CopyFiles@2
   displayName: Copy docs to output
@@ -187,50 +194,24 @@ steps:
     contents: |
       README.md
       LICENSE.txt
-    targetFolder: '$(Build.ArtifactStagingDirectory)/doc'
-    overWrite: true
-
-- task: ArchiveFiles@2
-  displayName: Pack binary to tar.gz
-  inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/bin'
-    includeRootFolder: false
-    archiveType: 'tar'
-    tarCompression: 'gz'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).tar.gz'
-
-- task: ArchiveFiles@2
-  displayName: Pack binary to zip
-  inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/bin'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/github-release/rnp.$(build.tag).$(TARGET_SHORT).zip'
-
-#
-# Nuget package generation
-#
-# We cannot use the source directory in the bash command directly, because Azure Pipeline will give them incorrect values
-# on windows machines, like this: D:a1s/target/..... However it seems fine on Linux.
-- bash: |
-    cp -f README.md target/$(TARGET)/release
-    cp -f LICENSE.txt target/$(TARGET)/release
-    sed -e 's/{build_branch_name}/$(build.branch_name)/g' -e 's/{build_tag}/$(build.tag)/g' -e 's/{version}/$(build.version)/g' -e 's/{target_short}/$(TARGET_SHORT)/g' -e 's/{target}/$(TARGET)/g' build/templates/nuget_packages/rnp_nupkg.csproj > target/$(TARGET)/release/rnp_nupkg.csproj
-  displayName: Prepare nuget package files
-  workingDirectory: $(Build.SourcesDirectory)
-
-- bash: |
-    dotnet pack target/$(TARGET)/release/rnp_nupkg.csproj -o target/$(TARGET)/release
-  displayName: Generate nuget package
-  workingDirectory: $(Build.SourcesDirectory)
+    targetFolder: '$(Build.ArtifactStagingDirectory)/bin'
 
 - task: CopyFiles@2
-  displayName: Copy nuget package to output
+  displayName: Copy symbols to output
   inputs:
     sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
     contents: |
-      *.nupkg
-    targetFolder: '$(Build.ArtifactStagingDirectory)/nuget'
+      rnp.pdb
+      rnp.symbols
+    targetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
+
+- task: CopyFiles@2
+  displayName: Copy package template to output
+  condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+  inputs:
+    sourceFolder: '$(Build.SourcesDirectory)/build/templates'
+    contents: *
+    targetFolder: '$(Build.ArtifactStagingDirectory)/templates'
 
 #
 # Publish all pipeline artifacts
