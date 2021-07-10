@@ -168,9 +168,9 @@ steps:
 
 - bash: |
     brew install binutils
-    gobjcopy --only-keep-debug rnp rnp.symbols
+    /usr/local/opt/binutils/bin/gobjcopy --only-keep-debug rnp rnp.symbols
     strip -S rnp
-    gobjcopy --add-gnu-debuglink=rnp.symbols rnp
+    /usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=rnp.symbols rnp
   displayName: Generate GCC symbol files
   condition: and(succeeded(), startsWith(variables['target_short'], 'macos.'))
   workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
