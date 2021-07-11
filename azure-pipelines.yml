@@ -255,7 +255,7 @@ stages:
           BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
           echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
           echo "##vso[task.setvariable variable=build.version]$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"
-          BUILD_TAG=$(build.version).$BUILD_BRANCH_NAME
+          BUILD_TAG=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision).$BUILD_BRANCH_NAME
           echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
         displayName: 'Set environment variables'
 
