@@ -247,7 +247,7 @@ stages:
       clean: all
 
     steps:
-      - checkout: none
+      - checkout: self
 
       - task: DownloadPipelineArtifact@2
         displayName: 'Download Pipeline Artifact'
@@ -272,12 +272,22 @@ stages:
         displayName: 'Set environment variables'
 
       - powershell: |
+          function EvaluateTemplate($template) {
+              return $template.Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
+          }
+
+          function EvaluateTemplateFile($templateFile, $targetFile) {
+              $templateFileContent = gc $templateFile;
+              $targetFileContent = EvaluateTemplate($templateFileContent)
+
+              $utf8NoBom = New-Object System.Text.UTF8Encoding $False
+              [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
+          }
+
           New-Item -ItemType Directory -Path ".\Releases\Crate.io"
           New-Item -ItemType Directory -Path ".\Releases\GithubReleases"
           New-Item -ItemType Directory -Path ".\Releases\NugetPackages"
           New-Item -ItemType Directory -Path ".\Releases\Chocolatey"
-
-          $utf8NoBom = New-Object System.Text.UTF8Encoding $False
 
           $flavors= @{
               "windows.x86" = @{"Root"="Build.Build.windowsx86"; "Target"="i686-pc-windows-msvc"};
@@ -317,19 +327,28 @@ stages:
               Write-Host "Creating nuget package under $nugetProjectRoot"
               New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
               Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
-              $nugetProjectContent = (gc .\Build.Build.linuxx64\templates\nuget_packages\rnp_nupkg.csproj).Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
-              [System.IO.File]::WriteAllLines("$nugetProjectRoot\rnp_nupkg.csproj", $nugetProjectContent, $utf8NoBom)
+              EvaluateTemplateFile(".\Build.Build.linuxx64\templates\nuget_packages\rnp_nupkg.csproj", "$nugetProjectRoot\rnp_nupkg.csproj")
               dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
           }
 
           # Pack symbols for github release
-          $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).symbols.${build.tag}.zip"
+          $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).symbols.zip"
           Write-Host "Pack all symbols to $symbolsZipFilePath"
           7z -tzip a $symbolsZipFilePath .\Staging\Symbols\*
 
           # Crate.io
           Write-Host "Pack source as crate to .\Releases\Crate.io"
           Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
+
+          # Chocolatey
+          $zipX86FileHash = (Get-FileHash ".\Releases\GithubReleases\rnp.$(build.tag).windows.x86.zip" -Algorithm SHA256).Hash
+          Write-Host "X86 zip SHA256 file hash: $zipX86FilePath"
+          $zipX64FileHash = (Get-FileHash ".\Releases\GithubReleases\rnp.$(build.tag).windows.x64.zip" -Algorithm SHA256).Hash
+          Write-Host "X64 zip SHA256 file hash: $zipX64FilePath"
+          $binX86FileHash = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash
+          Write-Host "X86 bin SHA256 file hash: $binX86FilePath"
+          $binX64FileHash = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash
+          Write-Host "X64 bin SHA256 file hash: $binX64FilePath"
         workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
         displayName: 'Generate all packages'
 
