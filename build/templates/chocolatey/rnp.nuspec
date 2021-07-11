@@ -3,20 +3,26 @@
   <metadata>
     <id>rnp-cli</id>
     <version>{version}</version>
-    <title>rnp-cli</title>
+    <title>Rnp</title>
     <authors>r12f</authors>
     <licenseUrl>https://github.com/r12f/rnp/blob/main/LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/r12f/rnp</projectUrl>
+    <docsUrl>https://github.com/r12f/rnp/blob/main/README.md</docsUrl>
+    <mailingListUrl></mailingListUrl>
+    <bugTrackerUrl>https://github.com/r12f/rnp/issues</bugTrackerUrl>
+    <packageSourceUrl>https://github.com/r12f/rnp/blob/main/build/templates/chocolatey</packageSourceUrl>
+    <projectSourceUrl>https://github.com/r12f/rnp</projectSourceUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>A simple cloud-friendly tool for testing network reachability.</summary>
+    <tags>network utility ping tcpping tcp</tags>
     <description>
-## Overview
 Rnp is a simple cloud-friendly tool for testing network reachability.
 
-To see more on how to use it, please check our README in our project: [https://github.com/r12f/rnp](https://github.com/r12f/rnp).
+To see more on how to use it, please check our README in our project: https://github.com/r12f/rnp
     </description>
-    <summary>Rnp - A simple cloud-friendly tool for testing network reachability.</summary>
-    <tags>network utility ping tcpping tcp</tags>
-    <packageSourceUrl>https://github.com/r12f/rnp/blob/main/build/templates/chocolatey</packageSourceUrl>
+    <releaseNotes>
+For release notes, please check our release in github: https://github.com/r12f/rnp/releases/tag/{build_tag}
+    </releaseNotes>
     <dependencies>
       <dependency id="chocolatey" version="0.10.15" />
     </dependencies>
