@@ -288,7 +288,7 @@ stages:
               $nugetProjectRoot = ".\Staging\NugetPackages\$flavor"
               New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
               Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
-              $nugetProjectContent = (gc .\Job.linuxx64\templates\nuget_packages\rnp_nupkg.csproj).Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
+              $nugetProjectContent = (gc .\Build.Build.linuxx64\templates\nuget_packages\rnp_nupkg.csproj).Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
               [System.IO.File]::WriteAllLines("$nugetProjectRoot\rnp_nupkg.csproj", $nugetProjectContent, $utf8NoBom)
               dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
           }
@@ -297,7 +297,7 @@ stages:
           7z -tzip a .\Releases\GithubReleases\rnp.symbols.${build.tag}.zip .\Staging\Symbols\*
 
           # Crate.io
-          Copy-Item -Path .\Job.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
+          Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
         workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
         displayName: 'Generate all packages'
 
