@@ -254,18 +254,22 @@ stages:
           BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
           BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
           echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
-          echo "##vso[task.setvariable variable=build.version]$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"
-          BUILD_TAG=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision).$BUILD_BRANCH_NAME
+          echo "Updated build.branch_name to $BUILD_BRANCH_NAME"
+
+          BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
+          echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
+          echo "Updated build.version to $BUILD_VERSION"
+
+          BUILD_TAG=$BUILD_VERSION.$BUILD_BRANCH_NAME
           echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
+          echo "Updated build.tag to $BUILD_TAG"
         displayName: 'Set environment variables'
 
       - powershell: |
-          tree
-
-          New-Item -ItemType Directory -Path ".\Releases\Crate.io" | Out-Null
-          New-Item -ItemType Directory -Path ".\Releases\GithubReleases" | Out-Null
-          New-Item -ItemType Directory -Path ".\Releases\NugetPackages" | Out-Null
-          New-Item -ItemType Directory -Path ".\Releases\Chocolatey" | Out-Null
+          New-Item -ItemType Directory -Path ".\Releases\Crate.io"
+          New-Item -ItemType Directory -Path ".\Releases\GithubReleases"
+          New-Item -ItemType Directory -Path ".\Releases\NugetPackages"
+          New-Item -ItemType Directory -Path ".\Releases\Chocolatey"
 
           $utf8NoBom = New-Object System.Text.UTF8Encoding $False
 
@@ -284,19 +288,27 @@ stages:
               $flavor = $_.Name
               $root = $_.Value["Root"]
               $target = $_.Value["Target"]
+              Write-Host "Processing build: Flavor = $flavor, Root = $root, Target = $target"
 
               # Create zip for github release
-              7z -tzip a .\Releases\GithubReleases\rnp.$(build.tag).$flavor.zip .\$root\bin\*
+              $zipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).$flavor.zip"
+              Write-Host "Packing to $zipFilePath"
+              7z -tzip a $zipFilePath .\$root\bin\*
 
               # Create tar.gz for github release
-              tar -cvzf .\Releases\GithubReleases\rnp.$(build.tag).$flavor.tar.gz --directory .\$root\bin *
+              $tarFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).$flavor.tar.gz"
+              Write-Host "Packing to $tarFilePath"
+              tar -cvzf $tarFilePath --directory .\$root\bin *
 
               # Copy symbols for github release
-              New-Item -ItemType Directory -Path .\Staging\Symbols\$flavor
-              Copy-Item -Path .\$root\symbols\* .\Staging\Symbols\$flavor -Verbose -Force
+              $symbolDir = ".\Staging\Symbols\$flavor"
+              Write-Host "Copying symbol to $symbolDir"
+              New-Item -ItemType Directory -Path $symbolDir
+              Copy-Item -Path .\$root\symbols\* $symbolDir -Verbose -Force
 
               # Generate nuget package
               $nugetProjectRoot = ".\Staging\NugetPackages\$flavor"
+              Write-Host "Creating nuget package under $nugetProjectRoot"
               New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
               Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
               $nugetProjectContent = (gc .\Build.Build.linuxx64\templates\nuget_packages\rnp_nupkg.csproj).Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
@@ -305,9 +317,11 @@ stages:
           }
 
           # Pack symbols for github release
+          Write-Host "Pack all symbols under .\Staging\Symbols"
           7z -tzip a .\Releases\GithubReleases\rnp.symbols.${build.tag}.zip .\Staging\Symbols\*
 
           # Crate.io
+          Write-Host "Pack source as crate to .\Releases\Crate.io"
           Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
         workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
         displayName: 'Generate all packages'
