@@ -317,8 +317,9 @@ stages:
           }
 
           # Pack symbols for github release
-          Write-Host "Pack all symbols under .\Staging\Symbols"
-          7z -tzip a .\Releases\GithubReleases\rnp.symbols.${build.tag}.zip .\Staging\Symbols\*
+          $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).symbols.${build.tag}.zip"
+          Write-Host "Pack all symbols to $symbolsZipFilePath"
+          7z -tzip a $symbolsZipFilePath .\Staging\Symbols\*
 
           # Crate.io
           Write-Host "Pack source as crate to .\Releases\Crate.io"
