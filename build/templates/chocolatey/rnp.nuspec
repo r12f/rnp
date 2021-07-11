@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>rnp</id>
+    <version>{version}</version>
+    <title>rnp</title>
+    <authors>r12f</authors>
+    <licenseUrl>https://github.com/r12f/rnp/blob/main/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/r12f/rnp</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>
+## Overview
+Rnp is a simple cloud-friendly tool for testing network reachability.
+
+To see more on how to use it, please check our README in our project: [https://github.com/r12f/rnp](https://github.com/r12f/rnp).
+    </description>
+    <summary>Rnp - A simple cloud-friendly tool for testing network reachability.</summary>
+    <tags>network utility ping tcpping tcp</tags>
+    <packageSourceUrl>https://github.com/r12f/rnp/blob/main/build/templates/chocolatey</packageSourceUrl>
+    <dependencies>
+      <dependency id="chocolatey" version="0.10.15" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
