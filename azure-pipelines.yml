@@ -150,7 +150,7 @@ stages:
       inputs:
         rootFolderOrFile: '$(Build.SourcesDirectory)'
         archiveType: '7z'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.$(build.tag).7z'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.7z'
 
     #
     # Build
