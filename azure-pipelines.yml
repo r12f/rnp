@@ -259,14 +259,14 @@ stages:
           $utf8NoBom = New-Object System.Text.UTF8Encoding $False
 
           $flavors= @{
-              // "windows.x86" = @{"Root"="Job.windowsx86"; "Target"="i686-pc-windows-msvc"};
-              // "windows.x64" = @{"Root"="Job.windowsx64";"Target"="x86_64-pc-windows-msvc"};
-              // "windows.arm64" = @{"Root"="Job.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
-              // "linux.x86" = @{"Root"="Job.linuxx86"; "Target"="i686-unknown-linux-gnu"};
+              # "windows.x86" = @{"Root"="Job.windowsx86"; "Target"="i686-pc-windows-msvc"};
+              # "windows.x64" = @{"Root"="Job.windowsx64";"Target"="x86_64-pc-windows-msvc"};
+              # "windows.arm64" = @{"Root"="Job.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
+              # "linux.x86" = @{"Root"="Job.linuxx86"; "Target"="i686-unknown-linux-gnu"};
               "linux.x64" = @{"Root"="Job.linuxx64";"Target"="x86_64-unknown-linux-gnu"};
-              // "linux.arm" = @{"Root"="Job.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
-              // "linux.arm64" = @{"Root"="Job.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
-              // "macos.x64" = @{"Root"="Job.macosx64";"Target"="x86_64-apple-darwin"};
+              # "linux.arm" = @{"Root"="Job.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
+              # "linux.arm64" = @{"Root"="Job.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
+              # "macos.x64" = @{"Root"="Job.macosx64";"Target"="x86_64-apple-darwin"};
           }
 
           $flavors.GetEnumerator() | ForEach-Object {
