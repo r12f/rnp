@@ -248,6 +248,17 @@ stages:
         inputs:
           targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
+      - bash: |
+          BUILD_BRANCH_NAME="$(Build.SourceBranch)"
+          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
+          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
+          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
+          echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
+          echo "##vso[task.setvariable variable=build.version]$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)"
+          BUILD_TAG=$(build.version).$BUILD_BRANCH_NAME
+          echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
+        displayName: 'Set environment variables'
+
       - powershell: |
           tree
 
