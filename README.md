@@ -1,5 +1,7 @@
 # Rnp - A simple cloud-friendly tool for testing network reachability.
+[![Documentation](https://docs.rs/rnp/badge.svg)](https://docs.rs/rnp/)
 [![Build Status](https://riff.visualstudio.com/rnp/_apis/build/status/r12f.rnp?branchName=main)](https://riff.visualstudio.com/rnp/_build/latest?definitionId=5&branchName=main)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
 | Release | Status |
 |:---:|---|
