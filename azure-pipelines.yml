@@ -73,14 +73,14 @@ stages:
         #   target_short: linux.arm
         #   is_cross_compile: true
         #   gcc_prefix: arm-linux-gnueabi-
-        # linux-arm64:
-        #   poolName: r12f-cross
-        #   imageName:
-        #   rustup_toolchain: stable
-        #   target: aarch64-unknown-linux-gnu
-        #   target_short: linux.arm64
-        #   is_cross_compile: true
-        #   gcc_prefix: aarch64-linux-gnu-
+        linux-arm64:
+          poolName: r12f-cross
+          imageName:
+          rustup_toolchain: stable
+          target: aarch64-unknown-linux-gnu
+          target_short: linux.arm64
+          is_cross_compile: true
+          gcc_prefix: aarch64-linux-gnu-
         # macos-x64:
         #   poolName: Azure Pipelines
         #   imageName: 'macos-latest'
@@ -276,7 +276,7 @@ stages:
               # "linux.x86" = @{"Root"="Build.Build.linuxx86"; "Target"="i686-unknown-linux-gnu"};
               "linux.x64" = @{"Root"="Build.Build.linuxx64";"Target"="x86_64-unknown-linux-gnu"};
               # "linux.arm" = @{"Root"="Build.Build.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
-              # "linux.arm64" = @{"Root"="Build.Build.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
+              "linux.arm64" = @{"Root"="Build.Build.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
               # "macos.x64" = @{"Root"="Build.Build.macosx64";"Target"="x86_64-apple-darwin"};
           }
 
@@ -314,7 +314,6 @@ stages:
 
       - task: CopyFiles@2
         displayName: Copy packages to staging folder
-        condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
         inputs:
           sourceFolder: '$(System.DefaultWorkingDirectory)/r12f.rnp/Releases'
           targetFolder: '$(Build.ArtifactStagingDirectory)/Releases'
