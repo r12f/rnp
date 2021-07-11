@@ -21,7 +21,6 @@ tokio = { version = "1", features = ["rt-multi-thread", "time", "sync"] }
 contracts = "0.6.0"
 chrono = "0.4"
 rand = "0.8"
-libc = "0.2"
 
 [profile.release]
 opt-level = 'z'     # Optimize for size.
