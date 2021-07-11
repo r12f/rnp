@@ -6,7 +6,7 @@
     <Version>{version}</Version>
     <Authors>r12f</Authors>
     <Company>r12f</Company>
-    <Copyright>Copyright ©2021 r12f</Copyright>
+    <Copyright>Copyright (c)2021 r12f</Copyright>
     <PackageTags>network;utility;ping;tcpping;tcp</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <ProjectUrl>http://github.com/r12f/rnp</ProjectUrl>

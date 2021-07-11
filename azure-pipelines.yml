@@ -286,10 +286,10 @@ stages:
               $target = $_.Value["Target"]
 
               # Create zip for github release
-              7z -tzip a .\Releases\GithubReleases\rnp.${build.tag}.$flavor.zip .\$root\bin\*
+              7z -tzip a .\Releases\GithubReleases\rnp.$(build.tag).$flavor.zip .\$root\bin\*
 
               # Create tar.gz for github release
-              tar -cvzf .\Releases\GithubReleases\rnp.${build.tag}.$flavor.tar.gz --directory .\$root\bin *
+              tar -cvzf .\Releases\GithubReleases\rnp.$(build.tag).$flavor.tar.gz --directory .\$root\bin *
 
               # Copy symbols for github release
               New-Item -ItemType Directory -Path .\Staging\Symbols\$flavor
