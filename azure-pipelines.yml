@@ -25,38 +25,38 @@ stages:
     #
     strategy:
       matrix:
-        windows-x86:
-          poolName: Azure Pipelines
-          imageName: 'windows-latest'
-          rustup_toolchain: stable
-          target: i686-pc-windows-msvc
-          target_short: windows.x86
-          is_cross_compile: true
-          gcc_prefix:
-        windows-x64:
-          poolName: Azure Pipelines
-          imageName: 'windows-latest'
-          rustup_toolchain: stable
-          target: x86_64-pc-windows-msvc
-          target_short: windows.x64
-          is_cross_compile: false
-          gcc_prefix:
-        windows-arm64:
-          poolName: Azure Pipelines
-          imageName: 'windows-latest'
-          rustup_toolchain: stable
-          target: aarch64-pc-windows-msvc
-          target_short: windows.arm64
-          is_cross_compile: true
-          gcc_prefix:
-        linux-x86:
-          poolName: r12f-cross
-          imageName:
-          rustup_toolchain: stable
-          target: i686-unknown-linux-gnu
-          target_short: linux.x86
-          is_cross_compile: true
-          gcc_prefix: i686-linux-gnu-
+        # windows-x86:
+        #   poolName: Azure Pipelines
+        #   imageName: 'windows-latest'
+        #   rustup_toolchain: stable
+        #   target: i686-pc-windows-msvc
+        #   target_short: windows.x86
+        #   is_cross_compile: true
+        #   gcc_prefix:
+        # windows-x64:
+        #   poolName: Azure Pipelines
+        #   imageName: 'windows-latest'
+        #   rustup_toolchain: stable
+        #   target: x86_64-pc-windows-msvc
+        #   target_short: windows.x64
+        #   is_cross_compile: false
+        #   gcc_prefix:
+        # windows-arm64:
+        #   poolName: Azure Pipelines
+        #   imageName: 'windows-latest'
+        #   rustup_toolchain: stable
+        #   target: aarch64-pc-windows-msvc
+        #   target_short: windows.arm64
+        #   is_cross_compile: true
+        #   gcc_prefix:
+        # linux-x86:
+        #   poolName: r12f-cross
+        #   imageName:
+        #   rustup_toolchain: stable
+        #   target: i686-unknown-linux-gnu
+        #   target_short: linux.x86
+        #   is_cross_compile: true
+        #   gcc_prefix: i686-linux-gnu-
         linux-x64:
           poolName: r12f-cross
           imageName:
@@ -65,30 +65,30 @@ stages:
           target_short: linux.x64
           is_cross_compile: false
           gcc_prefix:
-        linux-arm:
-          poolName: r12f-cross
-          imageName:
-          rustup_toolchain: stable
-          target: arm-unknown-linux-gnueabi
-          target_short: linux.arm
-          is_cross_compile: true
-          gcc_prefix: arm-linux-gnueabi-
-        linux-arm64:
-          poolName: r12f-cross
-          imageName:
-          rustup_toolchain: stable
-          target: aarch64-unknown-linux-gnu
-          target_short: linux.arm64
-          is_cross_compile: true
-          gcc_prefix: aarch64-linux-gnu-
-        macos-x64:
-          poolName: Azure Pipelines
-          imageName: 'macos-latest'
-          rustup_toolchain: stable
-          target: x86_64-apple-darwin
-          target_short: macos.x64
-          is_cross_compile: false
-          gcc_prefix:
+        # linux-arm:
+        #   poolName: r12f-cross
+        #   imageName:
+        #   rustup_toolchain: stable
+        #   target: arm-unknown-linux-gnueabi
+        #   target_short: linux.arm
+        #   is_cross_compile: true
+        #   gcc_prefix: arm-linux-gnueabi-
+        # linux-arm64:
+        #   poolName: r12f-cross
+        #   imageName:
+        #   rustup_toolchain: stable
+        #   target: aarch64-unknown-linux-gnu
+        #   target_short: linux.arm64
+        #   is_cross_compile: true
+        #   gcc_prefix: aarch64-linux-gnu-
+        # macos-x64:
+        #   poolName: Azure Pipelines
+        #   imageName: 'macos-latest'
+        #   rustup_toolchain: stable
+        #   target: x86_64-apple-darwin
+        #   target_short: macos.x64
+        #   is_cross_compile: false
+        #   gcc_prefix:
 
     pool:
       name: $(poolName)
@@ -253,14 +253,14 @@ stages:
           $utf8NoBom = New-Object System.Text.UTF8Encoding $False
 
           $flavors= @{
-              "windows.x86" = @{"Root"="Job.windowsx86"; "Target"="i686-pc-windows-msvc"};
-              "windows.x64" = @{"Root"="Job.windowsx64";"Target"="x86_64-pc-windows-msvc"};
-              "windows.arm64" = @{"Root"="Job.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
-              "linux.x86" = @{"Root"="Job.linuxx86"; "Target"="i686-unknown-linux-gnu"};
+              // "windows.x86" = @{"Root"="Job.windowsx86"; "Target"="i686-pc-windows-msvc"};
+              // "windows.x64" = @{"Root"="Job.windowsx64";"Target"="x86_64-pc-windows-msvc"};
+              // "windows.arm64" = @{"Root"="Job.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
+              // "linux.x86" = @{"Root"="Job.linuxx86"; "Target"="i686-unknown-linux-gnu"};
               "linux.x64" = @{"Root"="Job.linuxx64";"Target"="x86_64-unknown-linux-gnu"};
-              "linux.arm" = @{"Root"="Job.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
-              "linux.arm64" = @{"Root"="Job.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
-              "macos.x64" = @{"Root"="Job.macosx64";"Target"="x86_64-apple-darwin"};
+              // "linux.arm" = @{"Root"="Job.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
+              // "linux.arm64" = @{"Root"="Job.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
+              // "macos.x64" = @{"Root"="Job.macosx64";"Target"="x86_64-apple-darwin"};
           }
 
           $flavors.GetEnumerator() | ForEach-Object {
