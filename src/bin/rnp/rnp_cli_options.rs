@@ -41,6 +41,9 @@ pub struct RnpCliOptions {
     #[structopt(short = "t", help = "Ping until stopped.")]
     pub ping_until_stopped: bool,
 
+    #[structopt(long = "warmup", default_value = "1", help = "Warm up ping count.")]
+    pub warmup_count: u32,
+
     #[structopt(
         short = "w",
         long = "timeout",
@@ -179,6 +182,7 @@ impl RnpCliOptions {
                     None => None,
                 },
                 ping_count: None,
+                warmup_count: self.warmup_count,
                 parallel_ping_count: self.parallel_ping_count,
             },
             result_processor_config: PingResultProcessorConfig {
@@ -226,6 +230,7 @@ mod tests {
                 source_port_list: None,
                 ping_count: 4,
                 ping_until_stopped: false,
+                warmup_count: 1,
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1000,
                 time_to_live: None,
@@ -253,6 +258,7 @@ mod tests {
                 source_port_list: None,
                 ping_count: 10,
                 ping_until_stopped: true,
+                warmup_count: 1,
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1500,
                 time_to_live: None,
@@ -299,6 +305,7 @@ mod tests {
                 source_port_list: Some(vec![1024, 1025, 1026]),
                 ping_count: 10,
                 ping_until_stopped: false,
+                warmup_count: 3,
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
@@ -324,6 +331,8 @@ mod tests {
                 "1024,1025,1026",
                 "--count",
                 "10",
+                "--warmup",
+                "3",
                 "--timeout",
                 "2000",
                 "--interval",
@@ -366,6 +375,7 @@ mod tests {
                     source_port_max: 2047,
                     source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: Some(4),
+                    warmup_count: 1,
                     parallel_ping_count: 1,
                 },
                 result_processor_config: PingResultProcessorConfig {
@@ -382,6 +392,7 @@ mod tests {
                 target: "10.0.0.1:443".parse().unwrap(),
                 ping_count: 4,
                 ping_until_stopped: false,
+                warmup_count: 1,
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2047),
@@ -418,6 +429,7 @@ mod tests {
                     source_port_max: 2047,
                     source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: None,
+                    warmup_count: 3,
                     parallel_ping_count: 1,
                 },
                 result_processor_config: PingResultProcessorConfig {
@@ -434,6 +446,7 @@ mod tests {
                 target: "10.0.0.1:443".parse().unwrap(),
                 ping_count: 4,
                 ping_until_stopped: true,
+                warmup_count: 3,
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2047),

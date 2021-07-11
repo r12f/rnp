@@ -56,6 +56,11 @@ impl PingResultProcessorLatencyScatterLogger {
 
 impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
     fn process(&mut self, ping_result: &PingResult) {
+        // Skip warmup pings in analysis.
+        if ping_result.is_warmup() {
+            return;
+        }
+
         let (row, col) = self.get_ping_history_item_pos(ping_result.source().port() as u32);
         let bit_mask_bit = 1 << col;
 

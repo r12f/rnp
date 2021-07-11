@@ -44,6 +44,11 @@ impl PingResultProcessorLatencyBucketLogger {
     }
 
     fn update_statistics(&mut self, ping_result: &PingResult) {
+        // Skip warmup pings in analysis.
+        if ping_result.is_warmup() {
+            return;
+        }
+
         self.total_hit_count += 1;
 
         // check time out / failures
@@ -113,6 +118,7 @@ mod tests {
                 Protocol::TCP,
                 "1.2.3.4:443".parse().unwrap(),
                 "5.6.7.8:8080".parse().unwrap(),
+                false,
                 Duration::from_millis(10),
                 None,
             ),
@@ -122,6 +128,7 @@ mod tests {
                 Protocol::TCP,
                 "1.2.3.4:443".parse().unwrap(),
                 "5.6.7.8:8080".parse().unwrap(),
+                false,
                 Duration::from_millis(1000),
                 Some(io::Error::new(io::ErrorKind::TimedOut, "timed out")),
             ),
@@ -131,6 +138,7 @@ mod tests {
                 Protocol::TCP,
                 "1.2.3.4:443".parse().unwrap(),
                 "5.6.7.8:8080".parse().unwrap(),
+                false,
                 Duration::from_millis(0),
                 Some(io::Error::new(
                     io::ErrorKind::ConnectionRefused,

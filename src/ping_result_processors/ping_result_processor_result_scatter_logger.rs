@@ -57,6 +57,11 @@ impl PingResultProcessorResultScatterLogger {
 
 impl PingResultProcessor for PingResultProcessorResultScatterLogger {
     fn process(&mut self, ping_result: &PingResult) {
+        // Skip warmup pings in analysis.
+        if ping_result.is_warmup() {
+            return;
+        }
+
         let (row, bit_index) = self.get_ping_history_bit_pos(ping_result.source().port() as u32);
         let bit_mask_bit = 1 << bit_index;
         let success_bit = if let Some(_) = ping_result.error() {

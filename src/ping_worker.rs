@@ -53,7 +53,7 @@ impl PingWorker {
         loop {
             let source_port = self.port_picker.lock().expect("Failed getting port picker lock").next();
             match source_port {
-                Some(source_port) => self.run_single_ping(source_port).await,
+                Some((source_port, is_warmup)) => self.run_single_ping(source_port, is_warmup).await,
                 None => {
                     tracing::debug!("Ping finished, stopping worker; worker_id={}", self.id);
                     return;
@@ -67,18 +67,18 @@ impl PingWorker {
     }
 
     #[tracing::instrument(name = "Running single ping", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn run_single_ping(&self, source_port: u16) {
+    async fn run_single_ping(&self, source_port: u16, is_warmup: bool) {
         let source = SockAddr::from(SocketAddr::new(self.config.source_ip, source_port));
         let target = SockAddr::from(self.config.target);
         let ping_time= Utc::now();
         match self.ping_client.ping(&source, &target) {
-            Ok(result) => self.process_ping_client_result(&ping_time, source_port, result).await,
-            Err(result) => self.process_ping_client_result(&ping_time, source_port, result).await,
+            Ok(result) => self.process_ping_client_result(&ping_time, source_port, is_warmup, result).await,
+            Err(result) => self.process_ping_client_result(&ping_time, source_port, is_warmup, result).await,
         }
     }
 
     #[tracing::instrument(name = "Processing ping client single ping result", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn process_ping_client_result(&self, ping_time: &DateTime<Utc>, src_port: u16, ping_result: PingClientPingResultDetails) {
+    async fn process_ping_client_result(&self, ping_time: &DateTime<Utc>, src_port: u16, is_warmup: bool, ping_result: PingClientPingResultDetails) {
         // Failed due to unable to bind source port, the source port might be taken, and we should ignore this error and continue.
         if let Some(e) = &ping_result.inner_error {
             if e.kind() == io::ErrorKind::AddrInUse {
@@ -97,6 +97,7 @@ impl PingWorker {
             self.config.protocol,
             self.config.target,
             local_addr.unwrap(),
+            is_warmup,
             ping_result.round_trip_time,
             ping_result.inner_error,
         );
