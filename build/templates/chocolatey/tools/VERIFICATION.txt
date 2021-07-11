@@ -1,0 +1,11 @@
+﻿VERIFICATION
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+ 
+To validate the checksum, we can us Get-FileHash command in powershell.
+
+    Get-FileHash .\Path\To\rnp -Algorithm SHA256
+
+And the known filehashs for version {build_version} are:
+- x86: {rnp_bin_hash_x86}
+- x64: {rnp_bin_hash_x64}
