@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
-    <id>rnp</id>
+    <id>rnp-cli</id>
     <version>{version}</version>
-    <title>rnp</title>
+    <title>rnp-cli</title>
     <authors>r12f</authors>
     <licenseUrl>https://github.com/r12f/rnp/blob/main/LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/r12f/rnp</projectUrl>
