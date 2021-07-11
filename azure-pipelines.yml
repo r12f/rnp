@@ -231,71 +231,84 @@ stages:
 
 - stage: Pack
   jobs:
-    - job: Pack
+  - job: Pack
 
-      pool:
-        name: Azure Pipelines
-        vmImage: 'windows-latest'
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
 
-      workspace:
-        clean: all
+    workspace:
+      clean: all
 
-      steps:
-        - task: DownloadPipelineArtifact@2
-          displayName: 'Download Pipeline Artifact'
+    steps:
+      - checkout: none
 
-        - powershell: |
-            New-Item -ItemType Directory -Path ".\Releases\Crate.io" | Out-Null
-            New-Item -ItemType Directory -Path ".\Releases\GithubReleases" | Out-Null
-            New-Item -ItemType Directory -Path ".\Releases\NugetPackages" | Out-Null
-            New-Item -ItemType Directory -Path ".\Releases\Chocolatey" | Out-Null
+      - task: DownloadPipelineArtifact@2
+        displayName: 'Download Pipeline Artifact'
+        inputs:
+          targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
-            $utf8NoBom = New-Object System.Text.UTF8Encoding $False
+      - powershell: |
+          tree
 
-            $flavors= @{
-                // "windows.x86" = @{"Root"="Job.windowsx86"; "Target"="i686-pc-windows-msvc"};
-                // "windows.x64" = @{"Root"="Job.windowsx64";"Target"="x86_64-pc-windows-msvc"};
-                // "windows.arm64" = @{"Root"="Job.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
-                // "linux.x86" = @{"Root"="Job.linuxx86"; "Target"="i686-unknown-linux-gnu"};
-                "linux.x64" = @{"Root"="Job.linuxx64";"Target"="x86_64-unknown-linux-gnu"};
-                // "linux.arm" = @{"Root"="Job.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
-                // "linux.arm64" = @{"Root"="Job.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
-                // "macos.x64" = @{"Root"="Job.macosx64";"Target"="x86_64-apple-darwin"};
-            }
+          New-Item -ItemType Directory -Path ".\Releases\Crate.io" | Out-Null
+          New-Item -ItemType Directory -Path ".\Releases\GithubReleases" | Out-Null
+          New-Item -ItemType Directory -Path ".\Releases\NugetPackages" | Out-Null
+          New-Item -ItemType Directory -Path ".\Releases\Chocolatey" | Out-Null
 
-            $flavors.GetEnumerator() | ForEach-Object {
-                $flavor = $_.Name
-                $root = $_.Value["Root"]
-                $target = $_.Value["Target"]
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $False
 
-                # Create zip for github release
-                7z -tzip a .\Releases\GithubReleases\rnp.${build.tag}.$flavor.zip .\$root\bin\*
+          $flavors= @{
+              // "windows.x86" = @{"Root"="Job.windowsx86"; "Target"="i686-pc-windows-msvc"};
+              // "windows.x64" = @{"Root"="Job.windowsx64";"Target"="x86_64-pc-windows-msvc"};
+              // "windows.arm64" = @{"Root"="Job.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
+              // "linux.x86" = @{"Root"="Job.linuxx86"; "Target"="i686-unknown-linux-gnu"};
+              "linux.x64" = @{"Root"="Job.linuxx64";"Target"="x86_64-unknown-linux-gnu"};
+              // "linux.arm" = @{"Root"="Job.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
+              // "linux.arm64" = @{"Root"="Job.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
+              // "macos.x64" = @{"Root"="Job.macosx64";"Target"="x86_64-apple-darwin"};
+          }
 
-                # Create tar.gz for github release
-                tar -cvzf .\Releases\GithubReleases\rnp.${build.tag}.$flavor.tar.gz --directory .\$root\bin *
+          $flavors.GetEnumerator() | ForEach-Object {
+              $flavor = $_.Name
+              $root = $_.Value["Root"]
+              $target = $_.Value["Target"]
 
-                # Copy symbols for github release
-                New-Item -ItemType Directory -Path .\Staging\Symbols\$flavor
-                Copy-Item -Path .\$root\symbols\* .\Staging\Symbols\$flavor -Verbose -Force
+              # Create zip for github release
+              7z -tzip a .\Releases\GithubReleases\rnp.${build.tag}.$flavor.zip .\$root\bin\*
 
-                # Generate nuget package
-                $nugetProjectRoot = ".\Staging\NugetPackages\$flavor"
-                New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
-                Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
-                $nugetProjectContent = (gc .\Job.linuxx64\templates\nuget_packages\rnp_nupkg.csproj).Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
-                [System.IO.File]::WriteAllLines("$nugetProjectRoot\rnp_nupkg.csproj", $nugetProjectContent, $utf8NoBom)
-                dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
-            }
+              # Create tar.gz for github release
+              tar -cvzf .\Releases\GithubReleases\rnp.${build.tag}.$flavor.tar.gz --directory .\$root\bin *
 
-            # Pack symbols for github release
-            7z -tzip a .\Releases\GithubReleases\rnp.symbols.${build.tag}.zip .\Staging\Symbols\*
+              # Copy symbols for github release
+              New-Item -ItemType Directory -Path .\Staging\Symbols\$flavor
+              Copy-Item -Path .\$root\symbols\* .\Staging\Symbols\$flavor -Verbose -Force
 
-            # Crate.io
-            Copy-Item -Path .\Job.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
-          workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
-          displayName: 'Generate all packages'
+              # Generate nuget package
+              $nugetProjectRoot = ".\Staging\NugetPackages\$flavor"
+              New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
+              Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
+              $nugetProjectContent = (gc .\Job.linuxx64\templates\nuget_packages\rnp_nupkg.csproj).Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
+              [System.IO.File]::WriteAllLines("$nugetProjectRoot\rnp_nupkg.csproj", $nugetProjectContent, $utf8NoBom)
+              dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
+          }
 
-        - task: PublishPipelineArtifact@1
-          displayName: Publish pipeline artifact
-          inputs:
-            targetPath: '$(Build.ArtifactStagingDirectory)'
+          # Pack symbols for github release
+          7z -tzip a .\Releases\GithubReleases\rnp.symbols.${build.tag}.zip .\Staging\Symbols\*
+
+          # Crate.io
+          Copy-Item -Path .\Job.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
+        workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
+        displayName: 'Generate all packages'
+
+      - task: CopyFiles@2
+        displayName: Copy packages to staging folder
+        condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+        inputs:
+          sourceFolder: '$(System.DefaultWorkingDirectory)/r12f.rnp/Releases'
+          targetFolder: '$(Build.ArtifactStagingDirectory)/Releases'
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish pipeline artifact
+        inputs:
+          targetPath: '$(Build.ArtifactStagingDirectory)'
