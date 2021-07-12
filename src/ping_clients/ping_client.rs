@@ -173,7 +173,7 @@ mod tests {
         ping_client: &Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
-        let source = SockAddr::from("127.0.0.1:7680".parse::<SocketAddr>().unwrap());
+        let source = SockAddr::from("127.0.0.1:11337".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
         let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
