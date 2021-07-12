@@ -33,6 +33,7 @@ stages:
           target_short: windows.x86
           is_cross_compile: true
           gcc_prefix:
+          gcc_suffix:
         windows-x64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
@@ -41,6 +42,7 @@ stages:
           target_short: windows.x64
           is_cross_compile: false
           gcc_prefix:
+          gcc_suffix:
         windows-arm64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
@@ -49,6 +51,7 @@ stages:
           target_short: windows.arm64
           is_cross_compile: true
           gcc_prefix:
+          gcc_suffix:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -57,6 +60,7 @@ stages:
           target_short: linux.x86
           is_cross_compile: true
           gcc_prefix: i686-linux-gnu-
+          gcc_suffix: -i686-linux-gnu
         linux-x64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -65,6 +69,7 @@ stages:
           target_short: linux.x64
           is_cross_compile: false
           gcc_prefix:
+          gcc_suffix:
         linux-arm:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -73,6 +78,7 @@ stages:
           target_short: linux.arm
           is_cross_compile: true
           gcc_prefix: arm-linux-gnueabi-
+          gcc_suffix: -arm-linux-gnueabi
         linux-arm64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -81,6 +87,7 @@ stages:
           target_short: linux.arm64
           is_cross_compile: true
           gcc_prefix: aarch64-linux-gnu-
+          gcc_suffix: -aarch64-linux-gnu
         macos-x64:
           poolName: Azure Pipelines
           imageName: 'macos-latest'
@@ -89,6 +96,7 @@ stages:
           target_short: macos.x64
           is_cross_compile: false
           gcc_prefix:
+          gcc_suffix:
 
     pool:
       name: $(poolName)
@@ -136,6 +144,11 @@ stages:
 
     - script: rustup target install $(TARGET)
       displayName: rustup install target
+
+    - bash: |
+        sudo apt install gcc make gcc$(GCC_SUFFIX) binutils$(GCC_SUFFIX)
+      displayName: Install build tools for cross build
+      condition: and(succeeded(), ne(variables['gcc_suffix'], ''))
 
     #
     # Update version files and pack all source code for crate publishing
@@ -239,12 +252,14 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
 - stage: Pack
   jobs:
   - job: Pack
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines
