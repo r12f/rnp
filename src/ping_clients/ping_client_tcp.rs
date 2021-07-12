@@ -2,6 +2,7 @@ use crate::ping_clients::ping_client::{PingClient, PingClientPingResult, PingCli
 use crate::PingClientConfig;
 use socket2::{Domain, SockAddr, Socket, Type, Protocol};
 use std::time::{Duration, Instant};
+use std::io;
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -29,8 +30,10 @@ impl PingClient for PingClientTcp {
         let start_time = Instant::now();
         let connect_result = socket.connect_timeout(&target, self.config.wait_timeout);
         let rtt = Instant::now().duration_since(start_time);
-        if let Err(e) = connect_result {
-            return Err(PingClientPingResultDetails::new(None, rtt, Some(e)));
+        match connect_result {
+            Err(e) if e.kind() == io::ErrorKind::TimedOut => return Err(PingClientPingResultDetails::new(None, rtt, Some(e))),
+            Err(e) => return Err(PingClientPingResultDetails::new(None, Duration::from_millis(0), Some(e))),
+            Ok(()) => (),
         }
 
         let local_addr = socket.local_addr();
