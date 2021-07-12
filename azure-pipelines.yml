@@ -19,8 +19,8 @@ pr:
 #
 variables:
   buildVersionMajor: 0
-  buildVersionMinor: 2
-  buildVersionRevision: $[counter(format('{0}.{1}.{2}', $(Build.SourceBranch), variables['buildVersionMajor'], variables['buildVersionMinor']), 0)]
+  buildVersionMinor: 1
+  buildVersionRevision: $[counter(format('{0}.{1}', variables['buildVersionMajor'], variables['buildVersionMinor']), 0)]
 
 # Run
 name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
