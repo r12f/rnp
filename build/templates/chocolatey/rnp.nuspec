@@ -10,7 +10,6 @@
     <docsUrl>https://github.com/r12f/rnp/blob/main/README.md</docsUrl>
     <bugTrackerUrl>https://github.com/r12f/rnp/issues</bugTrackerUrl>
     <packageSourceUrl>https://github.com/r12f/rnp/blob/main/build/templates/chocolatey</packageSourceUrl>
-    <projectSourceUrl>https://github.com/r12f/rnp</projectSourceUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>A simple cloud-friendly tool for testing network reachability.</summary>
     <tags>network utility ping tcpping tcp</tags>
@@ -23,6 +22,7 @@ To see more on how to use it, please check our README in our project: https://gi
 For release notes, please check our release in github: https://github.com/r12f/rnp/releases/tag/{build_tag}
     </releaseNotes>
     <dependencies>
+      <!-- Taking dependency for chocolatey 0.10.15 for correctly detecting arm64 machine -->
       <dependency id="chocolatey" version="0.10.15" />
     </dependencies>
   </metadata>
