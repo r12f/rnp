@@ -211,7 +211,7 @@ stages:
     #
     # Running all tests
     #
-    - script: RUST_BACKTRACE=1 cargo test --release --all --target $(TARGET)
+    - bash: RUST_BACKTRACE=1 cargo test --release --all --target $(TARGET)
       displayName: Cargo test
       condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
