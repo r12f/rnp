@@ -3,7 +3,16 @@
 #
 # Limited resource, cannot afford CI for now.
 trigger:
-- none
+- master
+
+pr:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - build
+      - src
 
 #
 # Version and jobs
@@ -25,33 +34,33 @@ stages:
     #
     strategy:
       matrix:
-        # windows-x86:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   rustup_toolchain: stable
-        #   target: i686-pc-windows-msvc
-        #   target_short: windows.x86
-        #   is_cross_compile: true
-        #   gcc_prefix:
-        #   gcc_suffix:
-        # windows-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   rustup_toolchain: stable
-        #   target: x86_64-pc-windows-msvc
-        #   target_short: windows.x64
-        #   is_cross_compile: false
-        #   gcc_prefix:
-        #   gcc_suffix:
-        # windows-arm64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   rustup_toolchain: stable
-        #   target: aarch64-pc-windows-msvc
-        #   target_short: windows.arm64
-        #   is_cross_compile: true
-        #   gcc_prefix:
-        #   gcc_suffix:
+        windows-x86:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          rustup_toolchain: stable
+          target: i686-pc-windows-msvc
+          target_short: windows.x86
+          is_cross_compile: true
+          gcc_prefix:
+          gcc_suffix:
+        windows-x64:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          rustup_toolchain: stable
+          target: x86_64-pc-windows-msvc
+          target_short: windows.x64
+          is_cross_compile: false
+          gcc_prefix:
+          gcc_suffix:
+        windows-arm64:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          rustup_toolchain: stable
+          target: aarch64-pc-windows-msvc
+          target_short: windows.arm64
+          is_cross_compile: true
+          gcc_prefix:
+          gcc_suffix:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -61,42 +70,42 @@ stages:
           is_cross_compile: true
           gcc_prefix: i686-linux-gnu-
           gcc_suffix: -i686-linux-gnu
-        # linux-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   rustup_toolchain: stable
-        #   target: x86_64-unknown-linux-gnu
-        #   target_short: linux.x64
-        #   is_cross_compile: false
-        #   gcc_prefix:
-        #   gcc_suffix:
-        # linux-arm:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   rustup_toolchain: stable
-        #   target: arm-unknown-linux-gnueabi
-        #   target_short: linux.arm
-        #   is_cross_compile: true
-        #   gcc_prefix: arm-linux-gnueabi-
-        #   gcc_suffix: -arm-linux-gnueabi
-        # linux-arm64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   rustup_toolchain: stable
-        #   target: aarch64-unknown-linux-gnu
-        #   target_short: linux.arm64
-        #   is_cross_compile: true
-        #   gcc_prefix: aarch64-linux-gnu-
-        #   gcc_suffix: -aarch64-linux-gnu
-        # macos-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'macos-latest'
-        #   rustup_toolchain: stable
-        #   target: x86_64-apple-darwin
-        #   target_short: macos.x64
-        #   is_cross_compile: false
-        #   gcc_prefix:
-        #   gcc_suffix:
+        linux-x64:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          rustup_toolchain: stable
+          target: x86_64-unknown-linux-gnu
+          target_short: linux.x64
+          is_cross_compile: false
+          gcc_prefix:
+          gcc_suffix:
+        linux-arm:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          rustup_toolchain: stable
+          target: arm-unknown-linux-gnueabi
+          target_short: linux.arm
+          is_cross_compile: true
+          gcc_prefix: arm-linux-gnueabi-
+          gcc_suffix: -arm-linux-gnueabi
+        linux-arm64:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          rustup_toolchain: stable
+          target: aarch64-unknown-linux-gnu
+          target_short: linux.arm64
+          is_cross_compile: true
+          gcc_prefix: aarch64-linux-gnu-
+          gcc_suffix: -aarch64-linux-gnu
+        macos-x64:
+          poolName: Azure Pipelines
+          imageName: 'macos-latest'
+          rustup_toolchain: stable
+          target: x86_64-apple-darwin
+          target_short: macos.x64
+          is_cross_compile: false
+          gcc_prefix:
+          gcc_suffix:
 
     pool:
       name: $(poolName)
