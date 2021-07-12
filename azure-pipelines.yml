@@ -50,32 +50,32 @@ stages:
           is_cross_compile: true
           gcc_prefix:
         linux-x86:
-          poolName: r12f-cross
-          imageName:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
           rustup_toolchain: stable
           target: i686-unknown-linux-gnu
           target_short: linux.x86
           is_cross_compile: true
           gcc_prefix: i686-linux-gnu-
         linux-x64:
-          poolName: r12f-cross
-          imageName:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
           rustup_toolchain: stable
           target: x86_64-unknown-linux-gnu
           target_short: linux.x64
           is_cross_compile: false
           gcc_prefix:
         linux-arm:
-          poolName: r12f-cross
-          imageName:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
           rustup_toolchain: stable
           target: arm-unknown-linux-gnueabi
           target_short: linux.arm
           is_cross_compile: true
           gcc_prefix: arm-linux-gnueabi-
         linux-arm64:
-          poolName: r12f-cross
-          imageName:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
           rustup_toolchain: stable
           target: aarch64-unknown-linux-gnu
           target_short: linux.arm64
