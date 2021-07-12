@@ -58,6 +58,7 @@ mod tests {
         ping_non_existing_host_error: io::ErrorKind,
         ping_non_existing_port_error: io::ErrorKind,
         binding_invalid_source_ip_error: io::ErrorKind,
+        binding_unavailable_source_port_error: io::ErrorKind,
     }
 
     #[test]
@@ -91,6 +92,7 @@ mod tests {
                 io::ErrorKind::ConnectionRefused
             },
             binding_invalid_source_ip_error: io::ErrorKind::AddrNotAvailable,
+            binding_unavailable_source_port_error: io::ErrorKind::AddrInUse,
         };
 
         run_ping_client_tests(&ping_client, &expected_results);
@@ -112,6 +114,7 @@ mod tests {
         ping_client_should_fail_when_pinging_non_existing_host(ping_client, expected_results);
         ping_client_should_fail_when_pinging_non_existing_port(ping_client, expected_results);
         ping_client_should_fail_when_binding_invalid_source_ip(ping_client, expected_results);
+        ping_client_should_fail_when_binding_unavailable_source_port(ping_client, expected_results);
     }
 
     fn ping_client_should_work_when_pinging_good_host(
@@ -162,6 +165,20 @@ mod tests {
         ping_client_result_should_be_expected(
             &result,
             Some(expected_results.binding_invalid_source_ip_error),
+            expected_results.timeout_min_time,
+        );
+    }
+
+    fn ping_client_should_fail_when_binding_unavailable_source_port(
+        ping_client: &Box<dyn PingClient + Send + Sync>,
+        expected_results: &ExpectedPingClientTestResults,
+    ) {
+        let source = SockAddr::from("127.0.0.1:7680".parse::<SocketAddr>().unwrap());
+        let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
+        let result = ping_client.ping(&source, &target);
+        ping_client_result_should_be_expected(
+            &result,
+            Some(expected_results.binding_unavailable_source_port_error),
             expected_results.timeout_min_time,
         );
     }

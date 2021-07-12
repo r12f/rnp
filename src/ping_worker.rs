@@ -1,10 +1,10 @@
+use crate::ping_clients::ping_client::PingClientPingResultDetails;
 use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWorkerConfig};
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
 use socket2::SockAddr;
 use std::{io, net::SocketAddr, sync::Arc, sync::Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
-use crate::ping_clients::ping_client::PingClientPingResultDetails;
 
 pub struct PingWorker {
     id: u32,
@@ -29,7 +29,8 @@ impl PingWorker {
         result_sender: mpsc::Sender<PingResult>,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let mut ping_client = ping_client_factory::new(config.protocol, &config.ping_client_config);
+            let mut ping_client =
+                ping_client_factory::new(config.protocol, &config.ping_client_config);
             ping_client.prepare();
 
             let worker = PingWorker {
@@ -51,9 +52,15 @@ impl PingWorker {
     #[tracing::instrument(name = "Running worker loop", level = "debug", skip(self), fields(worker_id = %self.id))]
     async fn run_worker_loop(&self) {
         loop {
-            let source_port = self.port_picker.lock().expect("Failed getting port picker lock").next();
+            let source_port = self
+                .port_picker
+                .lock()
+                .expect("Failed getting port picker lock")
+                .next();
             match source_port {
-                Some((source_port, is_warmup)) => self.run_single_ping(source_port, is_warmup).await,
+                Some((source_port, is_warmup)) => {
+                    self.run_single_ping(source_port, is_warmup).await
+                }
                 None => {
                     tracing::debug!("Ping finished, stopping worker; worker_id={}", self.id);
                     return;
@@ -70,23 +77,30 @@ impl PingWorker {
     async fn run_single_ping(&self, source_port: u16, is_warmup: bool) {
         let source = SockAddr::from(SocketAddr::new(self.config.source_ip, source_port));
         let target = SockAddr::from(self.config.target);
-        let ping_time= Utc::now();
+        let ping_time = Utc::now();
         match self.ping_client.ping(&source, &target) {
-            Ok(result) => self.process_ping_client_result(&ping_time, source_port, is_warmup, result).await,
-            Err(result) => self.process_ping_client_result(&ping_time, source_port, is_warmup, result).await,
+            Ok(result) => {
+                self.process_ping_client_result(&ping_time, source_port, is_warmup, result)
+                    .await
+            }
+            Err(result) => {
+                self.process_ping_client_result(&ping_time, source_port, is_warmup, result)
+                    .await
+            }
         }
     }
 
     #[tracing::instrument(name = "Processing ping client single ping result", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn process_ping_client_result(&self, ping_time: &DateTime<Utc>, src_port: u16, is_warmup: bool, ping_result: PingClientPingResultDetails) {
-        // Failed due to unable to bind source port, the source port might be taken, and we should ignore this error and continue.
-        if let Some(e) = &ping_result.inner_error {
-            if e.kind() == io::ErrorKind::AddrInUse {
-                return;
-            }
-        }
+    async fn process_ping_client_result(
+        &self,
+        ping_time: &DateTime<Utc>,
+        src_port: u16,
+        is_warmup: bool,
+        ping_result: PingClientPingResultDetails,
+    ) {
+        let mut local_addr: Option<SocketAddr> =
+            ping_result.actual_local_addr.and_then(|x| x.as_socket());
 
-        let mut local_addr: Option<SocketAddr> = ping_result.actual_local_addr.and_then(|x| x.as_socket());
         if local_addr.is_none() {
             local_addr = Some(SocketAddr::new(self.config.source_ip, src_port));
         }
@@ -102,6 +116,21 @@ impl PingWorker {
             ping_result.inner_error,
         );
 
+        // Failed due to unable to bind source port, the source port might be taken, and we should ignore this error and continue.
+        if let Some(e) = result.error() {
+            if e.kind() == io::ErrorKind::AddrInUse || e.kind() == io::ErrorKind::PermissionDenied {
+                let warmup_sign = if result.is_warmup() { " (warmup)" } else { "" };
+                println!(
+                    "Unable to perform ping to {} {} from {}{}, because local port is unavailable: Error = {}",
+                    result.protocol_string(),
+                    result.target(),
+                    result.source(),
+                    warmup_sign,
+                    e);
+                return;
+            }
+        }
+
         self.result_sender.send(result).await.unwrap();
     }
 
@@ -112,7 +141,10 @@ impl PingWorker {
 
         // Wait succedded, which means we are signaled to exit.
         if let Ok(_) = result {
-            tracing::debug!("Stop event received, stopping worker; worker_id={}", self.id);
+            tracing::debug!(
+                "Stop event received, stopping worker; worker_id={}",
+                self.id
+            );
             return false;
         }
 
