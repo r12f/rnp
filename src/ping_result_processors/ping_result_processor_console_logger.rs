@@ -35,6 +35,11 @@ impl PingResultProcessorConsoleLogger {
     }
 
     fn update_statistics(&mut self, ping_result: &PingResult) {
+        // Skip warmup pings in analysis.
+        if ping_result.is_warmup() {
+            return;
+        }
+
         // Save the target for outputting summary.
         if self.target.is_none() {
             self.target = Some(ping_result.target());
