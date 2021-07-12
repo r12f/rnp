@@ -1,14 +1,13 @@
 #
 # CI triggers
 #
-# Limited resource, cannot afford CI for now.
 trigger:
-- master
+- main
 
 pr:
   branches:
     include:
-      - master
+      - main
   paths:
     include:
       - build
