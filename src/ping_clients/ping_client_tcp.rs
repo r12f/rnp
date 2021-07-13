@@ -21,7 +21,6 @@ impl PingClient for PingClientTcp {
         let socket_domain = Domain::from(target.family() as i32);
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&source)?;
-        socket.set_reuse_address(true)?;
         socket.set_linger(Some(Duration::from_secs(0)))?;
         if let Some(ttl) = self.config.time_to_live {
             socket.set_ttl(ttl)?;
