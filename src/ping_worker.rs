@@ -115,7 +115,7 @@ impl PingWorker {
             local_addr.unwrap(),
             self.is_warmup_worker,
             ping_result.round_trip_time,
-            ping_result.inner_error,
+            ping_result.prepare_error,
         );
 
         // Failed due to unable to bind source port, the source port might be taken, and we should ignore this error and continue.
