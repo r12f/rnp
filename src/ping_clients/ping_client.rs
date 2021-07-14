@@ -6,7 +6,8 @@ use std::time::Duration;
 pub struct PingClientPingResultDetails {
     pub actual_local_addr: Option<SockAddr>,
     pub round_trip_time: Duration,
-    pub inner_error: Option<io::Error>,
+    pub prepare_error: Option<io::Error>,
+    pub ping_error: Option<io::Error>,
 }
 pub type PingClientPingResult =
     std::result::Result<PingClientPingResultDetails, PingClientPingResultDetails>;
@@ -15,22 +16,14 @@ impl PingClientPingResultDetails {
     pub fn new(
         actual_local_addr: Option<SockAddr>,
         round_trip_time: Duration,
-        inner_error: Option<io::Error>,
+        prepare_error: Option<io::Error>,
+        ping_error: Option<io::Error>,
     ) -> PingClientPingResultDetails {
         PingClientPingResultDetails {
             actual_local_addr,
             round_trip_time,
-            inner_error,
-        }
-    }
-}
-
-impl From<io::Error> for PingClientPingResultDetails {
-    fn from(e: io::Error) -> PingClientPingResultDetails {
-        PingClientPingResultDetails {
-            actual_local_addr: None,
-            round_trip_time: Duration::from_secs(0),
-            inner_error: Some(e),
+            prepare_error,
+            ping_error,
         }
     }
 }
@@ -47,10 +40,10 @@ mod tests {
     use super::*;
     use crate::{ping_clients::ping_client_factory, PingClientConfig};
     use futures_intrusive::sync::ManualResetEvent;
+    use std::sync::Arc;
     use std::{io, net::SocketAddr};
     use tide::prelude::*;
     use tide::Request;
-    use std::sync::Arc;
     use tokio::runtime::Runtime;
 
     struct ExpectedPingClientTestResults {
@@ -124,7 +117,12 @@ mod tests {
         let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:3389".parse::<SocketAddr>().unwrap());
         let result = ping_client.ping(&source, &target);
-        ping_client_result_should_be_expected(&result, None, expected_results.timeout_min_time);
+        ping_client_result_should_be_expected(
+            &result,
+            None,
+            None,
+            expected_results.timeout_min_time,
+        );
     }
 
     fn ping_client_should_fail_when_pinging_non_existing_host(
@@ -136,6 +134,7 @@ mod tests {
         let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
             &result,
+            None,
             Some(expected_results.ping_non_existing_host_error),
             expected_results.timeout_min_time,
         );
@@ -150,6 +149,7 @@ mod tests {
         let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
             &result,
+            None,
             Some(expected_results.ping_non_existing_port_error),
             expected_results.timeout_min_time,
         );
@@ -165,6 +165,7 @@ mod tests {
         ping_client_result_should_be_expected(
             &result,
             Some(expected_results.binding_invalid_source_ip_error),
+            None,
             expected_results.timeout_min_time,
         );
     }
@@ -179,35 +180,42 @@ mod tests {
         ping_client_result_should_be_expected(
             &result,
             Some(expected_results.binding_unavailable_source_port_error),
+            None,
             expected_results.timeout_min_time,
         );
     }
 
     fn ping_client_result_should_be_expected(
         result: &PingClientPingResult,
-        expected_error: Option<io::ErrorKind>,
+        expected_prepare_error: Option<io::ErrorKind>,
+        expected_ping_error: Option<io::ErrorKind>,
         timeout_min_time: Duration,
     ) {
-        match expected_error {
-            None => {
-                assert!(result.is_ok());
-            }
+        if expected_prepare_error.is_none() && expected_ping_error.is_none() {
+            assert!(result.is_ok());
+        } else {
+            assert!(result.is_err());
+            assert!(result.as_ref().err().is_some());
 
-            Some(error) => {
-                assert!(result.is_err());
-                assert!(result.as_ref().err().is_some());
+            let actual_error_details = result.as_ref().err().unwrap();
 
-                let actual_error_details = result.as_ref().err().unwrap();
-                assert!(actual_error_details.inner_error.is_some());
+            let actual_prepare_error = match &actual_error_details.prepare_error {
+                Some(e) => Some(e.kind()),
+                None => None,
+            };
+            assert_eq!(expected_prepare_error, actual_prepare_error);
 
-                let actual_error_kind = actual_error_details.inner_error.as_ref().unwrap().kind();
-                assert_eq!(actual_error_kind, error);
+            let actual_ping_error = match &actual_error_details.ping_error {
+                Some(e) => Some(e.kind()),
+                None => None,
+            };
+            assert_eq!(expected_ping_error, actual_ping_error);
 
-                if error == io::ErrorKind::TimedOut {
-                    assert!(actual_error_details.round_trip_time > timeout_min_time);
-                } else {
-                    assert_eq!(0, actual_error_details.round_trip_time.as_micros());
-                }
+            if actual_ping_error.is_some() && actual_ping_error.unwrap() == io::ErrorKind::TimedOut
+            {
+                assert!(actual_error_details.round_trip_time > timeout_min_time);
+            } else {
+                assert_eq!(0, actual_error_details.round_trip_time.as_micros());
             }
         }
     }
