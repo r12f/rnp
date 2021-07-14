@@ -4,7 +4,7 @@ use rnp::{
     RnpCoreConfig,
 };
 use socket2::Protocol;
-use std::net::{IpAddr, SocketAddr, Ipv6Addr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -126,13 +126,17 @@ impl RnpCliOptions {
     pub fn prepare_to_use(&mut self) {
         if self.target.is_ipv4() != self.source_ip.is_ipv4() {
             match &self.source_ip {
-                IpAddr::V4(source_ip_v4) if *source_ip_v4 == Ipv4Addr::UNSPECIFIED => self.source_ip = IpAddr::V6(Ipv6Addr::UNSPECIFIED),
-                IpAddr::V6(source_ip_v6) if *source_ip_v6 == Ipv6Addr::UNSPECIFIED => self.source_ip = IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                IpAddr::V4(source_ip_v4) if *source_ip_v4 == Ipv4Addr::UNSPECIFIED => {
+                    self.source_ip = IpAddr::V6(Ipv6Addr::UNSPECIFIED)
+                }
+                IpAddr::V6(source_ip_v6) if *source_ip_v6 == Ipv6Addr::UNSPECIFIED => {
+                    self.source_ip = IpAddr::V4(Ipv4Addr::UNSPECIFIED)
+                }
                 _ => panic!("Source IP and Target IP are not both IPv4 or IPv6!"),
             }
         }
         if self.source_port_min.is_none() {
-            self.source_port_min = Some(rand::thread_rng().gen_range(1024..20000));
+            self.source_port_min = Some(rand::thread_rng().gen_range(10000..30000));
         }
 
         if self.source_port_max.is_none() {
@@ -149,6 +153,20 @@ impl RnpCliOptions {
             self.ping_count = 1;
         }
 
+        let available_source_port_count = match &self.source_port_list {
+            Some(port_list) => port_list.len() as u32,
+            None => self.source_port_max.unwrap() as u32 - self.source_port_min.unwrap() as u32 + 1,
+        };
+
+        if self.parallel_ping_count > available_source_port_count {
+            tracing::warn!(
+                "Parallel ping count ({}) is larger than available source port count ({}), to avoid port conflict reducing parallel ping count down to the same as available source port count.",
+                self.parallel_ping_count,
+                available_source_port_count);
+
+            self.parallel_ping_count = available_source_port_count;
+        }
+
         if self.parallel_ping_count < 1 {
             tracing::warn!("Parallel ping count cannot be 0. Setting to 1 as minimum.");
             self.parallel_ping_count = 1;
@@ -156,7 +174,9 @@ impl RnpCliOptions {
 
         if let Some(latency_buckets) = &mut self.latency_buckets {
             tracing::debug!("Latency bucket set to 0. Use default one.");
-            if latency_buckets.len() == 0 || (latency_buckets.len() == 1 && latency_buckets[0] == 0.0) {
+            if latency_buckets.len() == 0
+                || (latency_buckets.len() == 1 && latency_buckets[0] == 0.0)
+            {
                 *latency_buckets = vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0];
             }
         }
@@ -495,9 +515,24 @@ mod tests {
         assert_eq!(1, opts.ping_count);
         assert_eq!(1, opts.parallel_ping_count);
         assert_eq!(
-            Some(vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0]),
+            Some(vec![
+                0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0
+            ]),
             opts.latency_buckets
-        )
+        );
+
+        opts.source_port_min = Some(1024);
+        opts.source_port_max = Some(1047);
+        opts.parallel_ping_count = 100;
+        opts.prepare_to_use();
+        assert_eq!(24, opts.parallel_ping_count);
+
+        opts.source_port_min = None;
+        opts.source_port_max = None;
+        opts.source_port_list = Some(vec![1024,1025,1026]);
+        opts.parallel_ping_count = 100;
+        opts.prepare_to_use();
+        assert_eq!(3, opts.parallel_ping_count);
     }
 
     #[test]
