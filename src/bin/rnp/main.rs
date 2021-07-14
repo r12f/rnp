@@ -8,7 +8,7 @@ use tokio::runtime::Runtime;
 mod rnp_cli_options;
 
 fn main() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
     let mut opts = RnpCliOptions::from_args();
     opts.prepare_to_use();
