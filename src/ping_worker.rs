@@ -3,7 +3,7 @@ use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWor
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
 use socket2::SockAddr;
-use std::{io, net::SocketAddr, sync::Arc, sync::Mutex};
+use std::{net::SocketAddr, sync::Arc, sync::Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
 
 pub struct PingWorker {
@@ -61,9 +61,7 @@ impl PingWorker {
                 .expect("Failed getting port picker lock")
                 .next();
             match source_port {
-                Some(source_port) => {
-                    self.run_single_ping(source_port).await
-                }
+                Some(source_port) => self.run_single_ping(source_port).await,
                 None => {
                     tracing::debug!("Ping finished, stopping worker; worker_id={}", self.id);
                     return;
@@ -107,6 +105,7 @@ impl PingWorker {
             local_addr = Some(SocketAddr::new(self.config.source_ip, src_port));
         }
 
+        let is_prepare_error = ping_result.prepare_error.is_some();
         let result = PingResult::new(
             ping_time,
             self.id,
@@ -115,20 +114,26 @@ impl PingWorker {
             local_addr.unwrap(),
             self.is_warmup_worker,
             ping_result.round_trip_time,
-            ping_result.prepare_error,
+            if ping_result.ping_error.is_some() {
+                ping_result.ping_error
+            } else {
+                ping_result.prepare_error
+            },
         );
 
         // Failed due to unable to bind source port, the source port might be taken, and we should ignore this error and continue.
-        if let Some(e) = result.error() {
-            if e.kind() == io::ErrorKind::AddrInUse || e.kind() == io::ErrorKind::PermissionDenied {
+        if is_prepare_error {
+            if let Some(e) = result.error() {
                 let warmup_sign = if result.is_warmup() { " (warmup)" } else { "" };
+
                 println!(
-                    "Unable to perform ping to {} {} from {}{}, because local port is unavailable: Error = {}",
-                    result.protocol_string(),
-                    result.target(),
-                    result.source(),
-                    warmup_sign,
-                    e);
+                "Unable to perform ping to {} {} from {}{}, because failing to prepare local socket: Error = {}",
+                result.protocol_string(),
+                result.target(),
+                result.source(),
+                warmup_sign,
+                e);
+
                 return;
             }
         }
