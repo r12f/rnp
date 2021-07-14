@@ -13,6 +13,7 @@ pub struct PingWorker {
     port_picker: Arc<Mutex<PingPortPicker>>,
     ping_client: Box<dyn PingClient + Send + Sync>,
     result_sender: mpsc::Sender<PingResult>,
+    is_warmup_worker: bool,
 }
 
 impl PingWorker {
@@ -27,6 +28,7 @@ impl PingWorker {
         port_picker: Arc<Mutex<PingPortPicker>>,
         stop_event: Arc<ManualResetEvent>,
         result_sender: mpsc::Sender<PingResult>,
+        is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
             let mut ping_client =
@@ -40,6 +42,7 @@ impl PingWorker {
                 port_picker,
                 ping_client,
                 result_sender,
+                is_warmup_worker,
             };
             worker.run_worker_loop().await;
 
@@ -58,8 +61,8 @@ impl PingWorker {
                 .expect("Failed getting port picker lock")
                 .next();
             match source_port {
-                Some((source_port, is_warmup)) => {
-                    self.run_single_ping(source_port, is_warmup).await
+                Some(source_port) => {
+                    self.run_single_ping(source_port).await
                 }
                 None => {
                     tracing::debug!("Ping finished, stopping worker; worker_id={}", self.id);
@@ -74,17 +77,17 @@ impl PingWorker {
     }
 
     #[tracing::instrument(name = "Running single ping", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn run_single_ping(&self, source_port: u16, is_warmup: bool) {
+    async fn run_single_ping(&self, source_port: u16) {
         let source = SockAddr::from(SocketAddr::new(self.config.source_ip, source_port));
         let target = SockAddr::from(self.config.target);
         let ping_time = Utc::now();
         match self.ping_client.ping(&source, &target) {
             Ok(result) => {
-                self.process_ping_client_result(&ping_time, source_port, is_warmup, result)
+                self.process_ping_client_result(&ping_time, source_port, result)
                     .await
             }
             Err(result) => {
-                self.process_ping_client_result(&ping_time, source_port, is_warmup, result)
+                self.process_ping_client_result(&ping_time, source_port, result)
                     .await
             }
         }
@@ -95,7 +98,6 @@ impl PingWorker {
         &self,
         ping_time: &DateTime<Utc>,
         src_port: u16,
-        is_warmup: bool,
         ping_result: PingClientPingResultDetails,
     ) {
         let mut local_addr: Option<SocketAddr> =
@@ -111,7 +113,7 @@ impl PingWorker {
             self.config.protocol,
             self.config.target,
             local_addr.unwrap(),
-            is_warmup,
+            self.is_warmup_worker,
             ping_result.round_trip_time,
             ping_result.inner_error,
         );

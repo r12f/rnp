@@ -17,13 +17,16 @@ fn main() {
     let rt = Runtime::new().unwrap();
     rt.block_on( async {
         let stop_event = Arc::new(ManualResetEvent::new(false));
-        let mut rp = RnpCore::start_run(rnp_core_config, stop_event.clone());
+        let mut rp = RnpCore::new(rnp_core_config, stop_event.clone());
 
         ctrlc::set_handler(move || {
             tracing::debug!("Ctrl+C received. Stopping all ping workers.");
             stop_event.set();
         }).expect("Error setting Ctrl-C handler");
 
+        rp.run_warmup_pings().await;
+
+        rp.start_running_normal_pings();
         rp.join().await;
     });
 }

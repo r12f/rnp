@@ -1,6 +1,6 @@
 use crate::{
-    rnp_utils, PingPortPicker, PingResult, PingResultProcessingWorker, PingWorker, RnpCoreConfig, RNP_ABOUT, RNP_AUTHOR,
-    RNP_NAME,
+    rnp_utils, PingPortPicker, PingResult, PingResultProcessingWorker, PingResultProcessorConfig,
+    PingWorker, RnpCoreConfig, RNP_ABOUT, RNP_AUTHOR, RNP_NAME,
 };
 use futures_intrusive::sync::ManualResetEvent;
 use std::sync::{Arc, Mutex};
@@ -12,28 +12,52 @@ pub struct RnpCore {
     stop_event: Arc<ManualResetEvent>,
     worker_join_handles: Vec<JoinHandle<()>>,
     ping_result_processor_join_handle: Option<JoinHandle<()>>,
+    result_sender: mpsc::Sender<PingResult>,
 }
 
 impl RnpCore {
     #[tracing::instrument(name = "Start running Rnp core", level = "debug", skip(stop_event))]
-    pub fn start_run(config: RnpCoreConfig, stop_event: Arc<ManualResetEvent>) -> RnpCore {
-        let mut rnp_core = RnpCore {
+    pub fn new(config: RnpCoreConfig, stop_event: Arc<ManualResetEvent>) -> RnpCore {
+        let (result_sender, ping_result_processor_join_handle) =
+            RnpCore::create_ping_result_processing_worker(
+                config.result_processor_config.clone(),
+                config.worker_scheduler_config.parallel_ping_count,
+                stop_event.clone(),
+            );
+
+        let rnp_core = RnpCore {
             config,
             stop_event,
             worker_join_handles: Vec::new(),
-            ping_result_processor_join_handle: None,
+            ping_result_processor_join_handle: Some(ping_result_processor_join_handle),
+            result_sender,
         };
 
-        rnp_core.start();
+        rnp_core.log_header_to_console();
 
         return rnp_core;
     }
 
-    fn start(&mut self) {
-        self.log_header_to_console();
+    #[tracing::instrument(name = "Creating ping result processing worker", level = "debug")]
+    fn create_ping_result_processing_worker(
+        result_processor_config: PingResultProcessorConfig,
+        parallel_ping_count: u32,
+        stop_event: Arc<ManualResetEvent>,
+    ) -> (mpsc::Sender<PingResult>, JoinHandle<()>) {
+        let mut ping_result_channel_size = parallel_ping_count * 2;
+        if ping_result_channel_size < 128 {
+            ping_result_channel_size = 128;
+        }
 
-        let ping_result_sender = self.create_ping_result_processing_worker();
-        self.create_ping_workers(ping_result_sender);
+        let (ping_result_sender, ping_result_receiver) =
+            mpsc::channel(ping_result_channel_size as usize);
+        let ping_result_processor_join_handle = PingResultProcessingWorker::run(
+            Arc::new(result_processor_config),
+            stop_event,
+            ping_result_receiver,
+        );
+
+        return (ping_result_sender, ping_result_processor_join_handle);
     }
 
     fn log_header_to_console(&self) {
@@ -46,36 +70,78 @@ impl RnpCore {
         );
     }
 
-    #[tracing::instrument(name = "Creating ping result processing worker", level = "debug", skip(self))]
-    fn create_ping_result_processing_worker(&mut self) -> mpsc::Sender<PingResult> {
-        let mut ping_result_channel_size = self.config.worker_scheduler_config.parallel_ping_count * 2;
-        if ping_result_channel_size < 128 {
-            ping_result_channel_size = 128;
+    #[tracing::instrument(name = "Running warmup pings", level = "debug", skip(self))]
+    pub async fn run_warmup_pings(&mut self) {
+        let warmup_count = self.config.worker_scheduler_config.warmup_count;
+        if warmup_count == 0 {
+            tracing::debug!("Warmup count is 0, skip warmup.");
+            return;
         }
 
-        let (ping_result_sender, ping_result_receiver) = mpsc::channel(ping_result_channel_size as usize);
-        self.ping_result_processor_join_handle = Some(PingResultProcessingWorker::run(
-            Arc::new(self.config.result_processor_config.clone()),
-            self.stop_event.clone(),
-            ping_result_receiver,
-        ));
-
-        return ping_result_sender;
-    }
-
-    #[tracing::instrument(name = "Creating all ping workers", level = "debug", skip(self, sender))]
-    fn create_ping_workers(&mut self, sender: mpsc::Sender<PingResult>) {
-        let mut worker_join_handles = Vec::new();
-
+        tracing::debug!("Creating warmup worker.");
         let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
-            self.config.worker_scheduler_config.ping_count,
-            self.config.worker_scheduler_config.warmup_count,
+            Some(self.config.worker_scheduler_config.warmup_count),
             self.config.worker_scheduler_config.source_port_min,
             self.config.worker_scheduler_config.source_port_max,
             &self.config.worker_scheduler_config.source_port_list,
+            0,
+        )));
+
+        let mut worker_join_handles = self.create_ping_workers_with_options(
+            1, // Warmup always use only 1 worker.
+            source_port_picker,
+            true,
+        );
+
+        tracing::debug!("Waiting for warmup worker to stop.");
+        for join_handle in &mut worker_join_handles {
+            join_handle.await.unwrap();
+        }
+
+        tracing::debug!("Warmup ping completed!");
+    }
+
+    #[tracing::instrument(
+        name = "Start running normal pings",
+        level = "debug",
+        skip(self)
+    )]
+    pub fn start_running_normal_pings(&mut self) {
+        if self.stop_event.is_set() {
+            tracing::debug!("Stop event is signaled, skip running normal pings.");
+            return;
+        }
+
+        // When doing normal pings, we need to skip the ports we have used for warmups, because we
+        // need to give them time for OS to recycle the ports. If we use them again immediately,
+        // we might see TCP connect retry causing 1 extra second delay on the TTL.
+        let warmup_count = self.config.worker_scheduler_config.warmup_count;
+        let adjusted_ping_count = match self.config.worker_scheduler_config.ping_count {
+            None => None, // None means pings forever (infinite), hence infinite + warmup count = infinite.
+            Some(ping_count) => Some(ping_count + warmup_count),
+        };
+
+        let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
+            adjusted_ping_count,
+            self.config.worker_scheduler_config.source_port_min,
+            self.config.worker_scheduler_config.source_port_max,
+            &self.config.worker_scheduler_config.source_port_list,
+            warmup_count,
         )));
 
         let worker_count = self.config.worker_scheduler_config.parallel_ping_count;
+        self.worker_join_handles =
+            self.create_ping_workers_with_options(worker_count, source_port_picker, false);
+    }
+
+    fn create_ping_workers_with_options(
+        &mut self,
+        worker_count: u32,
+        source_port_picker: Arc<Mutex<PingPortPicker>>,
+        is_warmup_worker: bool,
+    ) -> Vec<JoinHandle<()>> {
+        let mut worker_join_handles = Vec::new();
+
         let shared_worker_config = Arc::new(self.config.worker_config.clone());
         for worker_id in 0..worker_count {
             let worker_join_handle = PingWorker::run(
@@ -83,16 +149,22 @@ impl RnpCore {
                 shared_worker_config.clone(),
                 source_port_picker.clone(),
                 self.stop_event.clone(),
-                sender.clone(),
+                self.result_sender.clone(),
+                is_warmup_worker,
             );
             worker_join_handles.push(worker_join_handle);
         }
 
-        self.worker_join_handles = worker_join_handles;
+        return worker_join_handles;
     }
 
-    #[tracing::instrument(name = "Waiting for all workers to finish", level = "debug", skip(self))]
+    #[tracing::instrument(
+        name = "Waiting for RNP core to be stopped.",
+        level = "debug",
+        skip(self)
+    )]
     pub async fn join(&mut self) {
+        tracing::debug!("Waiting for all workers to be stopped.");
         for join_handle in &mut self.worker_join_handles {
             join_handle.await.unwrap();
         }
@@ -105,6 +177,13 @@ impl RnpCore {
             );
             self.stop_event.set();
         }
-        self.ping_result_processor_join_handle.take().unwrap().await.unwrap();
+
+        tracing::debug!("Waiting for result processor to be stopped.");
+        self.ping_result_processor_join_handle
+            .take()
+            .unwrap()
+            .await
+            .unwrap();
+        tracing::debug!("Result processor stopped.");
     }
 }
