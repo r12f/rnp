@@ -1,4 +1,7 @@
-use crate::{PingResult, PingResultProcessorConfig, PingResultProcessor, ping_result_processors::ping_result_processor_factory};
+use crate::{
+    ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor,
+    PingResultProcessorConfig,
+};
 use futures_intrusive::sync::ManualResetEvent;
 use std::sync::Arc;
 use tokio::{sync::mpsc, task, task::JoinHandle};
@@ -23,25 +26,16 @@ impl PingResultProcessingWorker {
                 processors,
             };
 
-            worker.run_worker_loop().await;
+            worker.run_worker().await;
         });
 
         return join_handle;
     }
 
     #[tracing::instrument(name = "Running ping result processing worker loop", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]
-    async fn run_worker_loop(&mut self) {
+    async fn run_worker(&mut self) {
         self.prepare_all_processors();
-
-        while let Some(ping_result) = self.receiver.recv().await {
-            self.process_ping_result(&ping_result);
-
-            if self.stop_event.is_set() {
-                tracing::debug!("Stop event received, stopping ping result processing worker");
-                break;
-            }
-        }
-
+        self.run_result_processing_loop().await;
         self.signal_all_processors_done();
     }
 
@@ -49,6 +43,27 @@ impl PingResultProcessingWorker {
     fn prepare_all_processors(&mut self) {
         for processor in &mut self.processors {
             processor.prepare();
+        }
+    }
+
+    #[tracing::instrument(name = "Running ping result processing loop.", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]
+    async fn run_result_processing_loop(&mut self) {
+        loop {
+            tokio::select! {
+                Some(ping_result) = self.receiver.recv() => {
+                    self.process_ping_result(&ping_result);
+                }
+
+                _ = self.stop_event.wait() => {
+                    tracing::debug!("Stop event received, stopping ping result processing worker");
+                    break;
+                }
+
+                else => {
+                    tracing::debug!("Channel closed, stopping ping result processing worker");
+                    break;
+                }
+            }
         }
     }
 
