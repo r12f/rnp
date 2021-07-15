@@ -35,7 +35,7 @@ impl PingResultProcessorJsonLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorJsonLogger {
-    fn prepare(&mut self) {
+    fn initialize(&mut self) {
         // Writer json start
         self.log_file.write("[".as_bytes()).expect(&format!(
             "Failed to write logs to json file! Path = {}",
@@ -43,14 +43,14 @@ impl PingResultProcessor for PingResultProcessorJsonLogger {
         ));
     }
 
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.log_result_as_json(ping_result).expect(&format!(
             "Failed to write logs to json file! Path = {}",
             self.log_path.display()
         ));
     }
 
-    fn done(&mut self) {
+    fn rundown(&mut self) {
         // Writer json end
         self.log_file.write("\n]\n".as_bytes()).expect(&format!(
             "Failed to write logs to json file! Path = {}",

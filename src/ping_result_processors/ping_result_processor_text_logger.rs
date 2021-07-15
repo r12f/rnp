@@ -21,7 +21,7 @@ impl PingResultProcessorTextLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorTextLogger {
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         let log_content: String = ping_result.format_as_console_log();
         self.log_file.write(log_content.as_bytes()).expect(&format!(
             "Failed to write logs to text file! Path = {}",

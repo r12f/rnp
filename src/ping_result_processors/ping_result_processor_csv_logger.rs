@@ -26,7 +26,7 @@ impl PingResultProcessorCsvLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorCsvLogger {
-    fn prepare(&mut self) {
+    fn initialize(&mut self) {
         // Writer CSV header
         self.log_file
             .write("UTCTime,WorkerId,Protocol,TargetIP,TargetPort,SourceIP,SourcePort,IsWarmup,RTTInMs,Error,IsPreparationError\n".as_bytes())
@@ -36,7 +36,7 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
             ));
     }
 
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.log_result_as_csv(ping_result).expect(&format!(
             "Failed to write logs to csv file! Path = {}",
             self.log_path.display()
