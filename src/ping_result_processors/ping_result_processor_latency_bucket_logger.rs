@@ -78,11 +78,11 @@ impl PingResultProcessorLatencyBucketLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
     }
 
-    fn done(&mut self) {
+    fn rundown(&mut self) {
         println!("\n=== Latency buckets (in milliseconds) ===\n");
         println!("{:>15} | {}", "Latency Range", "Count");
         println!("{:->17}------------ ", "+");

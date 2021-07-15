@@ -98,12 +98,12 @@ impl PingResultProcessorConsoleLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorConsoleLogger {
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
         self.output_result_to_console(ping_result);
     }
 
-    fn done(&mut self) {
+    fn rundown(&mut self) {
         // Didn't received any result, skip output statistics.
         if self.target.is_none() {
             return;

@@ -34,15 +34,15 @@ impl PingResultProcessingWorker {
 
     #[tracing::instrument(name = "Running ping result processing worker loop", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]
     async fn run_worker(&mut self) {
-        self.prepare_all_processors();
+        self.initialize_all_processors();
         self.run_result_processing_loop().await;
         self.signal_all_processors_done();
     }
 
     #[tracing::instrument(name = "Preparing all ping result processors", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]
-    fn prepare_all_processors(&mut self) {
+    fn initialize_all_processors(&mut self) {
         for processor in &mut self.processors {
-            processor.prepare();
+            processor.initialize();
         }
     }
 
@@ -70,14 +70,14 @@ impl PingResultProcessingWorker {
     #[tracing::instrument(name = "Processing ping result", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         for processor in &mut self.processors {
-            processor.process(ping_result);
+            processor.process_ping_result(ping_result);
         }
     }
 
     #[tracing::instrument(name = "Signal all ping result processors done", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]
     fn signal_all_processors_done(&mut self) {
         for processor in &mut self.processors {
-            processor.done();
+            processor.rundown();
         }
     }
 }

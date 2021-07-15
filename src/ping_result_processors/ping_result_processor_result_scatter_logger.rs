@@ -56,7 +56,7 @@ impl PingResultProcessorResultScatterLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorResultScatterLogger {
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.
         if ping_result.is_warmup() {
             return;
@@ -84,7 +84,7 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
         failure_hits.results |= success_bit;
     }
 
-    fn done(&mut self) {
+    fn rundown(&mut self) {
         println!("\n=== Ping result scatter map ===\n");
 
         println!("{:>7} | {}", "Src", "Results");

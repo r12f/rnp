@@ -55,7 +55,7 @@ impl PingResultProcessorLatencyScatterLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
-    fn process(&mut self, ping_result: &PingResult) {
+    fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.
         if ping_result.is_warmup() {
             return;
@@ -81,7 +81,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
         }
     }
 
-    fn done(&mut self) {
+    fn rundown(&mut self) {
         println!("\n=== Latency scatter map (in milliseconds) ===\n");
 
         println!(
