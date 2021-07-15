@@ -26,7 +26,7 @@ mod tests {
         };
 
         let ping_client = new(Protocol::TCP, &config);
-        assert_eq!(Protocol::TCP, ping_client.protocol());
+        assert_eq!("TCP", ping_client.protocol());
     }
 
     #[test]

@@ -62,6 +62,11 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             return;
         }
 
+        // Skip preparation errors in analysis, since it is not a remote issue.
+        if ping_result.is_preparation_error() {
+            return;
+        }
+
         let (row, bit_index) = self.get_ping_history_bit_pos(ping_result.source().port() as u32);
         let bit_mask_bit = 1 << bit_index;
         let success_bit = if let Some(_) = ping_result.error() {

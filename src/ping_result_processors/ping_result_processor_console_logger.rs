@@ -40,6 +40,11 @@ impl PingResultProcessorConsoleLogger {
             return;
         }
 
+        // Skip preparation errors in analysis, since it is not a remote issue.
+        if ping_result.is_preparation_error() {
+            return;
+        }
+
         // Save the target for outputting summary.
         if self.target.is_none() {
             self.target = Some(ping_result.target());

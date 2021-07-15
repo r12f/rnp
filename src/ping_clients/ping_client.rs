@@ -1,4 +1,4 @@
-use socket2::{Protocol, SockAddr};
+use socket2::SockAddr;
 use std::io;
 use std::time::Duration;
 
@@ -6,7 +6,6 @@ use std::time::Duration;
 pub struct PingClientPingResultDetails {
     pub actual_local_addr: Option<SockAddr>,
     pub round_trip_time: Duration,
-    pub prepare_error: Option<io::Error>,
     pub ping_error: Option<io::Error>,
 }
 pub type PingClientPingResult =
@@ -16,23 +15,20 @@ impl PingClientPingResultDetails {
     pub fn new(
         actual_local_addr: Option<SockAddr>,
         round_trip_time: Duration,
-        prepare_error: Option<io::Error>,
         ping_error: Option<io::Error>,
     ) -> PingClientPingResultDetails {
         PingClientPingResultDetails {
             actual_local_addr,
             round_trip_time,
-            prepare_error,
             ping_error,
         }
     }
 }
 
 pub trait PingClient {
-    fn protocol(&self) -> Protocol;
-
-    fn prepare(&mut self) {}
-    fn ping(&self, source: &SockAddr, target: &SockAddr) -> PingClientPingResult;
+    fn protocol(&self) -> &'static str;
+    fn prepare_for_ping(&mut self, source: &SockAddr) -> io::Result<()>;
+    fn ping(&self, target: &SockAddr) -> PingClientPingResult;
 }
 
 #[cfg(test)]
@@ -45,6 +41,8 @@ mod tests {
     use tide::prelude::*;
     use tide::Request;
     use tokio::runtime::Runtime;
+    use socket2::Protocol;
+    use pretty_assertions::assert_eq;
 
     struct ExpectedPingClientTestResults {
         timeout_min_time: Duration,
@@ -73,7 +71,7 @@ mod tests {
             wait_timeout: Duration::from_millis(300),
             time_to_live: None,
         };
-        let ping_client = ping_client_factory::new(Protocol::TCP, &config);
+        let mut ping_client = ping_client_factory::new(Protocol::TCP, &config);
 
         // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
         let expected_results = ExpectedPingClientTestResults {
@@ -88,7 +86,7 @@ mod tests {
             binding_unavailable_source_port_error: io::ErrorKind::AddrInUse,
         };
 
-        run_ping_client_tests(&ping_client, &expected_results);
+        run_ping_client_tests(&mut ping_client, &expected_results);
     }
 
     async fn valid_http_handler(_req: Request<()>) -> tide::Result {
@@ -96,7 +94,7 @@ mod tests {
     }
 
     fn run_ping_client_tests(
-        ping_client: &Box<dyn PingClient + Send + Sync>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
         // TODO: This is failing on Linux and MAC, need to figure out why.
@@ -111,112 +109,123 @@ mod tests {
     }
 
     fn ping_client_should_work_when_pinging_good_host(
-        ping_client: &Box<dyn PingClient + Send + Sync>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
         let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:3389".parse::<SocketAddr>().unwrap());
-        let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
-            &result,
+            ping_client,
+            &source,
+            &target,
             None,
-            None,
+            false,
             expected_results.timeout_min_time,
         );
     }
 
     fn ping_client_should_fail_when_pinging_non_existing_host(
-        ping_client: &Box<dyn PingClient + Send + Sync>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
         let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("1.1.1.1:11111".parse::<SocketAddr>().unwrap());
-        let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
-            &result,
-            None,
+            ping_client,
+            &source,
+            &target,
             Some(expected_results.ping_non_existing_host_error),
+            false,
             expected_results.timeout_min_time,
         );
     }
 
     fn ping_client_should_fail_when_pinging_non_existing_port(
-        ping_client: &Box<dyn PingClient + Send + Sync>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
         let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
-        let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
-            &result,
-            None,
+            ping_client,
+            &source,
+            &target,
             Some(expected_results.ping_non_existing_port_error),
+            false,
             expected_results.timeout_min_time,
         );
     }
 
     fn ping_client_should_fail_when_binding_invalid_source_ip(
-        ping_client: &Box<dyn PingClient + Send + Sync>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
         let source = SockAddr::from("1.1.1.1:1111".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
-        let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
-            &result,
+            ping_client,
+            &source,
+            &target,
             Some(expected_results.binding_invalid_source_ip_error),
-            None,
+            true,
             expected_results.timeout_min_time,
         );
     }
 
     fn ping_client_should_fail_when_binding_unavailable_source_port(
-        ping_client: &Box<dyn PingClient + Send + Sync>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
         let source = SockAddr::from("127.0.0.1:11337".parse::<SocketAddr>().unwrap());
         let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
-        let result = ping_client.ping(&source, &target);
         ping_client_result_should_be_expected(
-            &result,
+            ping_client,
+            &source,
+            &target,
             Some(expected_results.binding_unavailable_source_port_error),
-            None,
+            true,
             expected_results.timeout_min_time,
         );
     }
 
     fn ping_client_result_should_be_expected(
-        result: &PingClientPingResult,
-        expected_prepare_error: Option<io::ErrorKind>,
-        expected_ping_error: Option<io::ErrorKind>,
+        ping_client: &mut Box<dyn PingClient + Send + Sync>,
+        source: &SockAddr,
+        target: &SockAddr,
+        expected_error: Option<io::ErrorKind>,
+        is_preparation_error: bool,
         timeout_min_time: Duration,
     ) {
-        if expected_prepare_error.is_none() && expected_ping_error.is_none() {
+        if let Err(e) = ping_client.prepare_for_ping(source) {
+            assert!(is_preparation_error);
+
+            let actual_error = Some(e.kind());
+            assert_eq!(expected_error, actual_error);
+
+            return;
+        }
+        assert!(!is_preparation_error);
+
+        let result = ping_client.ping(target);
+        if expected_error.is_none() {
             assert!(result.is_ok());
+            return;
+        }
+
+        assert!(result.is_err());
+        assert!(result.as_ref().err().is_some());
+
+        let actual_error_details = result.as_ref().err().unwrap();
+        let actual_error = match &actual_error_details.ping_error {
+            Some(e) => Some(e.kind()),
+            None => None,
+        };
+        assert_eq!(expected_error, actual_error);
+
+        if actual_error.is_some() && actual_error.unwrap() == io::ErrorKind::TimedOut {
+            assert!(actual_error_details.round_trip_time > timeout_min_time);
         } else {
-            assert!(result.is_err());
-            assert!(result.as_ref().err().is_some());
-
-            let actual_error_details = result.as_ref().err().unwrap();
-
-            let actual_prepare_error = match &actual_error_details.prepare_error {
-                Some(e) => Some(e.kind()),
-                None => None,
-            };
-            assert_eq!(expected_prepare_error, actual_prepare_error);
-
-            let actual_ping_error = match &actual_error_details.ping_error {
-                Some(e) => Some(e.kind()),
-                None => None,
-            };
-            assert_eq!(expected_ping_error, actual_ping_error);
-
-            if actual_ping_error.is_some() && actual_ping_error.unwrap() == io::ErrorKind::TimedOut
-            {
-                assert!(actual_error_details.round_trip_time > timeout_min_time);
-            } else {
-                assert_eq!(0, actual_error_details.round_trip_time.as_micros());
-            }
+            assert_eq!(0, actual_error_details.round_trip_time.as_micros());
         }
     }
 }
