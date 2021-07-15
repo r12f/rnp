@@ -3,8 +3,9 @@ use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWor
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
 use socket2::SockAddr;
-use std::{net::SocketAddr, sync::Arc, sync::Mutex};
+use std::{net::SocketAddr, sync::Arc, sync::Mutex, io};
 use tokio::{sync::mpsc, task, task::JoinHandle};
+use std::time::Duration;
 
 pub struct PingWorker {
     id: u32,
@@ -31,11 +32,10 @@ impl PingWorker {
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let mut ping_client =
+            let ping_client =
                 ping_client_factory::new(config.protocol, &config.ping_client_config);
-            ping_client.prepare();
 
-            let worker = PingWorker {
+            let mut worker = PingWorker {
                 id: worker_id,
                 config,
                 stop_event,
@@ -53,7 +53,7 @@ impl PingWorker {
     }
 
     #[tracing::instrument(name = "Running worker loop", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn run_worker_loop(&self) {
+    async fn run_worker_loop(&mut self) {
         loop {
             let source_port = self
                 .port_picker
@@ -75,11 +75,17 @@ impl PingWorker {
     }
 
     #[tracing::instrument(name = "Running single ping", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn run_single_ping(&self, source_port: u16) {
+    async fn run_single_ping(&mut self, source_port: u16) {
         let source = SockAddr::from(SocketAddr::new(self.config.source_ip, source_port));
         let target = SockAddr::from(self.config.target);
         let ping_time = Utc::now();
-        match self.ping_client.ping(&source, &target) {
+
+        if let Err(prepare_error) = self.ping_client.prepare_for_ping(&source) {
+            self.process_ping_client_preparation_error(&ping_time, source_port, prepare_error).await;
+            return;
+        }
+
+        match self.ping_client.ping(&target) {
             Ok(result) => {
                 self.process_ping_client_result(&ping_time, source_port, result)
                     .await
@@ -91,6 +97,30 @@ impl PingWorker {
         }
     }
 
+    #[tracing::instrument(name = "Processing ping client single ping preparation error", level = "debug", skip(self), fields(worker_id = %self.id))]
+    async fn process_ping_client_preparation_error(
+        &self,
+        ping_time: &DateTime<Utc>,
+        src_port: u16,
+        prepare_error: io::Error,
+    ) {
+        let source = SocketAddr::new(self.config.source_ip, src_port);
+
+        let result = PingResult::new(
+            ping_time,
+            self.id,
+            self.ping_client.protocol(),
+            self.config.target,
+            source,
+            self.is_warmup_worker,
+            Duration::from_millis(0),
+            Some(prepare_error),
+            true,
+        );
+
+        self.result_sender.send(result).await.unwrap();
+    }
+
     #[tracing::instrument(name = "Processing ping client single ping result", level = "debug", skip(self), fields(worker_id = %self.id))]
     async fn process_ping_client_result(
         &self,
@@ -98,45 +128,24 @@ impl PingWorker {
         src_port: u16,
         ping_result: PingClientPingResultDetails,
     ) {
-        let mut local_addr: Option<SocketAddr> =
+        let mut source: Option<SocketAddr> =
             ping_result.actual_local_addr.and_then(|x| x.as_socket());
 
-        if local_addr.is_none() {
-            local_addr = Some(SocketAddr::new(self.config.source_ip, src_port));
+        if source.is_none() {
+            source = Some(SocketAddr::new(self.config.source_ip, src_port));
         }
 
-        let is_prepare_error = ping_result.prepare_error.is_some();
         let result = PingResult::new(
             ping_time,
             self.id,
-            self.config.protocol,
+            self.ping_client.protocol(),
             self.config.target,
-            local_addr.unwrap(),
+            source.unwrap(),
             self.is_warmup_worker,
             ping_result.round_trip_time,
-            if ping_result.ping_error.is_some() {
-                ping_result.ping_error
-            } else {
-                ping_result.prepare_error
-            },
+            ping_result.ping_error,
+            false,
         );
-
-        // Failed due to unable to bind source port, the source port might be taken, and we should ignore this error and continue.
-        if is_prepare_error {
-            if let Some(e) = result.error() {
-                let warmup_sign = if result.is_warmup() { " (warmup)" } else { "" };
-
-                println!(
-                "Unable to perform ping to {} {} from {}{}, because failing to prepare local socket: Error = {}",
-                result.protocol_string(),
-                result.target(),
-                result.source(),
-                warmup_sign,
-                e);
-
-                return;
-            }
-        }
 
         self.result_sender.send(result).await.unwrap();
     }

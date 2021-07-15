@@ -49,6 +49,11 @@ impl PingResultProcessorLatencyBucketLogger {
             return;
         }
 
+        // Skip preparation errors in analysis, since it is not a remote issue.
+        if ping_result.is_preparation_error() {
+            return;
+        }
+
         self.total_hit_count += 1;
 
         // check time out / failures
@@ -106,7 +111,6 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
 mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
-    use socket2::Protocol;
     use std::{io, time::Duration};
 
     #[test]
@@ -115,27 +119,29 @@ mod tests {
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                 1,
-                Protocol::TCP,
+                "TCP",
                 "1.2.3.4:443".parse().unwrap(),
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(10),
                 None,
+                false,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                 1,
-                Protocol::TCP,
+                "TCP",
                 "1.2.3.4:443".parse().unwrap(),
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(1000),
                 Some(io::Error::new(io::ErrorKind::TimedOut, "timed out")),
+                false,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                 1,
-                Protocol::TCP,
+                "TCP",
                 "1.2.3.4:443".parse().unwrap(),
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
@@ -144,6 +150,21 @@ mod tests {
                     io::ErrorKind::ConnectionRefused,
                     "connect failed",
                 )),
+                false,
+            ),
+            PingResult::new(
+                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                1,
+                "TCP",
+                "1.2.3.4:443".parse().unwrap(),
+                "5.6.7.8:8080".parse().unwrap(),
+                false,
+                Duration::from_millis(0),
+                Some(io::Error::new(
+                    io::ErrorKind::AddrInUse,
+                    "address in use",
+                )),
+                true,
             ),
         ];
 
