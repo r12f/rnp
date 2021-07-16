@@ -63,6 +63,9 @@ pub struct RnpCliOptions {
     #[structopt(long = "ttl", help = "Time to live.")]
     pub time_to_live: Option<u32>,
 
+    #[structopt(long = "use-fin", help = "Use regular TCP disconnect (w/ FIN) instead of RST.")]
+    pub use_fin_in_tcp_ping: bool,
+
     #[structopt(
         short = "p",
         long = "parallel",
@@ -192,6 +195,7 @@ impl RnpCliOptions {
                 ping_client_config: PingClientConfig {
                     wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
                     time_to_live: self.time_to_live,
+                    use_fin_in_tcp_ping: self.use_fin_in_tcp_ping,
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -254,6 +258,7 @@ mod tests {
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1000,
                 time_to_live: None,
+                use_fin_in_tcp_ping: false,
                 parallel_ping_count: 1,
                 no_console_log: false,
                 csv_log_path: None,
@@ -282,6 +287,7 @@ mod tests {
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1500,
                 time_to_live: None,
+                use_fin_in_tcp_ping: false,
                 parallel_ping_count: 10,
                 no_console_log: true,
                 csv_log_path: None,
@@ -329,6 +335,7 @@ mod tests {
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
+                use_fin_in_tcp_ping: true,
                 parallel_ping_count: 10,
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
@@ -359,6 +366,7 @@ mod tests {
                 "1500",
                 "--ttl",
                 "128",
+                "--use-fin",
                 "--parallel",
                 "10",
                 "--no-console-log",
@@ -388,6 +396,7 @@ mod tests {
                     ping_client_config: PingClientConfig {
                         wait_timeout: Duration::from_millis(1000),
                         time_to_live: Some(128),
+                        use_fin_in_tcp_ping: false,
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -420,6 +429,7 @@ mod tests {
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
+                use_fin_in_tcp_ping: false,
                 parallel_ping_count: 1,
                 no_console_log: false,
                 csv_log_path: None,
@@ -442,6 +452,7 @@ mod tests {
                     ping_client_config: PingClientConfig {
                         wait_timeout: Duration::from_millis(2000),
                         time_to_live: Some(128),
+                        use_fin_in_tcp_ping: true,
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -474,6 +485,7 @@ mod tests {
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
+                use_fin_in_tcp_ping: true,
                 parallel_ping_count: 1,
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
@@ -529,7 +541,7 @@ mod tests {
 
         opts.source_port_min = None;
         opts.source_port_max = None;
-        opts.source_port_list = Some(vec![1024,1025,1026]);
+        opts.source_port_list = Some(vec![1024, 1025, 1026]);
         opts.parallel_ping_count = 100;
         opts.prepare_to_use();
         assert_eq!(3, opts.parallel_ping_count);
