@@ -70,6 +70,7 @@ mod tests {
         let config = PingClientConfig {
             wait_timeout: Duration::from_millis(300),
             time_to_live: None,
+            use_fin_in_tcp_ping: false,
         };
         let mut ping_client = ping_client_factory::new(Protocol::TCP, &config);
 

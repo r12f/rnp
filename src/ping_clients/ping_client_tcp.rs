@@ -21,7 +21,9 @@ impl PingClientTcp {
         let socket_domain = Domain::from(source.family() as i32);
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&source)?;
-        socket.set_linger(Some(Duration::from_secs(0)))?;
+        if !self.config.use_fin_in_tcp_ping {
+            socket.set_linger(Some(Duration::from_secs(0)))?;
+        }
         if let Some(ttl) = self.config.time_to_live {
             socket.set_ttl(ttl)?;
         }

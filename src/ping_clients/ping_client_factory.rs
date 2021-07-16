@@ -23,6 +23,7 @@ mod tests {
         let config = PingClientConfig {
             wait_timeout: Duration::from_millis(100),
             time_to_live: Some(128),
+            use_fin_in_tcp_ping: false,
         };
 
         let ping_client = new(Protocol::TCP, &config);
@@ -35,6 +36,7 @@ mod tests {
         let config = PingClientConfig {
             wait_timeout: Duration::from_millis(100),
             time_to_live: Some(128),
+            use_fin_in_tcp_ping: false,
         };
 
         new(Protocol::UDP, &config);
