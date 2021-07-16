@@ -1,4 +1,4 @@
-# Rnp - A simple cloud-friendly tool for testing network reachability.
+# Rnp - A simple cloud-friendly ping for testing network reachability.
 [![Documentation](https://docs.rs/rnp/badge.svg)](https://docs.rs/rnp/)
 [![Build Status](https://riff.visualstudio.com/rnp/_apis/build/status/r12f.rnp?branchName=main)](https://riff.visualstudio.com/rnp/_build/latest?definitionId=5&branchName=main)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
@@ -41,46 +41,52 @@ Reaching TCP 8.8.8.8:443 from 192.168.50.153:8943 succeeded: RTT=12.43ms
 
 ## Why Rnp?
 
-TCP connect tool is one of the most frequently used tool for testing network reachability. And yet, we have another one here... So why?
+Ping is one of the most frequently used tool for testing network reachability. And yet, we have another one here... So why?
 
-Although there are indeed numerous tools doing tcp connect test, I wrote this new one for some specific reasons:
-* Easy to deploy and run. 
+Despite there are numerous ping tools in the market, I wrote RNP for some specific reasons:
+* **Wide platform support**, so we can run it everywhere.
   * Wide platform support: Windows/Linux, x86/amd64/arm64.
-  * Wide machine environment support: Different machines might have very different environment. Some of them might not have or cannot install any heavy runtime, like JRE/CLR.
-* Be cloud-friendly:
-  * Fast network scan:
-    * Nowadays, network data path are mostly redundant, technologies like [ECMP] are widely used in the modern data center.
-    * Because of this, if one network link is having trouble, we will see intermediate packet drop/latency, instead of seeing full connectivity drop. Hence, we need a tool to help us scan all possible network paths and find out the bad links.
-  * Friendly to SNAT:
-    * If you are using load balancers in cloud for making outbound connections, you must be familiar with SNAT port allocation failure / exhaustion. It is because our backend instances are sharing the small set of public ips for making outbound connections. And the load balancer manages the port allocation on those IPs the and tracks all connections for doing SNAT.
-    * Since the tcp connect test tools are essentially creating new connections all the time to a unique endpoint, it can easily trigger SNAT port allocation failures.
-    * Whenever a connection hits port allocation failures, the packet could never go out and causing the test tools reporting timeout failures. These are purely noises and making our testing hard to do.
-* A language with light-weighted & GC-free runtime to avoid unstable measurements.
-* Easy to use:
-  * Formatted output for offline analysis, scripting or simply information archive.
-  * Simple analysis and brief summary for heavy testing to help quickly troubleshoot the problems.
+  * Wide machine environment support: Minimum dependencies, such as runtimes like JRE/CLR.
+* **Be cloud-friendly**:
+  * Support scanning all network paths.
+    * Nowadays, services and network data paths are mostly redundant. Technologies like load balancer and [ECMP] are widely used in cloud and modern data center.
+    * Because of this, if a service, or a network link is having trouble, we will see intermediate packet drop/latency, instead of seeing full connectivity drop. Hence, we need a tool to help us scan all possible network paths and find out the bad links.
+  * Minimize port usage (Friendly to SNAT).
+    * High port usage can cause SNAT port allocation failures, which result in false negatives. And it can be easily triggered by scanning.
+    * This is a very common error in all clouds, such as [AWS][AWSErrorPortAllocation] and [Azure][AzureLBSnatPortExhaustion].
+* **Avoid unstable measurements** when possible.
+* **Easy to use.**
 * ...
 
-To help us achieve the things above, we are implementing our ping in the following way:
-* Use [Rust] as the programming language:
+To help us achieve the things above, we are implementing our ping in a very specific way.
+* **TCP connect as ping.** Focus on network reachability.
+  * **Why not ICMP ping?**
+    1. Unlike TCP, ICMP is lacking of variant, which makes it bad for scanning all possible network paths.
+    2. ICMP is banned in many machines and network for security reasons, so ICMP timeout doesn't really mean it is timeout.
+  * **Why not UDP ping?**
+    1. UDP is connectionless, so there is no so-called UDP ping. 
+    2. Existing UDP ping tool uses ICMP unreachable message for detecting if a UDP port is reachable or not, which causes 2 problems:
+       1. Implementation usually involves using raw socket, which is really bad for performance, especially in cloud, where the network load could be high.
+       2. Same as ICMP ping. ICMP can be banned, hence UDP ping works doesn't really mean UDP port is open. (And one of the reasons that people ban ICMP is to avoid this UDP port scan.)
+* **Parallel pings** for spray all possible network paths:
+  * We rotate the source port to make each ping having different tuples to allow them going through different network path.
+  * Parallel pings with configurable ping intervals can dramatically increase the scanning speed.
+* **RST instead of FIN** by default. Minimize port usage.
+  * Most of the tcp connect tools follows the regular way to disconnect the TCP connection - the 4-way handshake with FIN packet. This is great for servers, but not for testing.
+  * The regular disconnect leaves the ports in TIME_WAIT state, and the cloud load balancers have to keep tracking these SNAT ports as well. It can easily cause SNAT port allocation error, which will make the network for your service even worse. You definitely don't want to see this.
+* **Use [Rust]** as the programming language:
   * Rust is a system language with very light-weighted and GC-free runtime, which means no more random lags during our measurements, such as stop-the-world stages in GC.
   * Rust has [wide range of platform support][RustPlatform] and produces almost self-contained native binaries, so we can simply copy and run.
   * Rust is as fast as C, while also has great support for modern age asynchronous programming. Gems like [go-like mpsc channel][GoChannel], async/await, you can find them all in Rust.
   * ...
-* RST instead of FIN:
-  * Most of the tcp connect tools follows the regular way to disconnect the TCP connection - the 4-way handshake with FIN packet. This is great for servers, but not for testing.
-  * The regular disconnect leaves the ports in TIME_WAIT state and the cloud load balancers have to keep tracking the SNAT ports as well. It can easily cause SNAT port allocation error everywhere in your service, which you definitely don't want to see. And our ping will try to avoid this to happen.
-* Ping as spray:
-  * To help us test all possible data path links, we keep rotating our source port during our ping.
-  * To make the ping run faster, we can change the number of pings we run in parallel as well the intervals we wait between the pings. This helps us spray all possible network paths.
-* Friendly result output:
-  * Besides outputting the ping result in the most well-known way (just like ping), we also provided more ways to show the results, such as very compacted scatter map.
+* **Friendly result output**:
+  * Besides outputting just like ping, we also provided other ways to show the results, such as very compacted scatter map.
   * We also support outputting the result into CSV/JSON/Text files for later analysis or scripting.
 
 Some hard decisions:
 * DNS name resolution is intentionally not supported. Using IP address is enforced when using our ping.
   * This is because DNS can return different result based on geo-location. This misleads people a lot when collaborating on network issues, because it might end up with different people debugging different issues without even knowing it for long time.
-  * To get IP from DNS, we can run `nslookup`.
+  * To get IP from DNS, we can run `nslookup <domain-name>`.
 
 ## Usage
 Ok, let's check some real cases to get started!
@@ -207,7 +213,8 @@ OPTIONS:
         --src-port-min <source-port-min>          First source port to use in ping.
         --log-text <text-log-path>                Log ping results to a text file.
         --ttl <time-to-live>                      Time to live.
-    -w, --timeout <wait-timeout-in-ms>            Wait time for each ping in milliseconds. [default: 1000]
+    -w, --timeout <wait-timeout-in-ms>            Wait time for each ping in milliseconds. [default: 2000]
+        --warmup <warmup-count>                   Warm up ping count. [default: 1]
 
 ARGS:
     <target>
@@ -235,7 +242,6 @@ $ cargo build --target=aarch64-pc-windows-msvc --release
 ```
 
 ### Future plans and issue tracking
-- IPv6 (not tested)
 - Maybe other protocol support? (ICMP is bad for checking all possible paths, because there are no variations for routing in the packet. And UDP has no uniformed handshake.).
 - ...
 
