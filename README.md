@@ -196,6 +196,7 @@ FLAGS:
     -t                            Ping until stopped.
     -l, --show-latency-scatter    Show latency (round trip time) scatter map after ping is done.
     -r, --show-result-scatter     Show ping result scatter map after ping is done.
+        --use-fin                 Use regular TCP disconnect (w/ FIN) instead of RST.
     -V, --version                 Prints version information
 
 OPTIONS:
