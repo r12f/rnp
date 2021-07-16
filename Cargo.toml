@@ -22,6 +22,9 @@ contracts = "0.6.0"
 chrono = "0.4"
 rand = "0.8"
 thiserror = "1.0.26"
+quinn = "0.7.2"
+rustls = { version = "*", features = ["dangerous_configuration", "quic"] }
+webpki = "0.21"
 
 [dev-dependencies]
 tide = "0.16.0"
