@@ -3,6 +3,7 @@ use crate::PingClientConfig;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
 use std::time::{Duration, Instant};
+use std::net::SocketAddr;
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -15,11 +16,11 @@ impl PingClientTcp {
         };
     }
 
-    fn ping_target(&self, source: &SockAddr, target: &SockAddr) -> PingClientResult<PingClientPingResultDetails> {
+    fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         let socket = self.prepare_socket_for_ping(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
 
         let start_time = Instant::now();
-        let connect_result = socket.connect_timeout(target, self.config.wait_timeout);
+        let connect_result = socket.connect_timeout(&SockAddr::from(target.clone()), self.config.wait_timeout);
         let rtt = Instant::now().duration_since(start_time);
         match connect_result {
             // Timeout is an expected value instead of an actual failure, so here we should return Ok.
@@ -34,15 +35,15 @@ impl PingClientTcp {
         // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
         let local_addr = socket.local_addr();
         return match local_addr {
-            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr), rtt, false)),
+            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false)),
             Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false)),
         };
     }
 
-    fn prepare_socket_for_ping(&self, source: &SockAddr) -> io::Result<Socket> {
-        let socket_domain = Domain::from(source.family() as i32);
+    fn prepare_socket_for_ping(&self, source: &SocketAddr) -> io::Result<Socket> {
+        let socket_domain = if source.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
-        socket.bind(&source)?;
+        socket.bind(&SockAddr::from(source.clone()))?;
         if !self.config.use_fin_in_tcp_ping {
             socket.set_linger(Some(Duration::from_secs(0)))?;
         }
@@ -59,7 +60,7 @@ impl PingClient for PingClientTcp {
         "TCP"
     }
 
-    fn ping(&self, source: &SockAddr, target: &SockAddr) -> PingClientResult<PingClientPingResultDetails> {
+    fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         return self.ping_target(source, target);
     }
 }

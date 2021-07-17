@@ -1,16 +1,16 @@
-use socket2::SockAddr;
 use std::time::Duration;
+use std::net::SocketAddr;
 
 #[derive(Debug)]
 pub struct PingClientPingResultDetails {
-    pub actual_local_addr: Option<SockAddr>,
+    pub actual_local_addr: Option<SocketAddr>,
     pub round_trip_time: Duration,
     pub is_timeout: bool,
 }
 
 impl PingClientPingResultDetails {
     pub fn new(
-        actual_local_addr: Option<SockAddr>,
+        actual_local_addr: Option<SocketAddr>,
         round_trip_time: Duration,
         is_timeout: bool,
     ) -> PingClientPingResultDetails {
@@ -35,7 +35,7 @@ pub type PingClientResult<T, E = PingClientError> = std::result::Result<T, E>;
 
 pub trait PingClient {
     fn protocol(&self) -> &'static str;
-    fn ping(&self, source: &SockAddr, target: &SockAddr) -> PingClientResult<PingClientPingResultDetails>;
+    fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails>;
 }
 
 #[cfg(test)]
@@ -126,8 +126,8 @@ mod tests {
         ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
-        let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
-        let target = SockAddr::from("127.0.0.1:3389".parse::<SocketAddr>().unwrap());
+        let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
+        let target = "127.0.0.1:3389".parse::<SocketAddr>().unwrap();
         ping_client_result_should_be_expected(
             ping_client,
             &source,
@@ -141,8 +141,8 @@ mod tests {
         ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
-        let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
-        let target = SockAddr::from("1.1.1.1:11111".parse::<SocketAddr>().unwrap());
+        let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
+        let target = "1.1.1.1:11111".parse::<SocketAddr>().unwrap();
         ping_client_result_should_be_expected(
             ping_client,
             &source,
@@ -156,8 +156,8 @@ mod tests {
         ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
-        let source = SockAddr::from("0.0.0.0:0".parse::<SocketAddr>().unwrap());
-        let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
+        let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
+        let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
         ping_client_result_should_be_expected(
             ping_client,
             &source,
@@ -171,8 +171,8 @@ mod tests {
         ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
-        let source = SockAddr::from("1.1.1.1:1111".parse::<SocketAddr>().unwrap());
-        let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
+        let source = "1.1.1.1:1111".parse::<SocketAddr>().unwrap();
+        let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
         ping_client_result_should_be_expected(
             ping_client,
             &source,
@@ -186,8 +186,8 @@ mod tests {
         ping_client: &mut Box<dyn PingClient + Send + Sync>,
         expected_results: &ExpectedPingClientTestResults,
     ) {
-        let source = SockAddr::from("127.0.0.1:11337".parse::<SocketAddr>().unwrap());
-        let target = SockAddr::from("127.0.0.1:56789".parse::<SocketAddr>().unwrap());
+        let source = "127.0.0.1:11337".parse::<SocketAddr>().unwrap();
+        let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
         ping_client_result_should_be_expected(
             ping_client,
             &source,
@@ -199,8 +199,8 @@ mod tests {
 
     fn ping_client_result_should_be_expected(
         ping_client: &mut Box<dyn PingClient + Send + Sync>,
-        source: &SockAddr,
-        target: &SockAddr,
+        source: &SocketAddr,
+        target: &SocketAddr,
         timeout_min_time: Duration,
         expected_error: &ExpectedTestCaseResult,
     ) {
