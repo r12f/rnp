@@ -24,10 +24,10 @@ impl PingClientPingResultDetails {
 
 #[derive(thiserror::Error, Debug)]
 pub enum PingClientError {
-    #[error("preparation failed: {0}")]
+    #[error("{0}")]
     PreparationFailed(Box<dyn std::error::Error + Send>),
 
-    #[error("ping failed: {0}")]
+    #[error("{0}")]
     PingFailed(Box<dyn std::error::Error + Send>),
 }
 

@@ -107,8 +107,8 @@ mod tests {
             } else {
                 ExpectedTestCaseResult::Failed("connection refused")
             },
-            binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("preparation failed: The requested address is not valid in its context. (os error 10049)"),
-            binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("preparation failed: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
+            binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)"),
+            binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
         };
 
         run_ping_client_tests(&mut ping_client, &expected_results);

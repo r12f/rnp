@@ -68,7 +68,11 @@ impl PingResult {
         &self.error
     }
     pub fn is_preparation_error(&self) -> bool {
-        if let Some(PreparationFailed(_)) = self.error() { true } else { false }
+        if let Some(PreparationFailed(_)) = self.error() {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn format_as_console_log(&self) -> String {
@@ -89,7 +93,7 @@ impl PingResult {
             return match error {
                 PreparationFailed(e) => {
                     format!(
-                            "Unable to perform ping to {} {} from {}{}, because failing to prepare local socket: Error = {}",
+                            "Unable to perform ping to {} {} from {}{}, because failed preparing to ping: Error = {}",
                             self.protocol(),
                             self.target(),
                             self.source(),
@@ -121,13 +125,16 @@ impl PingResult {
     }
 
     pub fn format_as_json_string(&self) -> String {
-        let error_message = match self.error() {
-            Some(e) => format!("{}", e.to_string()),
-            None => String::from(""),
-        };
+        let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
+            if let PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
+        });
+
+        let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
+            if let PingFailed(pe) = e { pe.to_string() } else { String::from("") }
+        });
 
         let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"error\":\"{}\",\"isPreparationError\":\"{}\"}}",
+            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\"}}",
             self.ping_time(),
             self.protocol(),
             self.worker_id(),
@@ -138,21 +145,24 @@ impl PingResult {
             self.is_warmup(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
-            error_message,
-            self.is_preparation_error(),
+            preparation_error,
+            ping_error,
         );
 
         return json;
     }
 
     pub fn format_as_csv_string(&self) -> String {
-        let error_message = match self.error() {
-            Some(e) => format!("{}", e.to_string()),
-            None => String::from(""),
-        };
+        let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
+            if let PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
+        });
+
+        let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
+            if let PingFailed(pe) = e { pe.to_string() } else { String::from("") }
+        });
 
         let csv = format!(
-            "{:?},{},{},{},{},{},{},{},{:.2},{},\"{}\",{}",
+            "{:?},{},{},{},{},{},{},{},{:.2},{},\"{}\",\"{}\"",
             self.ping_time(),
             self.worker_id(),
             self.protocol(),
@@ -163,8 +173,8 @@ impl PingResult {
             self.is_warmup(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
-            error_message,
-            self.is_preparation_error(),
+            preparation_error,
+            ping_error,
         );
 
         return csv;
@@ -173,6 +183,7 @@ impl PingResult {
 
 #[cfg(test)]
 mod tests {
+    use crate::ping_clients::ping_client::PingClientError::{PingFailed, PreparationFailed};
     use crate::ping_result::PingResult;
     use chrono::prelude::*;
     use chrono::Utc;
@@ -180,7 +191,6 @@ mod tests {
     use std::io;
     use std::net::SocketAddr;
     use std::time::Duration;
-    use crate::ping_clients::ping_client::PingClientError::{PreparationFailed, PingFailed};
 
     #[test]
     fn new_ping_result_should_work() {
@@ -213,7 +223,7 @@ mod tests {
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 (warmup) succeeded: RTT=10.00ms",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: Timed out, RTT = 1000.00ms",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: connect failed",
-                "Unable to perform ping to TCP 1.2.3.4:443 from 5.6.7.8:8080, because failing to prepare local socket: Error = address in use",
+                "Unable to perform ping to TCP 1.2.3.4:443 from 5.6.7.8:8080, because failed preparing to ping: Error = address in use",
             ],
             results
                 .into_iter()
@@ -227,10 +237,10 @@ mod tests {
         let results = generate_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"error\":\"\",\"isPreparationError\":\"false\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"error\":\"\",\"isPreparationError\":\"false\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"error\":\"ping failed: connect failed\",\"isPreparationError\":\"false\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"error\":\"preparation failed: address in use\",\"isPreparationError\":\"true\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
@@ -241,10 +251,10 @@ mod tests {
         let results = generate_test_samples();
         assert_eq!(
             vec![
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",false",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,1000.00,true,\"\",false",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"ping failed: connect failed\",false",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"preparation failed: address in use\",true",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,1000.00,true,\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"connect failed\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"address in use\",\"\"",
             ],
             results
                 .into_iter()
@@ -286,7 +296,10 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
-                Some(PingFailed(Box::new(io::Error::new(io::ErrorKind::ConnectionRefused, "connect failed")))),
+                Some(PingFailed(Box::new(io::Error::new(
+                    io::ErrorKind::ConnectionRefused,
+                    "connect failed",
+                )))),
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -297,7 +310,10 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
-                Some(PreparationFailed(Box::new(io::Error::new(io::ErrorKind::AddrInUse, "address in use")))),
+                Some(PreparationFailed(Box::new(io::Error::new(
+                    io::ErrorKind::AddrInUse,
+                    "address in use",
+                )))),
             ),
         ]
     }
