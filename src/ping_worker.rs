@@ -2,7 +2,6 @@ use crate::ping_clients::ping_client::{PingClientPingResultDetails, PingClientEr
 use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWorkerConfig};
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
-use socket2::SockAddr;
 use std::{net::SocketAddr, sync::Arc, sync::Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
 use std::time::Duration;
@@ -75,8 +74,8 @@ impl PingWorker {
 
     #[tracing::instrument(name = "Running single ping", level = "debug", skip(self), fields(worker_id = %self.id))]
     async fn run_single_ping(&mut self, source_port: u16) {
-        let source = SockAddr::from(SocketAddr::new(self.config.source_ip, source_port));
-        let target = SockAddr::from(self.config.target);
+        let source = SocketAddr::new(self.config.source_ip, source_port);
+        let target = self.config.target;
         let ping_time = Utc::now();
 
         match self.ping_client.ping(&source, &target) {
@@ -98,8 +97,7 @@ impl PingWorker {
         src_port: u16,
         ping_result: PingClientPingResultDetails,
     ) {
-        let mut source: Option<SocketAddr> =
-            ping_result.actual_local_addr.and_then(|x| x.as_socket());
+        let mut source: Option<SocketAddr> = ping_result.actual_local_addr;
 
         if source.is_none() {
             source = Some(SocketAddr::new(self.config.source_ip, src_port));
