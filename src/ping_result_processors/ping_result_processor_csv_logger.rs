@@ -29,7 +29,7 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     fn initialize(&mut self) {
         // Writer CSV header
         self.log_file
-            .write("UTCTime,WorkerId,Protocol,TargetIP,TargetPort,SourceIP,SourcePort,IsWarmup,RTTInMs,Error,IsPreparationError\n".as_bytes())
+            .write("UTCTime,WorkerId,Protocol,TargetIP,TargetPort,SourceIP,SourcePort,IsWarmup,RTTInMs,IsTimedOut,PreparationError,PingError\n".as_bytes())
             .expect(&format!(
                 "Failed to write logs to csv file! Path = {}",
                 self.log_path.display()
