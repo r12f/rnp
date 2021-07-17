@@ -72,20 +72,23 @@ impl PingResultProcessorConsoleLogger {
 
     fn output_result_to_console(&mut self, ping_result: &PingResult) {
         if self.no_console_log {
-            self.output_ping_count_update_to_console();
+            self.output_ping_count_update_to_console(false);
             return;
         }
 
         println!("{}", ping_result.format_as_console_log());
     }
 
-    fn output_ping_count_update_to_console(&mut self) {
+    fn output_ping_count_update_to_console(&mut self, force: bool) {
         // Only flush once per sec at maximum to avoid frequent flushing.
         let now = Instant::now();
         let time_since_last_flush = now - self.last_console_flush_time;
-        if time_since_last_flush.as_millis() < 1000 {
-            return;
+        if !force {
+            if time_since_last_flush.as_millis() < 1000 {
+                return;
+            }
         }
+
         self.last_console_flush_time = now;
 
         print!("\r{0} pings finished.", self.ping_count);
@@ -104,6 +107,11 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     }
 
     fn rundown(&mut self) {
+        if self.no_console_log {
+            self.output_ping_count_update_to_console(true);
+            println!();
+        }
+
         // Didn't received any result, skip output statistics.
         if self.target.is_none() {
             return;
