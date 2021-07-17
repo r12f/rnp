@@ -10,7 +10,7 @@
     <PackageTags>network;utility;ping;tcpping;tcp</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <ProjectUrl>http://github.com/r12f/rnp</ProjectUrl>
-    <Description>A simple cloud-friendly tool for testing network reachability.</Description>
+    <Description>A simple layer 4 ping tool for cloud.</Description>
     <IncludeBuildOutput>false</IncludeBuildOutput>
   </PropertyGroup>
 
