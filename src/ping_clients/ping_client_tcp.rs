@@ -1,23 +1,45 @@
-use crate::ping_clients::ping_client::{PingClient, PingClientPingResult, PingClientPingResultDetails};
+use crate::ping_clients::ping_client::{PingClient, PingClientResult, PingClientPingResultDetails, PingClientError};
 use crate::PingClientConfig;
 use socket2::{Domain, SockAddr, Socket, Type};
-use std::time::{Duration, Instant};
 use std::io;
-use contracts::{requires, ensures};
+use std::time::{Duration, Instant};
 
 pub struct PingClientTcp {
     config: PingClientConfig,
-    socket: Option<Socket>,
 }
 
 impl PingClientTcp {
     pub fn new(config: &PingClientConfig) -> PingClientTcp {
-        return PingClientTcp { config: config.clone(), socket: None };
+        return PingClientTcp {
+            config: config.clone(),
+        };
     }
 
-    fn prepare_tcp_socket(&mut self, source: &SockAddr) -> io::Result<()> {
-        self.socket = None;
+    fn ping_target(&self, source: &SockAddr, target: &SockAddr) -> PingClientResult<PingClientPingResultDetails> {
+        let socket = self.prepare_socket_for_ping(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
 
+        let start_time = Instant::now();
+        let connect_result = socket.connect_timeout(target, self.config.wait_timeout);
+        let rtt = Instant::now().duration_since(start_time);
+        match connect_result {
+            // Timeout is an expected value instead of an actual failure, so here we should return Ok.
+            Err(e) if e.kind() == io::ErrorKind::TimedOut => {
+                return Ok(PingClientPingResultDetails::new(None, rtt, true))
+            }
+            Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
+            Ok(()) => (),
+        }
+
+        // If getting local address failed, we ignore it.
+        // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
+        let local_addr = socket.local_addr();
+        return match local_addr {
+            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr), rtt, false)),
+            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false)),
+        };
+    }
+
+    fn prepare_socket_for_ping(&self, source: &SockAddr) -> io::Result<Socket> {
         let socket_domain = Domain::from(source.family() as i32);
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&source)?;
@@ -27,42 +49,17 @@ impl PingClientTcp {
         if let Some(ttl) = self.config.time_to_live {
             socket.set_ttl(ttl)?;
         }
-        self.socket = Some(socket);
 
-        return Ok(());
-    }
-
-    fn ping_target(&self, target: &SockAddr) -> PingClientPingResult {
-        let start_time = Instant::now();
-        let connect_result = self.socket.as_ref().unwrap().connect_timeout(target, self.config.wait_timeout);
-        let rtt = Instant::now().duration_since(start_time);
-        match connect_result {
-            Err(e) if e.kind() == io::ErrorKind::TimedOut => return Err(PingClientPingResultDetails::new(None, rtt, Some(e))),
-            Err(e) => return Err(PingClientPingResultDetails::new(None, Duration::from_millis(0), Some(e))),
-            Ok(()) => (),
-        }
-
-        // If getting local address failed, we ignore it.
-        // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
-        let local_addr = self.socket.as_ref().unwrap().local_addr();
-        return match local_addr {
-            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr), rtt, None)),
-            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, None)),
-        };
+        return Ok(socket);
     }
 }
 
 impl PingClient for PingClientTcp {
-    fn protocol(&self) -> &'static str { "TCP" }
-
-    #[ensures(ret.is_ok() -> self.socket.is_some())]
-    #[ensures(ret.is_err() -> self.socket.is_none())]
-    fn prepare_for_ping(&mut self, source: &SockAddr) -> io::Result<()> {
-        return self.prepare_tcp_socket(source);
+    fn protocol(&self) -> &'static str {
+        "TCP"
     }
 
-    #[requires(self.socket.is_some())]
-    fn ping(&self, target: &SockAddr) -> PingClientPingResult {
-        return self.ping_target(target);
+    fn ping(&self, source: &SockAddr, target: &SockAddr) -> PingClientResult<PingClientPingResultDetails> {
+        return self.ping_target(source, target);
     }
 }

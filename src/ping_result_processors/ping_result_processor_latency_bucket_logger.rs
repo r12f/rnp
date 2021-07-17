@@ -1,6 +1,5 @@
 use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::PingResult;
-use std::io;
 use std::time::Duration;
 use tracing;
 use contracts::requires;
@@ -56,11 +55,12 @@ impl PingResultProcessorLatencyBucketLogger {
 
         self.total_hit_count += 1;
 
-        // check time out / failures
-        match ping_result.error() {
-            Some(e) if e.kind() == io::ErrorKind::TimedOut => self.timed_out_hit_count += 1,
-            Some(_) => self.failed_hit_count += 1,
-            None => self.track_latency_in_buckets(&ping_result.round_trip_time()),
+        if ping_result.is_timed_out() {
+            self.timed_out_hit_count += 1;
+        } else if let Some(_) = ping_result.error() {
+            self.failed_hit_count += 1;
+        } else {
+            self.track_latency_in_buckets(&ping_result.round_trip_time());
         }
     }
 
@@ -112,6 +112,7 @@ mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
     use std::{io, time::Duration};
+    use crate::ping_clients::ping_client::PingClientError::{PreparationFailed, PingFailed};
 
     #[test]
     fn latency_bucket_logger_should_work() {
@@ -124,8 +125,8 @@ mod tests {
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(10),
-                None,
                 false,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -135,8 +136,8 @@ mod tests {
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(1000),
-                Some(io::Error::new(io::ErrorKind::TimedOut, "timed out")),
-                false,
+                true,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -146,11 +147,11 @@ mod tests {
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(0),
-                Some(io::Error::new(
+                false,
+                Some(PingFailed(Box::new(io::Error::new(
                     io::ErrorKind::ConnectionRefused,
                     "connect failed",
-                )),
-                false,
+                )))),
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -160,11 +161,11 @@ mod tests {
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(0),
-                Some(io::Error::new(
+                false,
+                Some(PreparationFailed(Box::new(io::Error::new(
                     io::ErrorKind::AddrInUse,
                     "address in use",
-                )),
-                true,
+                )))),
             ),
         ];
 
