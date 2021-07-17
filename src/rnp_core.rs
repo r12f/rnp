@@ -1,6 +1,6 @@
 use crate::{
     rnp_utils, PingPortPicker, PingResult, PingResultProcessingWorker, PingResultProcessorConfig,
-    PingWorker, RnpCoreConfig, RNP_ABOUT, RNP_AUTHOR, RNP_NAME,
+    PingWorker, RnpCoreConfig,
 };
 use futures_intrusive::sync::ManualResetEvent;
 use std::sync::{Arc, Mutex};
@@ -61,8 +61,6 @@ impl RnpCore {
     }
 
     fn log_header_to_console(&self) {
-        println!("{} - {} - {}\n", RNP_NAME, RNP_AUTHOR, RNP_ABOUT);
-
         println!(
             "Start testing {} {:?}:",
             rnp_utils::format_protocol(self.config.worker_config.protocol),

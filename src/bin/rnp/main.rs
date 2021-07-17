@@ -1,5 +1,5 @@
 use futures_intrusive::sync::ManualResetEvent;
-use rnp::RnpCore;
+use rnp::{RnpCore, RNP_NAME, RNP_AUTHOR, RNP_ABOUT};
 use rnp_cli_options::RnpCliOptions;
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -8,6 +8,8 @@ use tokio::runtime::Runtime;
 mod rnp_cli_options;
 
 fn main() {
+    println!("{} - {} - {}\n", RNP_NAME, RNP_AUTHOR, RNP_ABOUT);
+
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
     let mut opts = RnpCliOptions::from_args();
