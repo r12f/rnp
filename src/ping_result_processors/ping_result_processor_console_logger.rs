@@ -109,7 +109,7 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     fn rundown(&mut self) {
         if self.no_console_log {
             self.output_ping_count_update_to_console(true);
-            return;
+            println!();
         }
 
         // Didn't received any result, skip output statistics.
