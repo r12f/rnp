@@ -1,21 +1,18 @@
 use crate::ping_clients::ping_client_tcp::PingClientTcp;
-use crate::{PingClient, PingClientConfig};
+use crate::{PingClient, PingClientConfig, RnpSupportedProtocol};
 use contracts::requires;
-use socket2::Protocol;
 
-#[requires(protocol == Protocol::TCP)]
-pub fn new(protocol: Protocol, config: &PingClientConfig) -> Box<dyn PingClient + Send + Sync> {
+#[requires(protocol == RnpSupportedProtocol::TCP)]
+pub fn new(protocol: RnpSupportedProtocol, config: &PingClientConfig) -> Box<dyn PingClient + Send + Sync> {
     match protocol {
-        Protocol::TCP => return Box::new(PingClientTcp::new(config)),
-        _ => panic!("Unexpected protocol type!"),
+        RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ping_clients::ping_client_factory::new;
-    use crate::PingClientConfig;
-    use socket2::Protocol;
+    use crate::{PingClientConfig, RnpSupportedProtocol};
     use std::time::Duration;
 
     #[test]
@@ -26,19 +23,7 @@ mod tests {
             use_fin_in_tcp_ping: false,
         };
 
-        let ping_client = new(Protocol::TCP, &config);
+        let ping_client = new(RnpSupportedProtocol::TCP, &config);
         assert_eq!("TCP", ping_client.protocol());
-    }
-
-    #[test]
-    #[should_panic]
-    fn create_udp_ping_client_should_panic() {
-        let config = PingClientConfig {
-            wait_timeout: Duration::from_millis(100),
-            time_to_live: Some(128),
-            use_fin_in_tcp_ping: false,
-        };
-
-        new(Protocol::UDP, &config);
     }
 }
