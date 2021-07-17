@@ -41,14 +41,13 @@ pub trait PingClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig};
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol};
     use futures_intrusive::sync::ManualResetEvent;
     use std::sync::Arc;
     use std::net::SocketAddr;
     use tide::prelude::*;
     use tide::Request;
     use tokio::runtime::Runtime;
-    use socket2::Protocol;
     use pretty_assertions::assert_eq;
 
     enum ExpectedTestCaseResult {
@@ -85,7 +84,7 @@ mod tests {
             time_to_live: None,
             use_fin_in_tcp_ping: false,
         };
-        let mut ping_client = ping_client_factory::new(Protocol::TCP, &config);
+        let mut ping_client = ping_client_factory::new(RnpSupportedProtocol::TCP, &config);
 
         // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
         let expected_results = ExpectedPingClientTestResults {

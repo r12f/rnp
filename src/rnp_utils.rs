@@ -1,14 +1,10 @@
-use socket2::Protocol;
 use std::fs::{self, File};
 use std::path::PathBuf;
+use crate::RnpSupportedProtocol;
 
-pub fn format_protocol(protocol: Protocol) -> &'static str {
+pub fn format_protocol(protocol: RnpSupportedProtocol) -> &'static str {
     match protocol {
-        Protocol::TCP => "TCP",
-        Protocol::UDP => "UDP",
-        Protocol::ICMPV4 => "ICMP",
-        Protocol::ICMPV6 => "ICMPv6",
-        _ => "Unknown,",
+        RnpSupportedProtocol::TCP => "TCP",
     }
 }
 

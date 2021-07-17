@@ -1,9 +1,5 @@
 use rand::Rng;
-use rnp::{
-    PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    RnpCoreConfig,
-};
-use socket2::Protocol;
+use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -188,7 +184,7 @@ impl RnpCliOptions {
     pub fn to_rnp_core_config(&self) -> RnpCoreConfig {
         let mut config = RnpCoreConfig {
             worker_config: PingWorkerConfig {
-                protocol: Protocol::TCP,
+                protocol: RnpSupportedProtocol::TCP,
                 target: self.target,
                 source_ip: self.source_ip,
                 ping_interval: Duration::from_millis(self.ping_interval_in_ms.into()),
@@ -234,11 +230,7 @@ impl RnpCliOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rnp::{
-        PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-        RnpCoreConfig,
-    };
-    use socket2::Protocol;
+    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol};
     use std::path::PathBuf;
     use std::time::Duration;
     use structopt::StructOpt;
@@ -389,7 +381,7 @@ mod tests {
         assert_eq!(
             RnpCoreConfig {
                 worker_config: PingWorkerConfig {
-                    protocol: Protocol::TCP,
+                    protocol: RnpSupportedProtocol::TCP,
                     target: "10.0.0.1:443".parse().unwrap(),
                     source_ip: "10.0.0.2".parse().unwrap(),
                     ping_interval: Duration::from_millis(1500),
@@ -445,7 +437,7 @@ mod tests {
         assert_eq!(
             RnpCoreConfig {
                 worker_config: PingWorkerConfig {
-                    protocol: Protocol::TCP,
+                    protocol: RnpSupportedProtocol::TCP,
                     target: "10.0.0.1:443".parse().unwrap(),
                     source_ip: "10.0.0.2".parse().unwrap(),
                     ping_interval: Duration::from_millis(1500),

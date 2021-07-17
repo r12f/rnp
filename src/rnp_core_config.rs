@@ -1,10 +1,14 @@
-use socket2::Protocol;
 use std::net::{IpAddr, SocketAddr};
 use std::{time::Duration, path::PathBuf};
 
 pub const RNP_NAME: &str = "rnp";
 pub const RNP_AUTHOR: &str = "r12f (r12f.com, github.com/r12f)";
 pub const RNP_ABOUT: &str = "A simple cloud-friendly tool for testing network reachability.";
+
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub enum RnpSupportedProtocol {
+    TCP,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RnpCoreConfig {
@@ -15,7 +19,7 @@ pub struct RnpCoreConfig {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PingWorkerConfig {
-    pub protocol: Protocol,
+    pub protocol: RnpSupportedProtocol,
     pub target: SocketAddr,
     pub source_ip: IpAddr,
     pub ping_interval: Duration,
