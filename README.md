@@ -1,4 +1,4 @@
-# Rnp - A simple cloud-friendly ping for testing network reachability.
+# Rnp - A simple layer 4 ping tool for cloud.
 [![Documentation](https://docs.rs/rnp/badge.svg)](https://docs.rs/rnp/)
 [![Build Status](https://riff.visualstudio.com/rnp/_apis/build/status/r12f.rnp?branchName=main)](https://riff.visualstudio.com/rnp/_build/latest?definitionId=5&branchName=main)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
@@ -11,7 +11,7 @@
 
 ```bash
 $ rnp 8.8.8.8:443 -r -l
-rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
+rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
 
 Start testing TCP 8.8.8.8:443:
 Reaching TCP 8.8.8.8:443 from 192.168.50.153:8940 succeeded: RTT=12.95ms
@@ -92,7 +92,7 @@ Ok, let's check some real cases to get started!
 The simplest case - regular TCP connect test. Works just like ping.
 ```bash
 rnp 8.8.8.8:443
-rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
+rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
 
 Start testing TCP 8.8.8.8:443:
 Reaching TCP 8.8.8.8:443 from 192.168.50.153:10401 succeeded: RTT=11.17ms
@@ -108,7 +108,7 @@ Reaching TCP 8.8.8.8:443 from 192.168.50.153:10404 succeeded: RTT=12.39ms
 Now let's make our ping faster by adding `-p 10` to spawn 10 workers and `-i 0` to remove the intervals we wait between each ping, then run 100 pings. And to avoid abusing our console, we disable the regular output (`-q`), enable the result scatter map (`-r`) and log the details to a json file for later use (`--log-json log.json`).
 ```bash
 $ rnp.exe 8.8.8.8:443 -p 10 -i 0 -n 100 -q -r --log-json log.json
-rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
+rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
 
 Start testing TCP 8.8.8.8:443:
 97 pings finished.
@@ -141,7 +141,7 @@ We will see the test will complete almost immediately, and the details will be l
 And now, we can see our ping failed on port 19653, then we can start a continuous ping to rerun the bad ports. And we can see a fairly high failure rate on this port as below.
 ```bash
 $ rnp.exe 8.8.8.8:443 --src-port 18282 -t
-rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
+rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
 
 Start testing TCP 8.8.8.8:443:
 Reaching TCP 8.8.8.8:443 from 192.168.50.153:18282 succeeded: RTT=11.65ms
@@ -159,7 +159,7 @@ $ $ports
 
 # Retry
 $ rnp.exe 8.8.8.8:443 --src-port $ports -t
-rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
+rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
 
 Start testing TCP 8.8.8.8:443:
 Reaching TCP 8.8.8.8:443 from 192.168.50.153:18284 succeeded: RTT=11.24ms
@@ -182,7 +182,7 @@ To see more on this tool, we can try `--help` option.
 $ rnp.exe --help
 rnp 0.1.0
 r12f (r12f.com, github.com/r12f)
-A simple cloud-friendly tool for testing network reachability.
+A simple layer 4 ping tool for cloud.
 
 USAGE:
     rnp.exe [FLAGS] [OPTIONS] <target>

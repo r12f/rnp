@@ -11,10 +11,10 @@
     <bugTrackerUrl>https://github.com/r12f/rnp/issues</bugTrackerUrl>
     <packageSourceUrl>https://github.com/r12f/rnp/blob/main/build/templates/chocolatey</packageSourceUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <summary>A simple cloud-friendly tool for testing network reachability.</summary>
+    <summary>A simple layer 4 ping tool for cloud.</summary>
     <tags>network utility ping tcpping tcp</tags>
     <description>
-Rnp is a simple cloud-friendly tool for testing network reachability.
+Rnp is A simple layer 4 ping tool for cloud.
 
 To see more on how to use it, please check our README in our project: https://github.com/r12f/rnp
     </description>
