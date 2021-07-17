@@ -3,4 +3,4 @@ pub mod ping_client;
 mod ping_client_tcp;
 
 #[cfg(test)]
-mod ping_client_tests;
+mod ping_client_test_common;

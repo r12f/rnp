@@ -64,3 +64,55 @@ impl PingClient for PingClientTcp {
         return self.ping_target(source, target);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol};
+    use futures_intrusive::sync::ManualResetEvent;
+    use std::sync::Arc;
+    use tide::prelude::*;
+    use tide::Request;
+    use tokio::runtime::Runtime;
+    use std::time::Duration;
+    use crate::ping_clients::ping_client_test_common::*;
+
+    #[test]
+    fn ping_client_tcp_should_work() {
+        let rt = Runtime::new().unwrap();
+
+        let ready_event = Arc::new(ManualResetEvent::new(false));
+        let ready_event_clone = ready_event.clone();
+        let _server = rt.spawn(async move {
+            let mut app = tide::new();
+            app.at("/test").get(valid_http_handler);
+            let mut listener = app.bind("127.0.0.1:11337").await.unwrap();
+            ready_event_clone.set();
+            listener.accept().await.unwrap_or_default();
+        });
+        rt.block_on(ready_event.wait());
+
+        let config = PingClientConfig {
+            wait_timeout: Duration::from_millis(300),
+            time_to_live: None,
+            use_fin_in_tcp_ping: false,
+        };
+        let mut ping_client = ping_client_factory::new(RnpSupportedProtocol::TCP, &config);
+
+        // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
+        let expected_results = ExpectedPingClientTestResults {
+            timeout_min_time: Duration::from_millis(200),
+            ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,
+            ping_non_existing_port_result: if cfg!(windows) {
+                ExpectedTestCaseResult::Timeout
+            } else {
+                ExpectedTestCaseResult::Failed("connection refused")
+            },
+            binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("preparation failed: The requested address is not valid in its context. (os error 10049)"),
+            binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("preparation failed: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
+        };
+
+        run_ping_client_tests(&mut ping_client, &expected_results);
+    }
+
+    async fn valid_http_handler(_req: Request<()>) -> tide::Result { Ok("It works!".into()) }
+}
