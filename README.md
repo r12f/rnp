@@ -9,8 +9,6 @@
 | Github release | [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?style=for-the-badge)](https://github.com/r12f/rnp/releases) |
 | Nuget packages | [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x86?style=for-the-badge&color=green&label=windows.x86)](https://www.nuget.org/packages/rnp.main.windows.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x64?style=for-the-badge&color=green&label=windows.x64)](https://www.nuget.org/packages/rnp.main.windows.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.arm64?style=for-the-badge&color=green&label=windows.arm64)](https://www.nuget.org/packages/rnp.main.windows.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x86?style=for-the-badge&color=green&label=linux.x86)](https://www.nuget.org/packages/rnp.main.linux.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x64?style=for-the-badge&color=green&label=linux.x64)](https://www.nuget.org/packages/rnp.main.linux.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm?style=for-the-badge&color=green&label=linux.arm)](https://www.nuget.org/packages/rnp.main.linux.arm/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=for-the-badge&color=green&label=linux.arm64)](https://www.nuget.org/packages/rnp.main.linux.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=for-the-badge&color=green&label=macos.x64)](https://www.nuget.org/packages/rnp.main.macos.x64/)|
 
-> **NOTE:** This project is in early stage and might not be stable yet.
-
 ```bash
 $ rnp 8.8.8.8:443 -r -l
 rnp - r12f (r12f.com, github.com/r12f) - A simple cloud-friendly tool for testing network reachability.
@@ -241,10 +239,6 @@ To build other targets, such as ARM64 on windows, we can use `--target` to speci
 ```bash
 $ cargo build --target=aarch64-pc-windows-msvc --release
 ```
-
-### Future plans and issue tracking
-- Maybe other protocol support? (ICMP is bad for checking all possible paths, because there are no variations for routing in the packet. And UDP has no uniformed handshake.).
-- ...
 
 ## Resources
 * [Equal-cost multi-path routing][ECMP]
