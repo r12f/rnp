@@ -222,7 +222,7 @@ mod tests {
                 assert!(actual_result.is_err());
                 assert!(actual_result.as_ref().err().is_some());
 
-                /// On windows, we will check the detailed failure.
+                // On windows, we will check the detailed failure.
                 if cfg!(windows) {
                     let actual_error: &str = &actual_result.as_ref().err().unwrap().to_string();
                     assert_eq!(*e, actual_error);
