@@ -1,9 +1,9 @@
-use crate::ping_clients::ping_client::PingClientPingResultDetails;
+use crate::ping_clients::ping_client::{PingClientPingResultDetails, PingClientError};
 use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWorkerConfig};
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
 use socket2::SockAddr;
-use std::{net::SocketAddr, sync::Arc, sync::Mutex, io};
+use std::{net::SocketAddr, sync::Arc, sync::Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
 use std::time::Duration;
 
@@ -32,8 +32,7 @@ impl PingWorker {
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let ping_client =
-                ping_client_factory::new(config.protocol, &config.ping_client_config);
+            let ping_client = ping_client_factory::new(config.protocol, &config.ping_client_config);
 
             let mut worker = PingWorker {
                 id: worker_id,
@@ -80,45 +79,16 @@ impl PingWorker {
         let target = SockAddr::from(self.config.target);
         let ping_time = Utc::now();
 
-        if let Err(prepare_error) = self.ping_client.prepare_for_ping(&source) {
-            self.process_ping_client_preparation_error(&ping_time, source_port, prepare_error).await;
-            return;
-        }
-
-        match self.ping_client.ping(&target) {
+        match self.ping_client.ping(&source, &target) {
             Ok(result) => {
                 self.process_ping_client_result(&ping_time, source_port, result)
                     .await
             }
-            Err(result) => {
-                self.process_ping_client_result(&ping_time, source_port, result)
+            Err(error) => {
+                self.process_ping_client_error(&ping_time, source_port, error)
                     .await
             }
         }
-    }
-
-    #[tracing::instrument(name = "Processing ping client single ping preparation error", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn process_ping_client_preparation_error(
-        &self,
-        ping_time: &DateTime<Utc>,
-        src_port: u16,
-        prepare_error: io::Error,
-    ) {
-        let source = SocketAddr::new(self.config.source_ip, src_port);
-
-        let result = PingResult::new(
-            ping_time,
-            self.id,
-            self.ping_client.protocol(),
-            self.config.target,
-            source,
-            self.is_warmup_worker,
-            Duration::from_millis(0),
-            Some(prepare_error),
-            true,
-        );
-
-        self.result_sender.send(result).await.unwrap();
     }
 
     #[tracing::instrument(name = "Processing ping client single ping result", level = "debug", skip(self), fields(worker_id = %self.id))]
@@ -143,8 +113,32 @@ impl PingWorker {
             source.unwrap(),
             self.is_warmup_worker,
             ping_result.round_trip_time,
-            ping_result.ping_error,
+            ping_result.is_timeout,
+            None,
+        );
+
+        self.result_sender.send(result).await.unwrap();
+    }
+
+    #[tracing::instrument(name = "Processing ping client single ping error", level = "debug", skip(self), fields(worker_id = %self.id))]
+    async fn process_ping_client_error(
+        &self,
+        ping_time: &DateTime<Utc>,
+        src_port: u16,
+        error: PingClientError,
+    ) {
+        let source = SocketAddr::new(self.config.source_ip, src_port);
+
+        let result = PingResult::new(
+            ping_time,
+            self.id,
+            self.ping_client.protocol(),
+            self.config.target,
+            source,
+            self.is_warmup_worker,
+            Duration::from_millis(0),
             false,
+            Some(error),
         );
 
         self.result_sender.send(result).await.unwrap();
