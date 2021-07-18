@@ -25,6 +25,8 @@ mod tests {
             time_to_live: Some(128),
             use_fin_in_tcp_ping: false,
             server_name: None,
+            log_tls_key: false,
+            alpn_protocol: None
         };
 
         let ping_client = new(RnpSupportedProtocol::TCP, &config);

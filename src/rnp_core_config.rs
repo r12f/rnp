@@ -53,6 +53,8 @@ pub struct PingClientConfig {
     pub time_to_live: Option<u32>,
     pub use_fin_in_tcp_ping: bool,
     pub server_name: Option<String>,
+    pub log_tls_key: bool,
+    pub alpn_protocol: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
