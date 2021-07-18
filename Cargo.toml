@@ -25,6 +25,7 @@ thiserror = "1.0.26"
 quinn = "0.7.2"
 rustls = { version = "*", features = ["dangerous_configuration", "quic"] }
 webpki = "0.21"
+async-trait = "0.1.50"
 
 [dev-dependencies]
 tide = "0.16.0"

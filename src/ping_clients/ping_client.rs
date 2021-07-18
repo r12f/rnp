@@ -1,5 +1,6 @@
 use std::time::Duration;
 use std::net::SocketAddr;
+use async_trait::async_trait;
 
 #[derive(Debug)]
 pub struct PingClientPingResultDetails {
@@ -33,7 +34,8 @@ pub enum PingClientError {
 
 pub type PingClientResult<T, E = PingClientError> = std::result::Result<T, E>;
 
+#[async_trait]
 pub trait PingClient {
     fn protocol(&self) -> &'static str;
-    fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails>;
+    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails>;
 }

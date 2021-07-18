@@ -78,7 +78,7 @@ impl PingWorker {
         let target = self.config.target;
         let ping_time = Utc::now();
 
-        match self.ping_client.ping(&source, &target) {
+        match self.ping_client.ping(&source, &target).await {
             Ok(result) => {
                 self.process_ping_client_result(&ping_time, source_port, result)
                     .await

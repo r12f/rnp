@@ -24,6 +24,7 @@ mod tests {
             wait_timeout: Duration::from_millis(100),
             time_to_live: Some(128),
             use_fin_in_tcp_ping: false,
+            server_name: None,
         };
 
         let ping_client = new(RnpSupportedProtocol::TCP, &config);

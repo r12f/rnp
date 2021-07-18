@@ -5,6 +5,7 @@ use rustls::ServerCertVerified;
 use std::sync::Arc;
 use std::time::Instant;
 use std::net::SocketAddr;
+use async_trait::async_trait;
 
 pub struct PingClientQuic {
     config: PingClientConfig,
@@ -17,14 +18,13 @@ impl PingClientQuic {
         };
     }
 
-    fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+    #[tracing::instrument(name = "Running QUIC ping in ping client", level = "debug", skip(self))]
+    async fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         let endpoint = self.create_quic_endpoint(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
-        let current_runtime = tokio::runtime::Handle::current();
-        return current_runtime.block_on(async move {
-            let ping_result = PingClientQuic::connect_to_target(&endpoint, source, target).await;
-            endpoint.wait_idle().await;
-            return ping_result;
-        });
+        let server_name = self.config.server_name.as_ref().map_or("", |s| &s);
+        let ping_result = PingClientQuic::connect_to_target(&endpoint, source, target, server_name).await;
+        endpoint.wait_idle().await;
+        return ping_result;
     }
 
     fn create_quic_endpoint(&self, source: &SocketAddr) -> Result<Endpoint, EndpointError> {
@@ -47,11 +47,9 @@ impl PingClientQuic {
         return Ok(endpoint);
     }
 
-    async fn connect_to_target(endpoint: &Endpoint, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
-        let server_name = target.to_string();
-
+    async fn connect_to_target(endpoint: &Endpoint, source: &SocketAddr, target: &SocketAddr, server_name: &str) -> PingClientResult<PingClientPingResultDetails> {
         let start_time = Instant::now();
-        let connecting = endpoint.connect(target, &server_name).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
+        let connecting = endpoint.connect(target,&server_name).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
         let connection = (connecting.await).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
         let rtt = Instant::now().duration_since(start_time);
 
@@ -63,13 +61,14 @@ impl PingClientQuic {
     }
 }
 
+#[async_trait]
 impl PingClient for PingClientQuic {
     fn protocol(&self) -> &'static str {
         "QUIC"
     }
 
-    fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
-        return self.ping_target(source, target);
+    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+        return self.ping_target(source, target).await;
     }
 }
 

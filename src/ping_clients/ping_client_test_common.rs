@@ -17,22 +17,22 @@ pub struct ExpectedPingClientTestResults {
     pub binding_unavailable_source_port_result: ExpectedTestCaseResult,
 }
 
-pub fn run_ping_client_tests(
+pub async fn run_ping_client_tests(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     expected_results: &ExpectedPingClientTestResults,
 ) {
     // TODO: This is failing on Linux and MAC, need to figure out why.
     if cfg!(windows) {
-        ping_client_should_work_when_pinging_good_host(ping_client, expected_results);
+        ping_client_should_work_when_pinging_good_host(ping_client, expected_results).await;
     }
 
-    ping_client_should_fail_when_pinging_non_existing_host(ping_client, expected_results);
-    ping_client_should_fail_when_pinging_non_existing_port(ping_client, expected_results);
-    ping_client_should_fail_when_binding_invalid_source_ip(ping_client, expected_results);
-    ping_client_should_fail_when_binding_unavailable_source_port(ping_client, expected_results);
+    ping_client_should_fail_when_pinging_non_existing_host(ping_client, expected_results).await;
+    ping_client_should_fail_when_pinging_non_existing_port(ping_client, expected_results).await;
+    ping_client_should_fail_when_binding_invalid_source_ip(ping_client, expected_results).await;
+    ping_client_should_fail_when_binding_unavailable_source_port(ping_client, expected_results).await;
 }
 
-fn ping_client_should_work_when_pinging_good_host(
+async fn ping_client_should_work_when_pinging_good_host(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     expected_results: &ExpectedPingClientTestResults,
 ) {
@@ -44,10 +44,10 @@ fn ping_client_should_work_when_pinging_good_host(
         &target,
         expected_results.timeout_min_time,
         &ExpectedTestCaseResult::Ok,
-    );
+    ).await;
 }
 
-fn ping_client_should_fail_when_pinging_non_existing_host(
+async fn ping_client_should_fail_when_pinging_non_existing_host(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     expected_results: &ExpectedPingClientTestResults,
 ) {
@@ -59,10 +59,10 @@ fn ping_client_should_fail_when_pinging_non_existing_host(
         &target,
         expected_results.timeout_min_time,
         &expected_results.ping_non_existing_host_result,
-    );
+    ).await;
 }
 
-fn ping_client_should_fail_when_pinging_non_existing_port(
+async fn ping_client_should_fail_when_pinging_non_existing_port(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     expected_results: &ExpectedPingClientTestResults,
 ) {
@@ -74,10 +74,10 @@ fn ping_client_should_fail_when_pinging_non_existing_port(
         &target,
         expected_results.timeout_min_time,
         &expected_results.ping_non_existing_port_result,
-    );
+    ).await;
 }
 
-fn ping_client_should_fail_when_binding_invalid_source_ip(
+async fn ping_client_should_fail_when_binding_invalid_source_ip(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     expected_results: &ExpectedPingClientTestResults,
 ) {
@@ -89,10 +89,10 @@ fn ping_client_should_fail_when_binding_invalid_source_ip(
         &target,
         expected_results.timeout_min_time,
         &expected_results.binding_invalid_source_ip_result,
-    );
+    ).await;
 }
 
-fn ping_client_should_fail_when_binding_unavailable_source_port(
+async fn ping_client_should_fail_when_binding_unavailable_source_port(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     expected_results: &ExpectedPingClientTestResults,
 ) {
@@ -104,17 +104,17 @@ fn ping_client_should_fail_when_binding_unavailable_source_port(
         &target,
         expected_results.timeout_min_time,
         &expected_results.binding_unavailable_source_port_result,
-    );
+    ).await;
 }
 
-fn ping_client_result_should_be_expected(
+async fn ping_client_result_should_be_expected(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
     source: &SocketAddr,
     target: &SocketAddr,
     timeout_min_time: Duration,
     expected_error: &ExpectedTestCaseResult,
 ) {
-    let actual_result = ping_client.ping(source, target);
+    let actual_result = ping_client.ping(source, target).await;
     match expected_error {
         ExpectedTestCaseResult::Ok => {
             assert!(actual_result.is_ok());

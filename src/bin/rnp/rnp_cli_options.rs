@@ -73,6 +73,9 @@ pub struct RnpCliOptions {
     )]
     pub parallel_ping_count: u32,
 
+    #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
+    pub server_name: Option<String>,
+
     #[structopt(
         short = "q",
         long,
@@ -195,6 +198,7 @@ impl RnpCliOptions {
                     wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
                     time_to_live: self.time_to_live,
                     use_fin_in_tcp_ping: self.use_fin_in_tcp_ping,
+                    server_name: self.server_name.as_ref().map_or(None, |s| Some(s.to_string())),
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -256,6 +260,7 @@ mod tests {
                 time_to_live: None,
                 use_fin_in_tcp_ping: false,
                 parallel_ping_count: 1,
+                server_name: None,
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -286,6 +291,7 @@ mod tests {
                 time_to_live: None,
                 use_fin_in_tcp_ping: false,
                 parallel_ping_count: 10,
+                server_name: None,
                 no_console_log: true,
                 csv_log_path: None,
                 json_log_path: None,
@@ -337,6 +343,7 @@ mod tests {
                 time_to_live: Some(128),
                 use_fin_in_tcp_ping: true,
                 parallel_ping_count: 10,
+                server_name: Some(String::from("localhost")),
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
@@ -371,6 +378,8 @@ mod tests {
                 "--use-fin",
                 "--parallel",
                 "10",
+                "--server-name",
+                "localhost",
                 "--no-console-log",
                 "--log-csv",
                 "log.csv",
@@ -399,6 +408,7 @@ mod tests {
                         wait_timeout: Duration::from_millis(1000),
                         time_to_live: Some(128),
                         use_fin_in_tcp_ping: false,
+                        server_name: None,
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -434,6 +444,7 @@ mod tests {
                 time_to_live: Some(128),
                 use_fin_in_tcp_ping: false,
                 parallel_ping_count: 1,
+                server_name: None,
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -456,6 +467,7 @@ mod tests {
                         wait_timeout: Duration::from_millis(2000),
                         time_to_live: Some(128),
                         use_fin_in_tcp_ping: true,
+                        server_name: Some(String::from("localhost")),
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -491,6 +503,7 @@ mod tests {
                 time_to_live: Some(128),
                 use_fin_in_tcp_ping: true,
                 parallel_ping_count: 1,
+                server_name: Some(String::from("localhost")),
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
