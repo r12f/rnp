@@ -160,7 +160,7 @@ stages:
     - bash: |
         sudo apt install libc6-dev:i386
       displayName: Install build tools for cross build
-      condition: and(succeeded(), ne(variables['target'], 'i686-unknown-linux-gnu'))
+      condition: and(succeeded(), eq(variables['target'], 'i686-unknown-linux-gnu'))
 
     #
     # Update version files and pack all source code for crate publishing
