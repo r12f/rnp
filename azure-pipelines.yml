@@ -153,7 +153,7 @@ stages:
       displayName: rustup install target
 
     - bash: |
-        sudo apt install gcc make gcc$(GCC_SUFFIX) binutils$(GCC_SUFFIX)
+        sudo apt install gcc make gcc$(GCC_SUFFIX) binutils$(GCC_SUFFIX) gcc-multilib
       displayName: Install build tools for cross build
       condition: and(succeeded(), ne(variables['gcc_suffix'], ''))
 

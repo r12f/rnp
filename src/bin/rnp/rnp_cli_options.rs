@@ -79,7 +79,7 @@ pub struct RnpCliOptions {
     #[structopt(long, help = "Enable key logger in TLS for helping packet capture. Please note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
     pub log_tls_key: bool,
 
-    #[structopt(long = "alpn", help = "ALPN protocol used in QUIC, it is usually h3 for http/3 or hq-<ver> for specific version of QUIC. For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
+    #[structopt(long = "alpn", help = "ALPN protocol used in QUIC, it is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC. For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
     pub alpn_protocol: Option<String>,
 
     #[structopt(
