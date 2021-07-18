@@ -10,6 +10,9 @@ use structopt::StructOpt;
 pub struct RnpCliOptions {
     pub target: SocketAddr,
 
+    #[structopt(short = "m", long = "mode", default_value = "TCP", help = "Specify protocol to use.")]
+    pub protocol: RnpSupportedProtocol,
+
     #[structopt(
         short = "s",
         long = "src-ip",
@@ -184,7 +187,7 @@ impl RnpCliOptions {
     pub fn to_rnp_core_config(&self) -> RnpCoreConfig {
         let mut config = RnpCoreConfig {
             worker_config: PingWorkerConfig {
-                protocol: RnpSupportedProtocol::TCP,
+                protocol: self.protocol,
                 target: self.target,
                 source_ip: self.source_ip,
                 ping_interval: Duration::from_millis(self.ping_interval_in_ms.into()),
@@ -240,6 +243,7 @@ mod tests {
         assert_eq!(
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::TCP,
                 source_ip: "0.0.0.0".parse().unwrap(),
                 source_port_min: None,
                 source_port_max: None,
@@ -269,6 +273,7 @@ mod tests {
         assert_eq!(
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::TCP,
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: None,
                 source_port_max: None,
@@ -292,6 +297,8 @@ mod tests {
             RnpCliOptions::from_iter(&[
                 "rnp.exe",
                 "10.0.0.1:443",
+                "-m",
+                "tcp",
                 "-s",
                 "10.0.0.2",
                 "-n",
@@ -317,6 +324,7 @@ mod tests {
         assert_eq!(
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::QUIC,
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2048),
@@ -340,6 +348,8 @@ mod tests {
             RnpCliOptions::from_iter(&[
                 "rnp.exe",
                 "10.0.0.1:443",
+                "--mode",
+                "quic",
                 "--src-ip",
                 "10.0.0.2",
                 "--src-port-min",
@@ -411,6 +421,7 @@ mod tests {
             },
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::TCP,
                 ping_count: 4,
                 ping_until_stopped: false,
                 warmup_count: 1,
@@ -437,7 +448,7 @@ mod tests {
         assert_eq!(
             RnpCoreConfig {
                 worker_config: PingWorkerConfig {
-                    protocol: RnpSupportedProtocol::TCP,
+                    protocol: RnpSupportedProtocol::QUIC,
                     target: "10.0.0.1:443".parse().unwrap(),
                     source_ip: "10.0.0.2".parse().unwrap(),
                     ping_interval: Duration::from_millis(1500),
@@ -467,6 +478,7 @@ mod tests {
             },
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::QUIC,
                 ping_count: 4,
                 ping_until_stopped: true,
                 warmup_count: 3,

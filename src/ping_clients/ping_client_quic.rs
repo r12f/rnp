@@ -1,24 +1,33 @@
-use crate::ping_clients::ping_client::{
-    PingClient, PingClientPingResult, PingClientPingResultDetails,
-};
+use crate::ping_clients::ping_client::{PingClient, PingClientPingResultDetails, PingClientResult, PingClientError};
 use crate::PingClientConfig;
-use contracts::{ensures, requires};
-use quinn::crypto::rustls::TlsSession;
-use quinn::{ClientConfig, ClientConfigBuilder, Endpoint, EndpointBuilder};
+use quinn::{ClientConfigBuilder, Endpoint, EndpointError};
 use rustls::ServerCertVerified;
-use socket2::{Domain, SockAddr, Socket, Type};
-use std::io;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
+use std::net::SocketAddr;
 
 pub struct PingClientQuic {
     config: PingClientConfig,
-    endpoint_builder: EndpointBuilder,
-    endpoint: Option<Endpoint>,
 }
 
 impl PingClientQuic {
     pub fn new(config: &PingClientConfig) -> PingClientQuic {
+        return PingClientQuic {
+            config: config.clone(),
+        };
+    }
+
+    fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+        let endpoint = self.create_quic_endpoint(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
+        let current_runtime = tokio::runtime::Handle::current();
+        return current_runtime.block_on(async move {
+            let ping_result = PingClientQuic::connect_to_target(&endpoint, source, target).await;
+            endpoint.wait_idle().await;
+            return ping_result;
+        });
+    }
+
+    fn create_quic_endpoint(&self, source: &SocketAddr) -> Result<Endpoint, EndpointError> {
         let mut client_config = ClientConfigBuilder::default().build();
         {
             let tls_cfg: &mut rustls::ClientConfig =
@@ -26,36 +35,31 @@ impl PingClientQuic {
             tls_cfg
                 .dangerous()
                 .set_certificate_verifier(Arc::new(SkipCertificationVerification));
+
+            let transport_config = Arc::get_mut(&mut client_config.transport).unwrap();
+            transport_config.max_idle_timeout(Some(self.config.wait_timeout)).unwrap();
         }
 
         let mut endpoint_builder = Endpoint::builder();
         endpoint_builder.default_client_config(client_config);
 
-        return PingClientQuic {
-            config: config.clone(),
-            endpoint_builder,
-            endpoint: None,
-        };
+        let (endpoint, _) = endpoint_builder.bind(source)?;
+        return Ok(endpoint);
     }
 
-    fn create_local_endpoint(&mut self, source: &SockAddr) -> io::Result<()> {
-        let source_addr = source.as_socket()?;
-        let (endpoint, _) = self.endpoint_builder.bind(&source_addr)?;
-        self.endpoint = Some(endpoint);
-        return Ok(());
-    }
-
-    async fn ping_target(&self, target: &SockAddr) -> PingClientPingResult {
-        let target_addr = target.as_socket().unwrap();
-        let server_name = target_addr.to_string();
+    async fn connect_to_target(endpoint: &Endpoint, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+        let server_name = target.to_string();
 
         let start_time = Instant::now();
-        let connecting = self.endpoint.as_ref().unwrap().connect(&target_addr, &server_name)?;
-        let connection = connecting.await?;
-        let _rtt = Instant::now().duration_since(start_time);
+        let connecting = endpoint.connect(target, &server_name).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
+        let connection = (connecting.await).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
+        let rtt = Instant::now().duration_since(start_time);
 
-        drop(connection);
-        self.endpoint.wait_idle().await;
+        let local_ip = connection.connection.local_ip();
+        return match local_ip{
+            Some(addr) => Ok(PingClientPingResultDetails::new(Some(SocketAddr::new(addr, source.port())), rtt, false)),
+            None => Ok(PingClientPingResultDetails::new(None, rtt, false)),
+        };
     }
 }
 
@@ -64,15 +68,8 @@ impl PingClient for PingClientQuic {
         "QUIC"
     }
 
-    #[ensures(ret.is_ok() -> self.socket.is_some())]
-    #[ensures(ret.is_err() -> self.socket.is_none())]
-    fn prepare_for_ping(&mut self, source: &SockAddr) -> io::Result<()> {
-        return self.create_local_endpoint(source);
-    }
-
-    #[requires(self.socket.is_some())]
-    fn ping(&self, target: &SockAddr) -> PingClientPingResult {
-        return self.ping_target(target);
+    fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+        return self.ping_target(source, target);
     }
 }
 

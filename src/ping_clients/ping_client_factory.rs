@@ -1,11 +1,14 @@
+use crate::ping_clients::ping_client_quic::PingClientQuic;
 use crate::ping_clients::ping_client_tcp::PingClientTcp;
 use crate::{PingClient, PingClientConfig, RnpSupportedProtocol};
-use contracts::requires;
 
-#[requires(protocol == RnpSupportedProtocol::TCP)]
-pub fn new(protocol: RnpSupportedProtocol, config: &PingClientConfig) -> Box<dyn PingClient + Send + Sync> {
+pub fn new(
+    protocol: RnpSupportedProtocol,
+    config: &PingClientConfig,
+) -> Box<dyn PingClient + Send + Sync> {
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
+        RnpSupportedProtocol::QUIC => return Box::new(PingClientQuic::new(config)),
     }
 }
 
