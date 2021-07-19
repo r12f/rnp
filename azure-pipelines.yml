@@ -66,8 +66,8 @@ stages:
           target: i686-unknown-linux-gnu
           target_short: linux.x86
           is_cross_compile: true
-          gcc_prefix: i686-linux-gnu-
-          gcc_suffix: -i686-linux-gnu
+          gcc_prefix: x86_64-linux-gnu-
+          gcc_suffix: -x86_64-linux-gnu
         linux-x64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -158,7 +158,7 @@ stages:
       condition: and(succeeded(), ne(variables['gcc_suffix'], ''))
 
     - bash: |
-        sudo apt install gcc-9-multilib$(GCC_SUFFIX)
+        sudo apt install gcc-multilib
       displayName: Install gcc multilib for linux x86 cross build
       condition: and(succeeded(), eq(variables['target'], 'i686-unknown-linux-gnu'))
 
