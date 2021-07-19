@@ -22,12 +22,12 @@ contracts = "0.6.0"
 chrono = "0.4"
 rand = "0.8"
 thiserror = "1.0.26"
-webpki = "0.21"
 async-trait = "0.1.50"
 
-[target.'cfg(all(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
+[target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
 quinn = "0.7.2"
 rustls = { version = "*", features = ["dangerous_configuration", "quic"] }
+webpki = "0.21"
 
 [dev-dependencies]
 tide = "0.16.0"
