@@ -5,6 +5,7 @@ use crate::RnpSupportedProtocol;
 pub fn format_protocol(protocol: RnpSupportedProtocol) -> &'static str {
     match protocol {
         RnpSupportedProtocol::TCP => "TCP",
+        RnpSupportedProtocol::QUIC => "QUIC",
     }
 }
 

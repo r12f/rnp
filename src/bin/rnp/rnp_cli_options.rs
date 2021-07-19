@@ -10,6 +10,9 @@ use structopt::StructOpt;
 pub struct RnpCliOptions {
     pub target: SocketAddr,
 
+    #[structopt(short = "m", long = "mode", default_value = "TCP", help = "Specify protocol to use.")]
+    pub protocol: RnpSupportedProtocol,
+
     #[structopt(
         short = "s",
         long = "src-ip",
@@ -69,6 +72,15 @@ pub struct RnpCliOptions {
         help = "Count of pings running in parallel."
     )]
     pub parallel_ping_count: u32,
+
+    #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
+    pub server_name: Option<String>,
+
+    #[structopt(long, help = "Enable key logger in TLS for helping packet capture. Please note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
+    pub log_tls_key: bool,
+
+    #[structopt(long = "alpn", help = "ALPN protocol used in QUIC, it is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC. For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
+    pub alpn_protocol: Option<String>,
 
     #[structopt(
         short = "q",
@@ -184,7 +196,7 @@ impl RnpCliOptions {
     pub fn to_rnp_core_config(&self) -> RnpCoreConfig {
         let mut config = RnpCoreConfig {
             worker_config: PingWorkerConfig {
-                protocol: RnpSupportedProtocol::TCP,
+                protocol: self.protocol,
                 target: self.target,
                 source_ip: self.source_ip,
                 ping_interval: Duration::from_millis(self.ping_interval_in_ms.into()),
@@ -192,6 +204,9 @@ impl RnpCliOptions {
                     wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
                     time_to_live: self.time_to_live,
                     use_fin_in_tcp_ping: self.use_fin_in_tcp_ping,
+                    server_name: self.server_name.as_ref().and_then(|s| Some(s.to_string())),
+                    log_tls_key: self.log_tls_key,
+                    alpn_protocol: self.alpn_protocol.as_ref().and_then(|s| Some(s.to_string())),
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -212,10 +227,7 @@ impl RnpCliOptions {
                 text_log_path: self.text_log_path.clone(),
                 show_result_scatter: self.show_result_scatter,
                 show_latency_scatter: self.show_latency_scatter,
-                latency_buckets: match &self.latency_buckets {
-                    Some(buckets) => Some(buckets.clone()),
-                    None => None,
-                },
+                latency_buckets: self.latency_buckets.as_ref().and_then(|buckets| Some(buckets.clone())),
             },
         };
 
@@ -240,6 +252,7 @@ mod tests {
         assert_eq!(
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::TCP,
                 source_ip: "0.0.0.0".parse().unwrap(),
                 source_port_min: None,
                 source_port_max: None,
@@ -252,6 +265,9 @@ mod tests {
                 time_to_live: None,
                 use_fin_in_tcp_ping: false,
                 parallel_ping_count: 1,
+                server_name: None,
+                log_tls_key: false,
+                alpn_protocol: None,
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -269,6 +285,7 @@ mod tests {
         assert_eq!(
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::TCP,
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: None,
                 source_port_max: None,
@@ -281,6 +298,9 @@ mod tests {
                 time_to_live: None,
                 use_fin_in_tcp_ping: false,
                 parallel_ping_count: 10,
+                server_name: None,
+                log_tls_key: false,
+                alpn_protocol: None,
                 no_console_log: true,
                 csv_log_path: None,
                 json_log_path: None,
@@ -292,6 +312,8 @@ mod tests {
             RnpCliOptions::from_iter(&[
                 "rnp.exe",
                 "10.0.0.1:443",
+                "-m",
+                "tcp",
                 "-s",
                 "10.0.0.2",
                 "-n",
@@ -317,6 +339,7 @@ mod tests {
         assert_eq!(
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::QUIC,
                 source_ip: "10.0.0.2".parse().unwrap(),
                 source_port_min: Some(1024),
                 source_port_max: Some(2048),
@@ -329,6 +352,9 @@ mod tests {
                 time_to_live: Some(128),
                 use_fin_in_tcp_ping: true,
                 parallel_ping_count: 10,
+                server_name: Some(String::from("localhost")),
+                log_tls_key: true,
+                alpn_protocol: Some(String::from("hq-29")),
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
@@ -340,6 +366,8 @@ mod tests {
             RnpCliOptions::from_iter(&[
                 "rnp.exe",
                 "10.0.0.1:443",
+                "--mode",
+                "quic",
                 "--src-ip",
                 "10.0.0.2",
                 "--src-port-min",
@@ -361,6 +389,11 @@ mod tests {
                 "--use-fin",
                 "--parallel",
                 "10",
+                "--server-name",
+                "localhost",
+                "--log-tls-key",
+                "--alpn",
+                "hq-29",
                 "--no-console-log",
                 "--log-csv",
                 "log.csv",
@@ -389,6 +422,9 @@ mod tests {
                         wait_timeout: Duration::from_millis(1000),
                         time_to_live: Some(128),
                         use_fin_in_tcp_ping: false,
+                        server_name: None,
+                        log_tls_key: false,
+                        alpn_protocol: None
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -411,6 +447,7 @@ mod tests {
             },
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::TCP,
                 ping_count: 4,
                 ping_until_stopped: false,
                 warmup_count: 1,
@@ -423,6 +460,9 @@ mod tests {
                 time_to_live: Some(128),
                 use_fin_in_tcp_ping: false,
                 parallel_ping_count: 1,
+                server_name: None,
+                log_tls_key: false,
+                alpn_protocol: None,
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -437,7 +477,7 @@ mod tests {
         assert_eq!(
             RnpCoreConfig {
                 worker_config: PingWorkerConfig {
-                    protocol: RnpSupportedProtocol::TCP,
+                    protocol: RnpSupportedProtocol::QUIC,
                     target: "10.0.0.1:443".parse().unwrap(),
                     source_ip: "10.0.0.2".parse().unwrap(),
                     ping_interval: Duration::from_millis(1500),
@@ -445,6 +485,9 @@ mod tests {
                         wait_timeout: Duration::from_millis(2000),
                         time_to_live: Some(128),
                         use_fin_in_tcp_ping: true,
+                        server_name: Some(String::from("localhost")),
+                        log_tls_key: true,
+                        alpn_protocol: Some(String::from("h3")),
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -467,6 +510,7 @@ mod tests {
             },
             RnpCliOptions {
                 target: "10.0.0.1:443".parse().unwrap(),
+                protocol: RnpSupportedProtocol::QUIC,
                 ping_count: 4,
                 ping_until_stopped: true,
                 warmup_count: 3,
@@ -479,6 +523,9 @@ mod tests {
                 time_to_live: Some(128),
                 use_fin_in_tcp_ping: true,
                 parallel_ping_count: 1,
+                server_name: Some(String::from("localhost")),
+                log_tls_key: true,
+                alpn_protocol: Some(String::from("h3")),
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),

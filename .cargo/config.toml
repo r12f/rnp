@@ -1,5 +1,5 @@
 [target.i686-unknown-linux-gnu]
-linker = "i686-linux-gnu-gcc"
+linker = "x86_64-linux-gnu-gcc"
 
 [target.arm-unknown-linux-gnueabi]
 linker = "arm-linux-gnueabi-gcc"

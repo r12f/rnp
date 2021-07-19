@@ -4,6 +4,7 @@ use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
 use std::time::{Duration, Instant};
 use std::net::SocketAddr;
+use async_trait::async_trait;
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -16,6 +17,7 @@ impl PingClientTcp {
         };
     }
 
+    #[tracing::instrument(name = "Running TCP ping in ping client", level = "debug", skip(self))]
     fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         let socket = self.prepare_socket_for_ping(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
 
@@ -55,12 +57,13 @@ impl PingClientTcp {
     }
 }
 
+#[async_trait]
 impl PingClient for PingClientTcp {
     fn protocol(&self) -> &'static str {
         "TCP"
     }
 
-    fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         return self.ping_target(source, target);
     }
 }
@@ -91,27 +94,32 @@ mod tests {
         });
         rt.block_on(ready_event.wait());
 
-        let config = PingClientConfig {
-            wait_timeout: Duration::from_millis(300),
-            time_to_live: None,
-            use_fin_in_tcp_ping: false,
-        };
-        let mut ping_client = ping_client_factory::new(RnpSupportedProtocol::TCP, &config);
+        rt.block_on(async {
+            let config = PingClientConfig {
+                wait_timeout: Duration::from_millis(300),
+                time_to_live: None,
+                use_fin_in_tcp_ping: false,
+                server_name: None,
+                log_tls_key: false,
+                alpn_protocol: None
+            };
+            let mut ping_client = ping_client_factory::new(RnpSupportedProtocol::TCP, &config);
 
-        // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
-        let expected_results = ExpectedPingClientTestResults {
-            timeout_min_time: Duration::from_millis(200),
-            ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,
-            ping_non_existing_port_result: if cfg!(windows) {
-                ExpectedTestCaseResult::Timeout
-            } else {
-                ExpectedTestCaseResult::Failed("connection refused")
-            },
-            binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)"),
-            binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
-        };
+            // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
+            let expected_results = ExpectedPingClientTestResults {
+                timeout_min_time: Duration::from_millis(200),
+                ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,
+                ping_non_existing_port_result: if cfg!(windows) {
+                    ExpectedTestCaseResult::Timeout
+                } else {
+                    ExpectedTestCaseResult::Failed("connection refused")
+                },
+                binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)"),
+                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
+            };
 
-        run_ping_client_tests(&mut ping_client, &expected_results);
+            run_ping_client_tests(&mut ping_client, &expected_results).await;
+        });
     }
 
     async fn valid_http_handler(_req: Request<()>) -> tide::Result { Ok("It works!".into()) }
