@@ -153,14 +153,14 @@ stages:
       displayName: rustup install target
 
     - bash: |
+        sudo apt install gcc-multilib
+      displayName: Install gcc multilib for linux x86 cross build
+      condition: and(succeeded(), eq(variables['target'], 'i686-unknown-linux-gnu'))
+
+    - bash: |
         sudo apt install gcc make gcc$(GCC_SUFFIX) binutils$(GCC_SUFFIX)
       displayName: Install build tools for cross build
       condition: and(succeeded(), ne(variables['gcc_suffix'], ''))
-
-    - bash: |
-        sudo apt install libc6-dev:i386
-      displayName: Install build tools for cross build
-      condition: and(succeeded(), eq(variables['target'], 'i686-unknown-linux-gnu'))
 
     #
     # Update version files and pack all source code for crate publishing
