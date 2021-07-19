@@ -1,6 +1,8 @@
-use crate::ping_clients::ping_client_quic::PingClientQuic;
-use crate::ping_clients::ping_client_tcp::PingClientTcp;
 use crate::{PingClient, PingClientConfig, RnpSupportedProtocol};
+use crate::ping_clients::ping_client_tcp::PingClientTcp;
+
+#[cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))]
+use crate::ping_clients::ping_client_quic::PingClientQuic;
 
 pub fn new(
     protocol: RnpSupportedProtocol,
@@ -8,7 +10,13 @@ pub fn new(
 ) -> Box<dyn PingClient + Send + Sync> {
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
-        RnpSupportedProtocol::QUIC => return Box::new(PingClientQuic::new(config)),
+        RnpSupportedProtocol::QUIC => {
+            if cfg!(any(not(target_os = "windows"), not(target_arch = "aarch64"))) {
+                return Box::new(PingClientQuic::new(config));
+            } else {
+                panic!("Sorry, QUIC is not supported yet for Windows ARM64.");
+            }
+        },
     }
 }
 
