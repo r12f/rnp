@@ -76,11 +76,11 @@ pub struct RnpCliOptions {
     #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
     pub server_name: Option<String>,
 
-    #[structopt(long, help = "Enable key logger in TLS for helping packet capture. Please note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
+    #[structopt(long, help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
     pub log_tls_key: bool,
 
-    #[structopt(long = "alpn", help = "ALPN protocol used in QUIC, it is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC. For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
-    pub alpn_protocol: Option<String>,
+    #[structopt(long = "alpn", default_value = "h3-29", help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
+    pub alpn_protocol: String,
 
     #[structopt(
         short = "q",
@@ -146,6 +146,7 @@ impl RnpCliOptions {
                 _ => panic!("Source IP and Target IP are not both IPv4 or IPv6!"),
             }
         }
+
         if self.source_port_min.is_none() {
             self.source_port_min = Some(rand::thread_rng().gen_range(10000..30000));
         }
@@ -206,7 +207,11 @@ impl RnpCliOptions {
                     use_fin_in_tcp_ping: self.use_fin_in_tcp_ping,
                     server_name: self.server_name.as_ref().and_then(|s| Some(s.to_string())),
                     log_tls_key: self.log_tls_key,
-                    alpn_protocol: self.alpn_protocol.as_ref().and_then(|s| Some(s.to_string())),
+                    alpn_protocol: if self.alpn_protocol.to_uppercase() != String::from("NONE") {
+                        Some(self.alpn_protocol.clone())
+                    } else {
+                        None
+                    },
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -267,7 +272,7 @@ mod tests {
                 parallel_ping_count: 1,
                 server_name: None,
                 log_tls_key: false,
-                alpn_protocol: None,
+                alpn_protocol: String::from("h3-29"),
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -300,7 +305,7 @@ mod tests {
                 parallel_ping_count: 10,
                 server_name: None,
                 log_tls_key: false,
-                alpn_protocol: None,
+                alpn_protocol: String::from("h3-29"),
                 no_console_log: true,
                 csv_log_path: None,
                 json_log_path: None,
@@ -354,7 +359,7 @@ mod tests {
                 parallel_ping_count: 10,
                 server_name: Some(String::from("localhost")),
                 log_tls_key: true,
-                alpn_protocol: Some(String::from("hq-29")),
+                alpn_protocol: String::from("hq-29"),
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
@@ -462,7 +467,7 @@ mod tests {
                 parallel_ping_count: 1,
                 server_name: None,
                 log_tls_key: false,
-                alpn_protocol: None,
+                alpn_protocol: String::from("none"),
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -525,7 +530,7 @@ mod tests {
                 parallel_ping_count: 1,
                 server_name: Some(String::from("localhost")),
                 log_tls_key: true,
-                alpn_protocol: Some(String::from("h3")),
+                alpn_protocol: String::from("h3"),
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
