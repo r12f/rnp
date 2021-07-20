@@ -330,11 +330,11 @@ mod tests {
                 false,
                 Duration::from_millis(20),
                 false,
+                None,
                 Some(Box::new(io::Error::new(
                     io::ErrorKind::ConnectionAborted,
                     "connect aborted",
                 ))),
-                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -345,11 +345,11 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
-                None,
                 Some(PingFailed(Box::new(io::Error::new(
                     io::ErrorKind::ConnectionRefused,
                     "connect failed",
                 )))),
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -360,11 +360,11 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
-                None,
                 Some(PreparationFailed(Box::new(io::Error::new(
                     io::ErrorKind::AddrInUse,
                     "address in use",
                 )))),
+                None,
             ),
         ]
     }
