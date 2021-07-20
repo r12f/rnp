@@ -143,6 +143,10 @@ impl PingResult {
     }
 
     pub fn format_as_json_string(&self) -> String {
+        let ping_warning = self.warning().as_ref().map_or(String::from(""), |e| {
+            e.to_string()
+        });
+
         let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
             if let PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
         });
@@ -152,7 +156,7 @@ impl PingResult {
         });
 
         let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\"}}",
+            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"pingWarning\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\"}}",
             self.ping_time(),
             self.protocol(),
             self.worker_id(),
@@ -163,6 +167,7 @@ impl PingResult {
             self.is_warmup(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
+            ping_warning,
             preparation_error,
             ping_error,
         );
@@ -171,6 +176,10 @@ impl PingResult {
     }
 
     pub fn format_as_csv_string(&self) -> String {
+        let ping_warning = self.warning().as_ref().map_or(String::from(""), |e| {
+            e.to_string()
+        });
+
         let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
             if let PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
         });
@@ -180,7 +189,7 @@ impl PingResult {
         });
 
         let csv = format!(
-            "{:?},{},{},{},{},{},{},{},{:.2},{},\"{}\",\"{}\"",
+            "{:?},{},{},{},{},{},{},{},{:.2},{},\"{}\",\"{}\",\"{}\"",
             self.ping_time(),
             self.worker_id(),
             self.protocol(),
@@ -191,6 +200,7 @@ impl PingResult {
             self.is_warmup(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
+            ping_warning,
             preparation_error,
             ping_error,
         );
@@ -257,10 +267,11 @@ mod tests {
         let results = generate_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"pingWarning\":\"\",\"preparationError\":\"\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"pingWarning\":\"\",\"preparationError\":\"\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"pingWarning\":\"connect aborted\",\"preparationError\":\"\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"pingWarning\":\"\",\"preparationError\":\"\",\"pingError\":\"connect failed\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"pingWarning\":\"\",\"preparationError\":\"address in use\",\"pingError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
@@ -271,10 +282,11 @@ mod tests {
         let results = generate_test_samples();
         assert_eq!(
             vec![
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,1000.00,true,\"\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"connect failed\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"address in use\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,1000.00,true,\"\",\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,20.00,false,\"connect aborted\",\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"\",\"connect failed\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"address in use\",\"\"",
             ],
             results
                 .into_iter()
@@ -317,7 +329,7 @@ mod tests {
                 "5.6.7.8:8080".parse().unwrap(),
                 false,
                 Duration::from_millis(20),
-                true,
+                false,
                 Some(Box::new(io::Error::new(
                     io::ErrorKind::ConnectionAborted,
                     "connect aborted",

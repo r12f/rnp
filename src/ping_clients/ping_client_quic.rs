@@ -92,20 +92,14 @@ impl PingClientQuic {
             Err(e) => match e {
                 ConnectionError::TimedOut => Err(PingClientError::PingFailed(Box::new(e))),
                 ConnectionError::LocallyClosed => Err(PingClientError::PingFailed(Box::new(e))),
-                _ => return Ok(PingClientPingResultDetails::new(None, rtt, false, Some(Box::new(e)))),
+                _ => {
+                    return Ok(PingClientPingResultDetails::new(None, rtt, false, Some(Box::new(e))))
+                },
             }
         }?;
 
-        let local_ip = connection.connection.local_ip();
-        return match local_ip {
-            Some(addr) => Ok(PingClientPingResultDetails::new(
-                Some(SocketAddr::new(addr, source.port())),
-                rtt,
-                false,
-                None,
-            )),
-            None => Ok(PingClientPingResultDetails::new(None, rtt, false, None)),
-        };
+        let local_ip = connection.connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
+        return Ok(PingClientPingResultDetails::new(local_ip, rtt, false, None));
     }
 }
 
