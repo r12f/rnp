@@ -241,6 +241,7 @@ mod tests {
             vec![
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 (warmup) succeeded: RTT=10.00ms",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: Timed out, RTT = 1000.00ms",
+                "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 succeeded with warning: RTT=20.00ms, Warning = connect aborted",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: connect failed",
                 "Unable to perform ping to TCP 1.2.3.4:443 from 5.6.7.8:8080, because failed preparing to ping: Error = address in use",
             ],
@@ -306,6 +307,21 @@ mod tests {
                 Duration::from_millis(1000),
                 true,
                 None,
+                None,
+            ),
+            PingResult::new(
+                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                1,
+                "TCP",
+                "1.2.3.4:443".parse().unwrap(),
+                "5.6.7.8:8080".parse().unwrap(),
+                false,
+                Duration::from_millis(20),
+                true,
+                Some(Box::new(io::Error::new(
+                    io::ErrorKind::ConnectionAborted,
+                    "connect aborted",
+                ))),
                 None,
             ),
             PingResult::new(
