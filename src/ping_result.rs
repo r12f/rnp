@@ -12,6 +12,7 @@ pub struct PingResult {
     is_warmup: bool,
     round_trip_time: Duration,
     is_timed_out: bool,
+    warning: Option<Box<dyn std::error::Error + Send>>,
     error: Option<PingClientError>,
 }
 
@@ -25,6 +26,7 @@ impl PingResult {
         is_warmup: bool,
         round_trip_time: Duration,
         is_timed_out: bool,
+        warning: Option<Box<dyn std::error::Error + Send>>,
         error: Option<PingClientError>,
     ) -> PingResult {
         PingResult {
@@ -36,6 +38,7 @@ impl PingResult {
             is_warmup,
             round_trip_time,
             is_timed_out,
+            warning,
             error,
         }
     }
@@ -63,6 +66,9 @@ impl PingResult {
     }
     pub fn is_timed_out(&self) -> bool {
         self.is_timed_out
+    }
+    pub fn warning(&self) -> &Option<Box<dyn std::error::Error + Send>> {
+        &self.warning
     }
     pub fn error(&self) -> &Option<PingClientError> {
         &self.error
@@ -112,6 +118,18 @@ impl PingResult {
                     )
                 }
             };
+        }
+
+        if let Some(warning) = self.warning() {
+            return format!(
+                "Reaching {} {} from {}{} succeeded with warning: RTT={:.2}ms, Warning = {}",
+                self.protocol(),
+                self.target(),
+                self.source(),
+                warmup_sign,
+                self.round_trip_time().as_micros() as f64 / 1000.0,
+                warning,
+            );
         }
 
         return format!(
@@ -204,6 +222,7 @@ mod tests {
             Duration::from_millis(10),
             false,
             None,
+            None,
         );
 
         assert_eq!(1, r.worker_id());
@@ -275,6 +294,7 @@ mod tests {
                 Duration::from_millis(10),
                 false,
                 None,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -286,6 +306,7 @@ mod tests {
                 Duration::from_millis(1000),
                 true,
                 None,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -296,6 +317,7 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
+                None,
                 Some(PingFailed(Box::new(io::Error::new(
                     io::ErrorKind::ConnectionRefused,
                     "connect failed",
@@ -310,6 +332,7 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
+                None,
                 Some(PreparationFailed(Box::new(io::Error::new(
                     io::ErrorKind::AddrInUse,
                     "address in use",

@@ -127,6 +127,7 @@ mod tests {
                 Duration::from_millis(10),
                 false,
                 None,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -138,6 +139,7 @@ mod tests {
                 Duration::from_millis(1000),
                 true,
                 None,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -148,6 +150,7 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
+                None,
                 Some(PingFailed(Box::new(io::Error::new(
                     io::ErrorKind::ConnectionRefused,
                     "connect failed",
@@ -162,6 +165,7 @@ mod tests {
                 false,
                 Duration::from_millis(0),
                 false,
+                None,
                 Some(PreparationFailed(Box::new(io::Error::new(
                     io::ErrorKind::AddrInUse,
                     "address in use",
