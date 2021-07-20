@@ -211,14 +211,12 @@ impl PingResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::ping_clients::ping_client::PingClientError::{PingFailed, PreparationFailed};
     use crate::ping_result::PingResult;
-    use chrono::prelude::*;
     use chrono::Utc;
     use pretty_assertions::assert_eq;
-    use std::io;
     use std::net::SocketAddr;
     use std::time::Duration;
+    use crate::rnp_test_utils;
 
     #[test]
     fn new_ping_result_should_work() {
@@ -246,7 +244,7 @@ mod tests {
 
     #[test]
     fn format_ping_result_as_log_should_work() {
-        let results = generate_test_samples();
+        let results = rnp_test_utils::generate_ping_result_test_samples();
         assert_eq!(
             vec![
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 (warmup) succeeded: RTT=10.00ms",
@@ -264,7 +262,7 @@ mod tests {
 
     #[test]
     fn format_ping_result_as_json_should_work() {
-        let results = generate_test_samples();
+        let results = rnp_test_utils::generate_ping_result_test_samples();
         assert_eq!(
             vec![
                 "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
@@ -279,7 +277,7 @@ mod tests {
 
     #[test]
     fn format_ping_result_as_csv_should_work() {
-        let results = generate_test_samples();
+        let results = rnp_test_utils::generate_ping_result_test_samples();
         assert_eq!(
             vec![
                 "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",\"\",\"\"",
@@ -293,79 +291,5 @@ mod tests {
                 .map(|x| x.format_as_csv_string())
                 .collect::<Vec<String>>()
         );
-    }
-
-    fn generate_test_samples() -> Vec<PingResult> {
-        vec![
-            PingResult::new(
-                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
-                1,
-                "TCP",
-                "1.2.3.4:443".parse().unwrap(),
-                "5.6.7.8:8080".parse().unwrap(),
-                true,
-                Duration::from_millis(10),
-                false,
-                None,
-                None,
-            ),
-            PingResult::new(
-                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
-                1,
-                "TCP",
-                "1.2.3.4:443".parse().unwrap(),
-                "5.6.7.8:8080".parse().unwrap(),
-                false,
-                Duration::from_millis(1000),
-                true,
-                None,
-                None,
-            ),
-            PingResult::new(
-                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
-                1,
-                "TCP",
-                "1.2.3.4:443".parse().unwrap(),
-                "5.6.7.8:8080".parse().unwrap(),
-                false,
-                Duration::from_millis(20),
-                false,
-                None,
-                Some(Box::new(io::Error::new(
-                    io::ErrorKind::ConnectionAborted,
-                    "connect aborted",
-                ))),
-            ),
-            PingResult::new(
-                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
-                1,
-                "TCP",
-                "1.2.3.4:443".parse().unwrap(),
-                "5.6.7.8:8080".parse().unwrap(),
-                false,
-                Duration::from_millis(0),
-                false,
-                Some(PingFailed(Box::new(io::Error::new(
-                    io::ErrorKind::ConnectionRefused,
-                    "connect failed",
-                )))),
-                None,
-            ),
-            PingResult::new(
-                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
-                1,
-                "TCP",
-                "1.2.3.4:443".parse().unwrap(),
-                "5.6.7.8:8080".parse().unwrap(),
-                false,
-                Duration::from_millis(0),
-                false,
-                Some(PreparationFailed(Box::new(io::Error::new(
-                    io::ErrorKind::AddrInUse,
-                    "address in use",
-                )))),
-                None,
-            ),
-        ]
     }
 }

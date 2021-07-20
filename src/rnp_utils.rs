@@ -1,13 +1,5 @@
 use std::fs::{self, File};
 use std::path::PathBuf;
-use crate::RnpSupportedProtocol;
-
-pub fn format_protocol(protocol: RnpSupportedProtocol) -> &'static str {
-    match protocol {
-        RnpSupportedProtocol::TCP => "TCP",
-        RnpSupportedProtocol::QUIC => "QUIC",
-    }
-}
 
 pub fn create_log_file(log_path_buf: &PathBuf) -> File {
     let log_path = log_path_buf.as_path();
