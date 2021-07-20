@@ -113,6 +113,7 @@ impl PingWorker {
             ping_result.round_trip_time,
             ping_result.is_timeout,
             None,
+            ping_result.handshake_error,
         );
 
         self.result_sender.send(result).await.unwrap();
@@ -137,6 +138,7 @@ impl PingWorker {
             Duration::from_millis(0),
             false,
             Some(error),
+            None,
         );
 
         self.result_sender.send(result).await.unwrap();

@@ -127,6 +127,7 @@ mod tests {
                 Duration::from_millis(10),
                 false,
                 None,
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -138,6 +139,22 @@ mod tests {
                 Duration::from_millis(1000),
                 true,
                 None,
+                None,
+            ),
+            PingResult::new(
+                &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                1,
+                "TCP",
+                "1.2.3.4:443".parse().unwrap(),
+                "5.6.7.8:8080".parse().unwrap(),
+                false,
+                Duration::from_millis(20),
+                false,
+                None,
+                Some(Box::new(io::Error::new(
+                    io::ErrorKind::ConnectionAborted,
+                    "connect aborted",
+                ))),
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -152,6 +169,7 @@ mod tests {
                     io::ErrorKind::ConnectionRefused,
                     "connect failed",
                 )))),
+                None,
             ),
             PingResult::new(
                 &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -166,6 +184,7 @@ mod tests {
                     io::ErrorKind::AddrInUse,
                     "address in use",
                 )))),
+                None,
             ),
         ];
 
@@ -175,7 +194,7 @@ mod tests {
             .iter()
             .for_each(|x| logger.update_statistics(x));
 
-        assert_eq!(3, logger.total_hit_count);
+        assert_eq!(4, logger.total_hit_count);
         assert_eq!(1, logger.timed_out_hit_count);
         assert_eq!(1, logger.failed_hit_count);
     }

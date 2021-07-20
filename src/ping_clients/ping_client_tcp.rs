@@ -27,7 +27,7 @@ impl PingClientTcp {
         match connect_result {
             // Timeout is an expected value instead of an actual failure, so here we should return Ok.
             Err(e) if e.kind() == io::ErrorKind::TimedOut => {
-                return Ok(PingClientPingResultDetails::new(None, rtt, true))
+                return Ok(PingClientPingResultDetails::new(None, rtt, true, None))
             }
             Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
             Ok(()) => (),
@@ -37,8 +37,8 @@ impl PingClientTcp {
         // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
         let local_addr = socket.local_addr();
         return match local_addr {
-            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false)),
-            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false)),
+            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false, None)),
+            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false, None)),
         };
     }
 

@@ -3,7 +3,7 @@ use crate::ping_clients::ping_client::{
 };
 use crate::PingClientConfig;
 use async_trait::async_trait;
-use quinn::{ClientConfigBuilder, Endpoint, EndpointError};
+use quinn::{ClientConfigBuilder, Endpoint, EndpointError, ConnectionError};
 use rustls::ServerCertVerified;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -77,22 +77,29 @@ impl PingClientQuic {
         server_name: &str,
     ) -> PingClientResult<PingClientPingResultDetails> {
         let start_time = Instant::now();
+
         let connecting = endpoint
             .connect(target, &server_name)
             .map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
-        let connection =
-            (connecting.await).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
+        let connecting_result = connecting.await;
         let rtt = Instant::now().duration_since(start_time);
 
-        let local_ip = connection.connection.local_ip();
-        return match local_ip {
-            Some(addr) => Ok(PingClientPingResultDetails::new(
-                Some(SocketAddr::new(addr, source.port())),
-                rtt,
-                false,
-            )),
-            None => Ok(PingClientPingResultDetails::new(None, rtt, false)),
-        };
+        // If a QUIC connection returned errors other than timed out or local error, it means the local endpoint has successfully
+        // received packets from remote server, which means the underlying network is reachable, but higher level of stack went
+        // wrong, such as ALPN, so here, we should log this failure as warning instead.
+        let connection = match connecting_result {
+            Ok(connection) => Ok(connection),
+            Err(e) => match e {
+                ConnectionError::TimedOut => Err(PingClientError::PingFailed(Box::new(e))),
+                ConnectionError::LocallyClosed => Err(PingClientError::PingFailed(Box::new(e))),
+                _ => {
+                    return Ok(PingClientPingResultDetails::new(None, rtt, false, Some(Box::new(e))))
+                },
+            }
+        }?;
+
+        let local_ip = connection.connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
+        return Ok(PingClientPingResultDetails::new(local_ip, rtt, false, None));
     }
 }
 
