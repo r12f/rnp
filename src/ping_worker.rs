@@ -112,8 +112,8 @@ impl PingWorker {
             self.is_warmup_worker,
             ping_result.round_trip_time,
             ping_result.is_timeout,
-            ping_result.warning,
             None,
+            ping_result.handshake_error,
         );
 
         self.result_sender.send(result).await.unwrap();
@@ -137,8 +137,8 @@ impl PingWorker {
             self.is_warmup_worker,
             Duration::from_millis(0),
             false,
-            None,
             Some(error),
+            None,
         );
 
         self.result_sender.send(result).await.unwrap();

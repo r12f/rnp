@@ -7,7 +7,7 @@ pub struct PingClientPingResultDetails {
     pub actual_local_addr: Option<SocketAddr>,
     pub round_trip_time: Duration,
     pub is_timeout: bool,
-    pub warning: Option<Box<dyn std::error::Error + Send>>,
+    pub handshake_error: Option<Box<dyn std::error::Error + Send>>,
 }
 
 impl PingClientPingResultDetails {
@@ -15,13 +15,13 @@ impl PingClientPingResultDetails {
         actual_local_addr: Option<SocketAddr>,
         round_trip_time: Duration,
         is_timeout: bool,
-        warning: Option<Box<dyn std::error::Error + Send>>,
+        handshake_error: Option<Box<dyn std::error::Error + Send>>,
     ) -> PingClientPingResultDetails {
         PingClientPingResultDetails {
             actual_local_addr,
             round_trip_time,
             is_timeout,
-            warning,
+            handshake_error,
         }
     }
 }

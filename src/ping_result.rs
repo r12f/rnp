@@ -12,8 +12,8 @@ pub struct PingResult {
     is_warmup: bool,
     round_trip_time: Duration,
     is_timed_out: bool,
-    warning: Option<Box<dyn std::error::Error + Send>>,
     error: Option<PingClientError>,
+    handshake_error: Option<Box<dyn std::error::Error + Send>>,
 }
 
 impl PingResult {
@@ -26,8 +26,8 @@ impl PingResult {
         is_warmup: bool,
         round_trip_time: Duration,
         is_timed_out: bool,
-        warning: Option<Box<dyn std::error::Error + Send>>,
         error: Option<PingClientError>,
+        handshake_error: Option<Box<dyn std::error::Error + Send>>,
     ) -> PingResult {
         PingResult {
             ping_time: time.clone(),
@@ -38,8 +38,8 @@ impl PingResult {
             is_warmup,
             round_trip_time,
             is_timed_out,
-            warning,
             error,
+            handshake_error,
         }
     }
 
@@ -67,8 +67,8 @@ impl PingResult {
     pub fn is_timed_out(&self) -> bool {
         self.is_timed_out
     }
-    pub fn warning(&self) -> &Option<Box<dyn std::error::Error + Send>> {
-        &self.warning
+    pub fn handshake_error(&self) -> &Option<Box<dyn std::error::Error + Send>> {
+        &self.handshake_error
     }
     pub fn error(&self) -> &Option<PingClientError> {
         &self.error
@@ -120,15 +120,15 @@ impl PingResult {
             };
         }
 
-        if let Some(warning) = self.warning() {
+        if let Some(handshake_error) = self.handshake_error() {
             return format!(
-                "Reaching {} {} from {}{} succeeded with warning: RTT={:.2}ms, Warning = {}",
+                "Reaching {} {} from {}{} succeeded, but handshake failed: RTT={:.2}ms, Error = {}",
                 self.protocol(),
                 self.target(),
                 self.source(),
                 warmup_sign,
                 self.round_trip_time().as_micros() as f64 / 1000.0,
-                warning,
+                handshake_error,
             );
         }
 
@@ -143,10 +143,6 @@ impl PingResult {
     }
 
     pub fn format_as_json_string(&self) -> String {
-        let ping_warning = self.warning().as_ref().map_or(String::from(""), |e| {
-            e.to_string()
-        });
-
         let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
             if let PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
         });
@@ -155,8 +151,12 @@ impl PingResult {
             if let PingFailed(pe) = e { pe.to_string() } else { String::from("") }
         });
 
+        let handshake_error = self.handshake_error().as_ref().map_or(String::from(""), |e| {
+            e.to_string()
+        });
+
         let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"pingWarning\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\"}}",
+            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
             self.ping_time(),
             self.protocol(),
             self.worker_id(),
@@ -167,25 +167,25 @@ impl PingResult {
             self.is_warmup(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
-            ping_warning,
             preparation_error,
             ping_error,
+            handshake_error,
         );
 
         return json;
     }
 
     pub fn format_as_csv_string(&self) -> String {
-        let ping_warning = self.warning().as_ref().map_or(String::from(""), |e| {
-            e.to_string()
-        });
-
         let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
             if let PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
         });
 
         let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
             if let PingFailed(pe) = e { pe.to_string() } else { String::from("") }
+        });
+
+        let handshake_error = self.handshake_error().as_ref().map_or(String::from(""), |e| {
+            e.to_string()
         });
 
         let csv = format!(
@@ -200,9 +200,9 @@ impl PingResult {
             self.is_warmup(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
-            ping_warning,
             preparation_error,
             ping_error,
+            handshake_error,
         );
 
         return csv;
@@ -251,7 +251,7 @@ mod tests {
             vec![
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 (warmup) succeeded: RTT=10.00ms",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: Timed out, RTT = 1000.00ms",
-                "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 succeeded with warning: RTT=20.00ms, Warning = connect aborted",
+                "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 succeeded, but handshake failed: RTT=20.00ms, Error = connect aborted",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: connect failed",
                 "Unable to perform ping to TCP 1.2.3.4:443 from 5.6.7.8:8080, because failed preparing to ping: Error = address in use",
             ],
@@ -267,11 +267,11 @@ mod tests {
         let results = generate_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"pingWarning\":\"\",\"preparationError\":\"\",\"pingError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"pingWarning\":\"\",\"preparationError\":\"\",\"pingError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"pingWarning\":\"connect aborted\",\"preparationError\":\"\",\"pingError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"pingWarning\":\"\",\"preparationError\":\"\",\"pingError\":\"connect failed\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"pingWarning\":\"\",\"preparationError\":\"address in use\",\"pingError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
@@ -284,9 +284,9 @@ mod tests {
             vec![
                 "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",\"\",\"\"",
                 "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,1000.00,true,\"\",\"\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,20.00,false,\"connect aborted\",\"\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"\",\"connect failed\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"address in use\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,20.00,false,\"\",\"\",\"connect aborted\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"connect failed\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"address in use\",\"\",\"\"",
             ],
             results
                 .into_iter()
