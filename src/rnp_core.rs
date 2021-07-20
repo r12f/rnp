@@ -1,5 +1,5 @@
 use crate::{
-    rnp_utils, PingPortPicker, PingResult, PingResultProcessingWorker, PingResultProcessorConfig,
+    PingPortPicker, PingResult, PingResultProcessingWorker, PingResultProcessorConfig,
     PingWorker, RnpCoreConfig,
 };
 use futures_intrusive::sync::ManualResetEvent;
@@ -63,7 +63,7 @@ impl RnpCore {
     fn log_header_to_console(&self) {
         println!(
             "Start testing {} {:?}:",
-            rnp_utils::format_protocol(self.config.worker_config.protocol),
+            self.config.worker_config.protocol,
             self.config.worker_config.target
         );
     }
