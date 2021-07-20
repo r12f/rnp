@@ -84,6 +84,9 @@ impl PingClientQuic {
         let connecting_result = connecting.await;
         let rtt = Instant::now().duration_since(start_time);
 
+        // If a QUIC connection returned errors other than timed out or local error, it means the local endpoint has successfully
+        // received packets from remote server, which means the underlying network is reachable, but higher level of stack went
+        // wrong, such as ALPN, so here, we should log this failure as warning instead.
         let connection = match connecting_result {
             Ok(connection) => Ok(connection),
             Err(e) => match e {
