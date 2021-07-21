@@ -26,7 +26,7 @@ async-trait = "0.1.50"
 
 [target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
 quinn = "0.7.2"
-rustls = { version = "*", features = ["dangerous_configuration", "quic"] }
+rustls = { version = "0.19.1", features = ["dangerous_configuration", "quic"] }
 webpki = "0.21"
 
 [dev-dependencies]
