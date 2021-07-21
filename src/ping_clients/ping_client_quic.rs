@@ -30,8 +30,9 @@ impl PingClientQuic {
             .create_local_endpoint(source)
             .map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
         let server_name = self.config.server_name.as_ref().map_or("", |s| &s);
+        let use_timer_rtt = self.config.use_timer_rtt;
         let ping_result =
-            PingClientQuic::connect_to_target(&endpoint, source, target, server_name).await;
+            PingClientQuic::connect_to_target(&endpoint, source, target, server_name, use_timer_rtt).await;
         endpoint.wait_idle().await;
         return ping_result;
     }
@@ -75,6 +76,7 @@ impl PingClientQuic {
         source: &SocketAddr,
         target: &SocketAddr,
         server_name: &str,
+        use_timer_rtt: bool,
     ) -> PingClientResult<PingClientPingResultDetails> {
         let start_time = Instant::now();
 
@@ -82,7 +84,7 @@ impl PingClientQuic {
             .connect(target, &server_name)
             .map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
         let connecting_result = connecting.await;
-        let rtt = Instant::now().duration_since(start_time);
+        let mut rtt = Instant::now().duration_since(start_time);
 
         // If a QUIC connection returned errors other than timed out or local error, it means the local endpoint has successfully
         // received packets from remote server, which means the underlying network is reachable, but higher level of stack went
@@ -99,6 +101,9 @@ impl PingClientQuic {
         }?;
 
         let local_ip = connection.connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
+        if !use_timer_rtt {
+            rtt = connection.connection.rtt();
+        }
         return Ok(PingClientPingResultDetails::new(local_ip, rtt, false, None));
     }
 }

@@ -40,7 +40,8 @@ mod tests {
             use_fin_in_tcp_ping: false,
             server_name: None,
             log_tls_key: false,
-            alpn_protocol: None
+            alpn_protocol: None,
+            use_timer_rtt: false,
         };
 
         let ping_client = new(RnpSupportedProtocol::TCP, &config);
