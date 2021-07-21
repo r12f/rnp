@@ -50,7 +50,6 @@ mod tests {
     use crate::ping_result_processors::ping_result_processor_test_common;
     use crate::rnp_dto::PingResultCsvDto;
     use pretty_assertions::assert_eq;
-    use std::time::Duration;
     use chrono::{Utc, TimeZone};
 
     #[test]
@@ -73,16 +72,20 @@ mod tests {
         assert_eq!(
             vec![
                 PingResultCsvDto {
-                    ping_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
-                    target: "1.2.3.4:443".parse().unwrap(),
-                    source: "5.6.7.8:8080".parse().unwrap(),
+                    target_ip: "1.2.3.4".parse().unwrap(),
+                    target_port: 443,
+                    source_ip: "5.6.7.8:8080".parse().unwrap(),
+                    source_port: 8080,
                     is_warmup: true,
-                    round_trip_time: Duration::from_millis(10),
-                    is_timed_out: false,
-                    error: "".to_string(),
-                    handshake_error: "".to_string(),
+                    is_timed_out: true,
+                    preparation_error: "".to_string(),
+                    ping_error: "".to_string(),
+                    rtt_in_ms: 10f64,
+                    is_succeeded: false,
+                    handshake_error: "".to_string()
                 },
             ],
             actual_logged_records,
