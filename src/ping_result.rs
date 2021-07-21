@@ -1,6 +1,7 @@
 use crate::ping_clients::ping_client::PingClientError::{self, PingFailed, PreparationFailed};
 use chrono::{offset::Utc, DateTime};
 use std::{net::SocketAddr, time::Duration};
+use contracts::requires;
 
 #[derive(Debug)]
 pub struct PingResult {
@@ -10,6 +11,7 @@ pub struct PingResult {
     target: SocketAddr,
     source: SocketAddr,
     is_warmup: bool,
+    is_succeeded: bool,
     round_trip_time: Duration,
     is_timed_out: bool,
     error: Option<PingClientError>,
@@ -17,6 +19,9 @@ pub struct PingResult {
 }
 
 impl PingResult {
+    #[requires(is_succeeded -> !is_timed_out && error.is_none())]
+    #[requires(handshake_error.is_some() -> is_succeeded)]
+    #[requires(!is_succeeded -> (is_timed_out || error.is_some()) && handshake_error.is_none())]
     pub fn new(
         time: &DateTime<Utc>,
         worker_id: u32,
@@ -24,6 +29,7 @@ impl PingResult {
         target: SocketAddr,
         source: SocketAddr,
         is_warmup: bool,
+        is_succeeded: bool,
         round_trip_time: Duration,
         is_timed_out: bool,
         error: Option<PingClientError>,
@@ -36,6 +42,7 @@ impl PingResult {
             target,
             source,
             is_warmup,
+            is_succeeded,
             round_trip_time,
             is_timed_out,
             error,
@@ -60,6 +67,9 @@ impl PingResult {
     }
     pub fn is_warmup(&self) -> bool {
         self.is_warmup
+    }
+    pub fn is_succeeded(&self) -> bool {
+        self.is_succeeded
     }
     pub fn round_trip_time(&self) -> Duration {
         self.round_trip_time
@@ -156,7 +166,7 @@ impl PingResult {
         });
 
         let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
+            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"isSucceeded\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
             self.ping_time(),
             self.protocol(),
             self.worker_id(),
@@ -165,6 +175,7 @@ impl PingResult {
             self.source().ip(),
             self.source().port(),
             self.is_warmup(),
+            self.is_succeeded(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
             preparation_error,
@@ -189,7 +200,7 @@ impl PingResult {
         });
 
         let csv = format!(
-            "{:?},{},{},{},{},{},{},{},{:.2},{},\"{}\",\"{}\",\"{}\"",
+            "{:?},{},{},{},{},{},{},{},{},{:.2},{},\"{}\",\"{}\",\"{}\"",
             self.ping_time(),
             self.worker_id(),
             self.protocol(),
@@ -198,6 +209,7 @@ impl PingResult {
             self.source().ip(),
             self.source().port(),
             self.is_warmup(),
+            self.is_succeeded(),
             self.round_trip_time().as_micros() as f64 / 1000.0,
             self.is_timed_out(),
             preparation_error,
@@ -227,6 +239,7 @@ mod tests {
             "1.2.3.4:443".parse().unwrap(),
             "5.6.7.8:8080".parse().unwrap(),
             true,
+            true,
             Duration::from_millis(10),
             false,
             None,
@@ -238,8 +251,10 @@ mod tests {
         assert_eq!("1.2.3.4:443".parse::<SocketAddr>().unwrap(), r.target());
         assert_eq!("5.6.7.8:8080".parse::<SocketAddr>().unwrap(), r.source());
         assert!(r.is_warmup());
+        assert!(r.is_succeeded());
         assert_eq!(Duration::from_millis(10), r.round_trip_time());
         assert!(r.error().is_none());
+        assert!(r.handshake_error().is_none());
     }
 
     #[test]
@@ -265,11 +280,11 @@ mod tests {
         let results = rnp_test_utils::generate_ping_result_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"isSucceeded\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"true\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
@@ -280,11 +295,11 @@ mod tests {
         let results = rnp_test_utils::generate_ping_result_test_samples();
         assert_eq!(
             vec![
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,10.00,false,\"\",\"\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,1000.00,true,\"\",\"\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,20.00,false,\"\",\"\",\"connect aborted\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"\",\"connect failed\",\"\"",
-                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,0.00,false,\"address in use\",\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,true,10.00,false,\"\",\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,false,1000.00,true,\"\",\"\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,true,20.00,false,\"\",\"\",\"connect aborted\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,false,0.00,false,\"\",\"connect failed\",\"\"",
+                "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,false,0.00,false,\"address in use\",\"\",\"\"",
             ],
             results
                 .into_iter()
