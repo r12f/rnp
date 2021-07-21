@@ -166,7 +166,7 @@ impl PingResult {
         });
 
         let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"isSucceeded\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
+            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIp\":\"{}\",\"targetPort\":{},\"sourceIp\":\"{}\",\"sourcePort\":{},\"isWarmup\":{},\"isSucceeded\":{},\"rttInMs\":{:.2},\"isTimedOut\":{},\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
             self.ping_time(),
             self.protocol(),
             self.worker_id(),
@@ -280,11 +280,11 @@ mod tests {
         let results = rnp_test_common::generate_ping_result_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"isSucceeded\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"true\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":true,\"isSucceeded\":true,\"rttInMs\":10.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":1000.00,\"isTimedOut\":true,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":true,\"rttInMs\":20.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":0.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":0.00,\"isTimedOut\":false,\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
