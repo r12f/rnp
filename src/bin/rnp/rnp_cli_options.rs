@@ -82,8 +82,8 @@ pub struct RnpCliOptions {
     #[structopt(long = "alpn", default_value = "h3-29", help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
     pub alpn_protocol: String,
 
-    #[structopt(long, help = "Use the estimated RTT from QUIC connection as the RTT.")]
-    pub use_quic_rtt: bool,
+    #[structopt(long, help = "Calculate the RTT by checking the time of before and after doing QUIC connect instead of estimated RTT from QUIC. Not recommended, as this might cause the RTT time to be larger than the real one.")]
+    pub use_timer_rtt: bool,
 
     #[structopt(
         short = "q",
@@ -215,7 +215,7 @@ impl RnpCliOptions {
                     } else {
                         None
                     },
-                    use_quic_rtt: self.use_quic_rtt,
+                    use_timer_rtt: self.use_timer_rtt,
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -277,7 +277,7 @@ mod tests {
                 server_name: None,
                 log_tls_key: false,
                 alpn_protocol: String::from("h3-29"),
-                use_quic_rtt: false,
+                use_timer_rtt: false,
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -311,7 +311,7 @@ mod tests {
                 server_name: None,
                 log_tls_key: false,
                 alpn_protocol: String::from("h3-29"),
-                use_quic_rtt: false,
+                use_timer_rtt: false,
                 no_console_log: true,
                 csv_log_path: None,
                 json_log_path: None,
@@ -366,7 +366,7 @@ mod tests {
                 server_name: Some(String::from("localhost")),
                 log_tls_key: true,
                 alpn_protocol: String::from("hq-29"),
-                use_quic_rtt: true,
+                use_timer_rtt: true,
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
@@ -406,7 +406,7 @@ mod tests {
                 "--log-tls-key",
                 "--alpn",
                 "hq-29",
-                "--use-quic-rtt",
+                "--use-timer-rtt",
                 "--no-console-log",
                 "--log-csv",
                 "log.csv",
@@ -438,7 +438,7 @@ mod tests {
                         server_name: None,
                         log_tls_key: false,
                         alpn_protocol: None,
-                        use_quic_rtt: false,
+                        use_timer_rtt: false,
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -477,7 +477,7 @@ mod tests {
                 server_name: None,
                 log_tls_key: false,
                 alpn_protocol: String::from("none"),
-                use_quic_rtt: false,
+                use_timer_rtt: false,
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -503,7 +503,7 @@ mod tests {
                         server_name: Some(String::from("localhost")),
                         log_tls_key: true,
                         alpn_protocol: Some(String::from("h3")),
-                        use_quic_rtt: true,
+                        use_timer_rtt: true,
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -542,7 +542,7 @@ mod tests {
                 server_name: Some(String::from("localhost")),
                 log_tls_key: true,
                 alpn_protocol: String::from("h3"),
-                use_quic_rtt: true,
+                use_timer_rtt: true,
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),

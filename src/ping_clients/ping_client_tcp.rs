@@ -102,7 +102,7 @@ mod tests {
                 server_name: None,
                 log_tls_key: false,
                 alpn_protocol: None,
-                use_quic_rtt: false,
+                use_timer_rtt: false,
             };
             let mut ping_client = ping_client_factory::new(RnpSupportedProtocol::TCP, &config);
 

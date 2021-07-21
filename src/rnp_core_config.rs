@@ -55,7 +55,7 @@ pub struct PingClientConfig {
     pub server_name: Option<String>,
     pub log_tls_key: bool,
     pub alpn_protocol: Option<String>,
-    pub use_quic_rtt: bool,
+    pub use_timer_rtt: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

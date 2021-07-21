@@ -41,7 +41,7 @@ mod tests {
             server_name: None,
             log_tls_key: false,
             alpn_protocol: None,
-            use_quic_rtt: false,
+            use_timer_rtt: false,
         };
 
         let ping_client = new(RnpSupportedProtocol::TCP, &config);
