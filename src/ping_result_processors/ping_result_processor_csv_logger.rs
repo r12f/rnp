@@ -29,7 +29,7 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     fn initialize(&mut self) {
         // Writer CSV header
         self.log_file
-            .write("UTCTime,WorkerId,Protocol,TargetIP,TargetPort,SourceIP,SourcePort,IsWarmup,IsSucceeded,RTTInMs,IsTimedOut,PreparationError,PingError,HandshakeError\n".as_bytes())
+            .write("UtcTime,WorkerId,Protocol,TargetIp,TargetPort,SourceIp,SourcePort,IsWarmup,IsSucceeded,RttInMs,IsTimedOut,PreparationError,PingError,HandshakeError\n".as_bytes())
             .expect(&format!(
                 "Failed to write logs to csv file! Path = {}",
                 self.log_path.display()
@@ -77,14 +77,78 @@ mod tests {
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),
                     target_port: 443,
-                    source_ip: "5.6.7.8:8080".parse().unwrap(),
+                    source_ip: "5.6.7.8".parse().unwrap(),
                     source_port: 8080,
                     is_warmup: true,
-                    is_timed_out: true,
+                    is_succeeded: true,
+                    is_timed_out: false,
+                    rtt_in_ms: 10f64,
                     preparation_error: "".to_string(),
                     ping_error: "".to_string(),
-                    rtt_in_ms: 10f64,
+                    handshake_error: "".to_string()
+                },
+                PingResultCsvDto {
+                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    worker_id: 1,
+                    protocol: "TCP".to_string(),
+                    target_ip: "1.2.3.4".parse().unwrap(),
+                    target_port: 443,
+                    source_ip: "5.6.7.8".parse().unwrap(),
+                    source_port: 8080,
+                    is_warmup: false,
                     is_succeeded: false,
+                    is_timed_out: true,
+                    rtt_in_ms: 1000f64,
+                    preparation_error: "".to_string(),
+                    ping_error: "".to_string(),
+                    handshake_error: "".to_string()
+                },
+                PingResultCsvDto {
+                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    worker_id: 1,
+                    protocol: "TCP".to_string(),
+                    target_ip: "1.2.3.4".parse().unwrap(),
+                    target_port: 443,
+                    source_ip: "5.6.7.8".parse().unwrap(),
+                    source_port: 8080,
+                    is_warmup: false,
+                    is_succeeded: true,
+                    is_timed_out: false,
+                    rtt_in_ms: 20f64,
+                    preparation_error: "".to_string(),
+                    ping_error: "".to_string(),
+                    handshake_error: "connect aborted".to_string()
+                },
+                PingResultCsvDto {
+                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    worker_id: 1,
+                    protocol: "TCP".to_string(),
+                    target_ip: "1.2.3.4".parse().unwrap(),
+                    target_port: 443,
+                    source_ip: "5.6.7.8".parse().unwrap(),
+                    source_port: 8080,
+                    is_warmup: false,
+                    is_succeeded: false,
+                    is_timed_out: false,
+                    rtt_in_ms: 0f64,
+                    preparation_error: "".to_string(),
+                    ping_error: "connect failed".to_string(),
+                    handshake_error: "".to_string()
+                },
+                PingResultCsvDto {
+                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    worker_id: 1,
+                    protocol: "TCP".to_string(),
+                    target_ip: "1.2.3.4".parse().unwrap(),
+                    target_port: 443,
+                    source_ip: "5.6.7.8".parse().unwrap(),
+                    source_port: 8080,
+                    is_warmup: false,
+                    is_succeeded: false,
+                    is_timed_out: false,
+                    rtt_in_ms: 0f64,
+                    preparation_error: "address in use".to_string(),
+                    ping_error: "".to_string(),
                     handshake_error: "".to_string()
                 },
             ],
