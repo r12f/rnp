@@ -1,6 +1,7 @@
 use crate::ping_clients::ping_client::PingClientError::{self, PingFailed, PreparationFailed};
 use chrono::{offset::Utc, DateTime};
 use std::{net::SocketAddr, time::Duration};
+use contracts::requires;
 
 #[derive(Debug)]
 pub struct PingResult {
@@ -10,6 +11,7 @@ pub struct PingResult {
     target: SocketAddr,
     source: SocketAddr,
     is_warmup: bool,
+    is_succeeded: bool,
     round_trip_time: Duration,
     is_timed_out: bool,
     error: Option<PingClientError>,
@@ -17,6 +19,9 @@ pub struct PingResult {
 }
 
 impl PingResult {
+    #[requires(is_succeeded -> !is_timed_out && error.is_none())]
+    #[requires(handshake_error.is_some() -> is_succeeded)]
+    #[requires(!is_succeeded -> (is_timed_out || error.is_some()) && handshake_error.is_none())]
     pub fn new(
         time: &DateTime<Utc>,
         worker_id: u32,
@@ -24,6 +29,7 @@ impl PingResult {
         target: SocketAddr,
         source: SocketAddr,
         is_warmup: bool,
+        is_succeeded: bool,
         round_trip_time: Duration,
         is_timed_out: bool,
         error: Option<PingClientError>,
@@ -36,6 +42,7 @@ impl PingResult {
             target,
             source,
             is_warmup,
+            is_succeeded,
             round_trip_time,
             is_timed_out,
             error,
@@ -60,6 +67,9 @@ impl PingResult {
     }
     pub fn is_warmup(&self) -> bool {
         self.is_warmup
+    }
+    pub fn is_succeeded(&self) -> bool {
+        self.is_succeeded
     }
     pub fn round_trip_time(&self) -> Duration {
         self.round_trip_time
@@ -227,6 +237,7 @@ mod tests {
             "1.2.3.4:443".parse().unwrap(),
             "5.6.7.8:8080".parse().unwrap(),
             true,
+            true,
             Duration::from_millis(10),
             false,
             None,
@@ -238,8 +249,10 @@ mod tests {
         assert_eq!("1.2.3.4:443".parse::<SocketAddr>().unwrap(), r.target());
         assert_eq!("5.6.7.8:8080".parse::<SocketAddr>().unwrap(), r.source());
         assert!(r.is_warmup());
+        assert!(r.is_succeeded());
         assert_eq!(Duration::from_millis(10), r.round_trip_time());
         assert!(r.error().is_none());
+        assert!(r.handshake_error().is_none());
     }
 
     #[test]
