@@ -166,7 +166,7 @@ impl PingResult {
         });
 
         let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIP\":\"{}\",\"targetPort\":\"{}\",\"sourceIP\":\"{}\",\"sourcePort\":\"{}\",\"isWarmup\":\"{}\",\"isSucceeded\":\"{}\",\"roundTripTimeInMs\":{:.2},\"isTimedOut\":\"{}\",\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
+            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIp\":\"{}\",\"targetPort\":{},\"sourceIp\":\"{}\",\"sourcePort\":{},\"isWarmup\":{},\"isSucceeded\":{},\"rttInMs\":{:.2},\"isTimedOut\":{},\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\"}}",
             self.ping_time(),
             self.protocol(),
             self.worker_id(),
@@ -228,7 +228,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use std::net::SocketAddr;
     use std::time::Duration;
-    use crate::rnp_test_utils;
+    use crate::rnp_test_common;
 
     #[test]
     fn new_ping_result_should_work() {
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn format_ping_result_as_log_should_work() {
-        let results = rnp_test_utils::generate_ping_result_test_samples();
+        let results = rnp_test_common::generate_ping_result_test_samples();
         assert_eq!(
             vec![
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 (warmup) succeeded: RTT=10.00ms",
@@ -277,14 +277,14 @@ mod tests {
 
     #[test]
     fn format_ping_result_as_json_should_work() {
-        let results = rnp_test_utils::generate_ping_result_test_samples();
+        let results = rnp_test_common::generate_ping_result_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"true\",\"isSucceeded\":\"true\",\"roundTripTimeInMs\":10.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":1000.00,\"isTimedOut\":\"true\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"true\",\"roundTripTimeInMs\":20.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIP\":\"1.2.3.4\",\"targetPort\":\"443\",\"sourceIP\":\"5.6.7.8\",\"sourcePort\":\"8080\",\"isWarmup\":\"false\",\"isSucceeded\":\"false\",\"roundTripTimeInMs\":0.00,\"isTimedOut\":\"false\",\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":true,\"isSucceeded\":true,\"rttInMs\":10.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":1000.00,\"isTimedOut\":true,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":true,\"rttInMs\":20.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":0.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\"}",
+                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":0.00,\"isTimedOut\":false,\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn format_ping_result_as_csv_should_work() {
-        let results = rnp_test_utils::generate_ping_result_test_samples();
+        let results = rnp_test_common::generate_ping_result_test_samples();
         assert_eq!(
             vec![
                 "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,true,true,10.00,false,\"\",\"\",\"\"",

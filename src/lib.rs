@@ -17,6 +17,7 @@ mod ping_worker;
 mod rnp_core;
 mod rnp_core_config;
 mod rnp_utils;
+mod rnp_dto;
 
 #[cfg(test)]
-mod rnp_test_utils;
+mod rnp_test_common;
