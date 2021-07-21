@@ -110,11 +110,11 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rnp_test_utils;
+    use crate::rnp_test_common;
 
     #[test]
     fn latency_bucket_logger_should_work() {
-        let ping_results = rnp_test_utils::generate_ping_result_test_samples();
+        let ping_results = rnp_test_common::generate_ping_result_test_samples();
 
         let mut logger =
             PingResultProcessorLatencyBucketLogger::new(&vec![0.1, 0.5, 1.0, 10.0, 50.0, 100.0]);

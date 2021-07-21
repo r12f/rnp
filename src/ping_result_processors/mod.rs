@@ -7,3 +7,6 @@ mod ping_result_processor_text_logger;
 mod ping_result_processor_result_scatter_logger;
 mod ping_result_processor_latency_scatter_logger;
 mod ping_result_processor_latency_bucket_logger;
+
+#[cfg(test)]
+mod ping_result_processor_test_common;

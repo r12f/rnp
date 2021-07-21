@@ -2,3 +2,4 @@
 log.*
 target
 Cargo.lock
+tests_data
