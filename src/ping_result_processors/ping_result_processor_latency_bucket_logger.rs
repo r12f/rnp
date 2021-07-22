@@ -15,6 +15,7 @@ pub struct PingResultProcessorLatencyBucketLogger {
 
 impl PingResultProcessorLatencyBucketLogger {
     #[tracing::instrument(name = "Creating ping result latency bucket logger", level = "debug")]
+    #[allow(unreachable_code)]
     #[requires(buckets.len() >= 1)]
     pub fn new(buckets: &Vec<f64>) -> PingResultProcessorLatencyBucketLogger {
         // The buckets from settings are treated as separators, so the real buckets are:
