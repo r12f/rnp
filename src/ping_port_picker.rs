@@ -14,6 +14,7 @@ pub struct PingPortPicker {
 }
 
 impl PingPortPicker {
+    #[allow(unreachable_code)]
     #[requires(min_port > 0)]
     #[requires(max_port > 0)]
     #[requires(min_port <= max_port)]
@@ -57,6 +58,7 @@ impl PingPortPicker {
         return Some(self.fetch_next_available_port_from_port_range());
     }
 
+    #[allow(unreachable_code)]
     #[requires(self.port_list.is_some())]
     fn fetch_next_available_port_from_port_list(&mut self) -> u16 {
         let port = self.port_list.as_ref().unwrap()[self.next_port_index];
