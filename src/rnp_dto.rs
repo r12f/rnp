@@ -19,6 +19,7 @@ pub struct PingResultJsonDto {
     pub preparation_error: String,
     pub ping_error: String,
     pub handshake_error: String,
+    pub disconnect_error: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialOrd, PartialEq)]
@@ -38,4 +39,5 @@ pub struct PingResultCsvDto {
     pub preparation_error: String,
     pub ping_error: String,
     pub handshake_error: String,
+    pub disconnect_error: String,
 }

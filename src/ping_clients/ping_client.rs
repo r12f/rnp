@@ -5,37 +5,10 @@ use async_trait::async_trait;
 #[derive(thiserror::Error, Debug)]
 pub enum PingClientWarning {
     #[error("{0}")]
-    PreparationFailed(Box<dyn std::error::Error + Send>),
+    DisconnectFailed(Box<dyn std::error::Error + Send>),
 
     #[error("{0}")]
-    PingFailed(Box<dyn std::error::Error + Send>),
-}
-
-#[derive(Debug)]
-pub struct PingClientPingResultDetails {
-    pub actual_local_addr: Option<SocketAddr>,
-    pub round_trip_time: Duration,
-    pub is_timeout: bool,
-    pub handshake_error: Option<Box<dyn std::error::Error + Send>>,
-    pub disconnect_error: Option<Box<dyn std::error::Error + Send>>,
-}
-
-impl PingClientPingResultDetails {
-    pub fn new(
-        actual_local_addr: Option<SocketAddr>,
-        round_trip_time: Duration,
-        is_timeout: bool,
-        handshake_error: Option<Box<dyn std::error::Error + Send>>,
-        disconnect_error: Option<Box<dyn std::error::Error + Send>>,
-    ) -> PingClientPingResultDetails {
-        PingClientPingResultDetails {
-            actual_local_addr,
-            round_trip_time,
-            is_timeout,
-            handshake_error,
-            disconnect_error,
-        }
-    }
+    AppHandshakeFailed(Box<dyn std::error::Error + Send>),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -45,6 +18,31 @@ pub enum PingClientError {
 
     #[error("{0}")]
     PingFailed(Box<dyn std::error::Error + Send>),
+}
+
+
+#[derive(Debug)]
+pub struct PingClientPingResultDetails {
+    pub actual_local_addr: Option<SocketAddr>,
+    pub round_trip_time: Duration,
+    pub is_timeout: bool,
+    pub warning: Option<PingClientWarning>,
+}
+
+impl PingClientPingResultDetails {
+    pub fn new(
+        actual_local_addr: Option<SocketAddr>,
+        round_trip_time: Duration,
+        is_timeout: bool,
+        warning: Option<PingClientWarning>,
+    ) -> PingClientPingResultDetails {
+        PingClientPingResultDetails {
+            actual_local_addr,
+            round_trip_time,
+            is_timeout,
+            warning,
+        }
+    }
 }
 
 pub type PingClientResult<T, E = PingClientError> = std::result::Result<T, E>;

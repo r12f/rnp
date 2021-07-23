@@ -29,7 +29,7 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     fn initialize(&mut self) {
         // Writer CSV header
         self.log_file
-            .write("UtcTime,WorkerId,Protocol,TargetIp,TargetPort,SourceIp,SourcePort,IsWarmup,IsSucceeded,RttInMs,IsTimedOut,PreparationError,PingError,HandshakeError\n".as_bytes())
+            .write("UtcTime,WorkerId,Protocol,TargetIp,TargetPort,SourceIp,SourcePort,IsWarmup,IsSucceeded,RttInMs,IsTimedOut,PreparationError,PingError,HandshakeError,DisconnectError\n".as_bytes())
             .expect(&format!(
                 "Failed to write logs to csv file! Path = {}",
                 self.log_path.display()
@@ -85,7 +85,8 @@ mod tests {
                     rtt_in_ms: 10f64,
                     preparation_error: "".to_string(),
                     ping_error: "".to_string(),
-                    handshake_error: "".to_string()
+                    handshake_error: "".to_string(),
+                    disconnect_error: "".to_string(),
                 },
                 PingResultCsvDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -101,7 +102,8 @@ mod tests {
                     rtt_in_ms: 1000f64,
                     preparation_error: "".to_string(),
                     ping_error: "".to_string(),
-                    handshake_error: "".to_string()
+                    handshake_error: "".to_string(),
+                    disconnect_error: "".to_string(),
                 },
                 PingResultCsvDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -117,7 +119,8 @@ mod tests {
                     rtt_in_ms: 20f64,
                     preparation_error: "".to_string(),
                     ping_error: "".to_string(),
-                    handshake_error: "connect aborted".to_string()
+                    handshake_error: "connect aborted".to_string(),
+                    disconnect_error: "".to_string(),
                 },
                 PingResultCsvDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -133,7 +136,8 @@ mod tests {
                     rtt_in_ms: 0f64,
                     preparation_error: "".to_string(),
                     ping_error: "connect failed".to_string(),
-                    handshake_error: "".to_string()
+                    handshake_error: "".to_string(),
+                    disconnect_error: "".to_string(),
                 },
                 PingResultCsvDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
@@ -149,7 +153,8 @@ mod tests {
                     rtt_in_ms: 0f64,
                     preparation_error: "address in use".to_string(),
                     ping_error: "".to_string(),
-                    handshake_error: "".to_string()
+                    handshake_error: "".to_string(),
+                    disconnect_error: "".to_string(),
                 },
             ],
             actual_logged_records,

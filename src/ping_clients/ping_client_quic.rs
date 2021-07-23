@@ -1,6 +1,4 @@
-use crate::ping_clients::ping_client::{
-    PingClient, PingClientError, PingClientPingResultDetails, PingClientResult,
-};
+use crate::ping_clients::ping_client::{PingClient, PingClientError, PingClientPingResultDetails, PingClientResult, PingClientWarning};
 use crate::PingClientConfig;
 use async_trait::async_trait;
 use quinn::{ClientConfigBuilder, Endpoint, EndpointError, ConnectionError};
@@ -94,9 +92,11 @@ impl PingClientQuic {
             Err(e) => match e {
                 ConnectionError::TimedOut => Err(PingClientError::PingFailed(Box::new(e))),
                 ConnectionError::LocallyClosed => Err(PingClientError::PingFailed(Box::new(e))),
-                _ => {
-                    return Ok(PingClientPingResultDetails::new(None, rtt, false, Some(Box::new(e))))
-                },
+                _ => return Ok(PingClientPingResultDetails::new(
+                    None,
+                    rtt,
+                    false,
+                    Some(PingClientWarning::AppHandshakeFailed(Box::new(e))))),
             }
         }?;
 
