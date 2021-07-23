@@ -2,12 +2,22 @@ use std::time::Duration;
 use std::net::SocketAddr;
 use async_trait::async_trait;
 
+#[derive(thiserror::Error, Debug)]
+pub enum PingClientWarning {
+    #[error("{0}")]
+    PreparationFailed(Box<dyn std::error::Error + Send>),
+
+    #[error("{0}")]
+    PingFailed(Box<dyn std::error::Error + Send>),
+}
+
 #[derive(Debug)]
 pub struct PingClientPingResultDetails {
     pub actual_local_addr: Option<SocketAddr>,
     pub round_trip_time: Duration,
     pub is_timeout: bool,
     pub handshake_error: Option<Box<dyn std::error::Error + Send>>,
+    pub disconnect_error: Option<Box<dyn std::error::Error + Send>>,
 }
 
 impl PingClientPingResultDetails {
@@ -16,12 +26,14 @@ impl PingClientPingResultDetails {
         round_trip_time: Duration,
         is_timeout: bool,
         handshake_error: Option<Box<dyn std::error::Error + Send>>,
+        disconnect_error: Option<Box<dyn std::error::Error + Send>>,
     ) -> PingClientPingResultDetails {
         PingClientPingResultDetails {
             actual_local_addr,
             round_trip_time,
             is_timeout,
             handshake_error,
+            disconnect_error,
         }
     }
 }
