@@ -62,8 +62,8 @@ pub struct RnpCliOptions {
     #[structopt(long = "ttl", help = "Time to live.")]
     pub time_to_live: Option<u32>,
 
-    #[structopt(long = "use-fin", help = "Use regular TCP disconnect (w/ FIN) instead of RST.")]
-    pub use_fin_in_tcp_ping: bool,
+    #[structopt(short = "d", long = "check-disconnect", help = "Check if connection can be correctly disconnected. Only available in TCP mode now.\nWhen enabled, we will use normal disconnect (w/ FIN) and check the connection disconnect.")]
+    pub check_disconnect: bool,
 
     #[structopt(
         short = "p",
@@ -207,7 +207,7 @@ impl RnpCliOptions {
                 ping_client_config: PingClientConfig {
                     wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
                     time_to_live: self.time_to_live,
-                    use_fin_in_tcp_ping: self.use_fin_in_tcp_ping,
+                    check_disconnect: self.check_disconnect,
                     server_name: self.server_name.as_ref().and_then(|s| Some(s.to_string())),
                     log_tls_key: self.log_tls_key,
                     alpn_protocol: if self.alpn_protocol.to_uppercase() != String::from("NONE") {
@@ -272,7 +272,7 @@ mod tests {
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1000,
                 time_to_live: None,
-                use_fin_in_tcp_ping: false,
+                check_disconnect: false,
                 parallel_ping_count: 1,
                 server_name: None,
                 log_tls_key: false,
@@ -306,7 +306,7 @@ mod tests {
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1500,
                 time_to_live: None,
-                use_fin_in_tcp_ping: false,
+                check_disconnect: true,
                 parallel_ping_count: 10,
                 server_name: None,
                 log_tls_key: false,
@@ -334,6 +334,7 @@ mod tests {
                 "1000",
                 "-i",
                 "1500",
+                "-d",
                 "-p",
                 "10",
                 "-q",
@@ -361,7 +362,7 @@ mod tests {
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
-                use_fin_in_tcp_ping: true,
+                check_disconnect: true,
                 parallel_ping_count: 10,
                 server_name: Some(String::from("localhost")),
                 log_tls_key: true,
@@ -398,7 +399,7 @@ mod tests {
                 "1500",
                 "--ttl",
                 "128",
-                "--use-fin",
+                "--check-disconnect",
                 "--parallel",
                 "10",
                 "--server-name",
@@ -434,7 +435,7 @@ mod tests {
                     ping_client_config: PingClientConfig {
                         wait_timeout: Duration::from_millis(1000),
                         time_to_live: Some(128),
-                        use_fin_in_tcp_ping: false,
+                        check_disconnect: false,
                         server_name: None,
                         log_tls_key: false,
                         alpn_protocol: None,
@@ -472,7 +473,7 @@ mod tests {
                 wait_timeout_in_ms: 1000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
-                use_fin_in_tcp_ping: false,
+                check_disconnect: false,
                 parallel_ping_count: 1,
                 server_name: None,
                 log_tls_key: false,
@@ -499,7 +500,7 @@ mod tests {
                     ping_client_config: PingClientConfig {
                         wait_timeout: Duration::from_millis(2000),
                         time_to_live: Some(128),
-                        use_fin_in_tcp_ping: true,
+                        check_disconnect: true,
                         server_name: Some(String::from("localhost")),
                         log_tls_key: true,
                         alpn_protocol: Some(String::from("h3")),
@@ -537,7 +538,7 @@ mod tests {
                 wait_timeout_in_ms: 2000,
                 ping_interval_in_ms: 1500,
                 time_to_live: Some(128),
-                use_fin_in_tcp_ping: true,
+                check_disconnect: true,
                 parallel_ping_count: 1,
                 server_name: Some(String::from("localhost")),
                 log_tls_key: true,

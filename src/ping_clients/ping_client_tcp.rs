@@ -36,7 +36,7 @@ impl PingClientTcp {
         let local_addr = socket.local_addr();
 
         // Check closing connection as well as opening connection
-        if self.config.use_fin_in_tcp_ping {
+        if self.config.check_disconnect {
             let shutdown_result = self.shutdown_connection(socket);
             match shutdown_result {
                 Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
@@ -57,7 +57,7 @@ impl PingClientTcp {
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&SockAddr::from(source.clone()))?;
         socket.set_read_timeout(Some(self.config.wait_timeout))?;
-        if !self.config.use_fin_in_tcp_ping {
+        if !self.config.check_disconnect {
             socket.set_linger(Some(Duration::from_secs(0)))?;
         }
         if let Some(ttl) = self.config.time_to_live {
@@ -121,7 +121,7 @@ mod tests {
             let config = PingClientConfig {
                 wait_timeout: Duration::from_millis(300),
                 time_to_live: None,
-                use_fin_in_tcp_ping: false,
+                check_disconnect: false,
                 server_name: None,
                 log_tls_key: false,
                 alpn_protocol: None,
