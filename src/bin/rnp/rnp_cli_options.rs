@@ -62,7 +62,7 @@ pub struct RnpCliOptions {
     #[structopt(long = "ttl", help = "Time to live.")]
     pub time_to_live: Option<u32>,
 
-    #[structopt(short = "d", long = "check-disconnect", help = "Use regular TCP disconnect (w/ FIN) instead of RST.")]
+    #[structopt(short = "d", long = "check-disconnect", help = "Check if connection can be correctly disconnected. Only available in TCP mode now.\nWhen enabled, we will use normal disconnect (w/ FIN) and check the connection disconnect.")]
     pub check_disconnect: bool,
 
     #[structopt(
