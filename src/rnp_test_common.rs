@@ -55,6 +55,24 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             None,
         ),
 
+        // Reachable but disconnect connection timed out
+        PingResult::new(
+            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            1,
+            "TCP",
+            "1.2.3.4:443".parse().unwrap(),
+            "5.6.7.8:8080".parse().unwrap(),
+            false,
+            true,
+            Duration::from_millis(20),
+            false,
+            Some(PingClientWarning::DisconnectFailed(Box::new(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "disconnect timeout",
+            )))),
+            None,
+        ),
+
         // Failed to reach remote
         PingResult::new(
             &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),

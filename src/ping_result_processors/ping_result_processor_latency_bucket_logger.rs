@@ -123,7 +123,7 @@ mod tests {
             .iter()
             .for_each(|x| logger.update_statistics(x));
 
-        assert_eq!(3, logger.total_hit_count);
+        assert_eq!(4, logger.total_hit_count);
         assert_eq!(1, logger.timed_out_hit_count);
         assert_eq!(1, logger.failed_hit_count);
     }
