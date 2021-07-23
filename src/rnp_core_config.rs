@@ -51,7 +51,7 @@ pub struct PingWorkerConfig {
 pub struct PingClientConfig {
     pub wait_timeout: Duration,
     pub time_to_live: Option<u32>,
-    pub use_fin_in_tcp_ping: bool,
+    pub check_disconnect: bool,
     pub server_name: Option<String>,
     pub log_tls_key: bool,
     pub alpn_protocol: Option<String>,

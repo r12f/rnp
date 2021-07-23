@@ -37,7 +37,7 @@ mod tests {
         let config = PingClientConfig {
             wait_timeout: Duration::from_millis(100),
             time_to_live: Some(128),
-            use_fin_in_tcp_ping: false,
+            check_disconnect: false,
             server_name: None,
             log_tls_key: false,
             alpn_protocol: None,
