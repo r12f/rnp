@@ -3,6 +3,7 @@ use crate::ping_result::PingResult;
 use chrono::{TimeZone, Utc};
 use std::io;
 use std::time::Duration;
+use crate::ping_clients::ping_client::PingClientWarning;
 
 pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
     vec![
@@ -47,11 +48,29 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             true,
             Duration::from_millis(20),
             false,
-            None,
-            Some(Box::new(io::Error::new(
+            Some(PingClientWarning::AppHandshakeFailed(Box::new(io::Error::new(
                 io::ErrorKind::ConnectionAborted,
                 "connect aborted",
-            ))),
+            )))),
+            None,
+        ),
+
+        // Reachable but disconnect connection timed out
+        PingResult::new(
+            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            1,
+            "TCP",
+            "1.2.3.4:443".parse().unwrap(),
+            "5.6.7.8:8080".parse().unwrap(),
+            false,
+            true,
+            Duration::from_millis(20),
+            false,
+            Some(PingClientWarning::DisconnectFailed(Box::new(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "disconnect timeout",
+            )))),
+            None,
         ),
 
         // Failed to reach remote
@@ -65,11 +84,11 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             false,
             Duration::from_millis(0),
             false,
+            None,
             Some(PingFailed(Box::new(io::Error::new(
                 io::ErrorKind::ConnectionRefused,
                 "connect failed",
             )))),
-            None,
         ),
 
         // Failed to create local resources for ping, such as cannot bind address
@@ -83,11 +102,11 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             false,
             Duration::from_millis(0),
             false,
+            None,
             Some(PreparationFailed(Box::new(io::Error::new(
                 io::ErrorKind::AddrInUse,
                 "address in use",
             )))),
-            None,
         ),
     ]
 }
