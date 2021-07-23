@@ -3,8 +3,9 @@ use crate::PingClientConfig;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
 use std::time::{Duration, Instant};
-use std::net::SocketAddr;
+use std::net::{SocketAddr, Shutdown};
 use async_trait::async_trait;
+use std::mem::MaybeUninit;
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -32,10 +33,19 @@ impl PingClientTcp {
             Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
             Ok(()) => (),
         }
+        let local_addr = socket.local_addr();
+
+        // Check closing connection as well as opening connection
+        if self.config.use_fin_in_tcp_ping {
+            let shutdown_result = self.shutdown_connection(socket);
+            match shutdown_result {
+                Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
+                Ok(_) => (),
+            }
+        }
 
         // If getting local address failed, we ignore it.
         // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
-        let local_addr = socket.local_addr();
         return match local_addr {
             Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false, None)),
             Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false, None)),
@@ -46,6 +56,7 @@ impl PingClientTcp {
         let socket_domain = if source.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&SockAddr::from(source.clone()))?;
+        socket.set_read_timeout(Some(self.config.wait_timeout))?;
         if !self.config.use_fin_in_tcp_ping {
             socket.set_linger(Some(Duration::from_secs(0)))?;
         }
@@ -54,6 +65,18 @@ impl PingClientTcp {
         }
 
         return Ok(socket);
+    }
+
+    fn shutdown_connection(&self, socket: Socket) -> io::Result<()> {
+        socket.shutdown(Shutdown::Write)?;
+
+        // Try to read until recv returns nothing, which indicates shutdown is succeeded.
+        let mut buf: [MaybeUninit<u8>; 128] = unsafe { MaybeUninit::uninit().assume_init() };
+        while socket.recv(&mut buf)? > 0 {
+            continue;
+        }
+
+        return Ok(());
     }
 }
 
