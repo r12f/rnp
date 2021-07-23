@@ -3,9 +3,8 @@ use crate::PingClientConfig;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
 use std::time::{Duration, Instant};
-use std::net::SocketAddr;
+use std::net::{SocketAddr, Shutdown};
 use async_trait::async_trait;
-use async_std::net::Shutdown;
 use std::mem::MaybeUninit;
 
 pub struct PingClientTcp {
