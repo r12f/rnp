@@ -1,4 +1,4 @@
-use crate::ping_clients::ping_client::{PingClient, PingClientResult, PingClientPingResultDetails, PingClientError};
+use crate::ping_clients::ping_client::{PingClient, PingClientResult, PingClientPingResultDetails, PingClientError, PingClientWarning};
 use crate::PingClientConfig;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
@@ -36,19 +36,19 @@ impl PingClientTcp {
         let local_addr = socket.local_addr();
 
         // Check closing connection as well as opening connection
+        let mut warning: Option<PingClientWarning> = None;
         if self.config.check_disconnect {
-            let shutdown_result = self.shutdown_connection(socket);
-            match shutdown_result {
-                Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
-                Ok(_) => (),
+            warning = match self.shutdown_connection(socket) {
+                Err(e) => Some(PingClientWarning::DisconnectFailed(Box::new(e))),
+                Ok(_) => None,
             }
         }
 
         // If getting local address failed, we ignore it.
         // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
         return match local_addr {
-            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false, None)),
-            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false, None)),
+            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false, warning)),
+            Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false, warning)),
         };
     }
 
