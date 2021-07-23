@@ -1,4 +1,5 @@
 use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
+use crate::ping_clients::ping_client::PingClientWarning;
 use crate::PingResult;
 use std::io::{stdout, Write};
 use std::net::SocketAddr;
@@ -9,10 +10,13 @@ pub struct PingResultProcessorConsoleLogger {
     no_console_log: bool,
     last_console_flush_time: Instant,
 
+    protocol: Option<String>,
     target: Option<SocketAddr>,
     ping_count: u32,
     success_count: u32,
     failure_count: u32,
+    handshake_failed_count: u32,
+    disconnect_failed_count: u32,
     min_latency_in_us: u128,
     max_latency_in_us: u128,
     average_latency_in_us: f64,
@@ -24,10 +28,13 @@ impl PingResultProcessorConsoleLogger {
         return PingResultProcessorConsoleLogger {
             no_console_log,
             last_console_flush_time: Instant::now(),
+            protocol: None,
             target: None,
             ping_count: 0,
             success_count: 0,
             failure_count: 0,
+            handshake_failed_count: 0,
+            disconnect_failed_count: 0,
             min_latency_in_us: u128::MAX,
             max_latency_in_us: u128::MIN,
             average_latency_in_us: 0.0,
@@ -45,8 +52,9 @@ impl PingResultProcessorConsoleLogger {
             return;
         }
 
-        // Save the target for outputting summary.
+        // Save some info for outputting summary.
         if self.target.is_none() {
+            self.protocol = Some(ping_result.protocol().to_string());
             self.target = Some(ping_result.target());
         }
 
@@ -55,6 +63,13 @@ impl PingResultProcessorConsoleLogger {
             Some(_) => self.failure_count += 1,
             None => self.success_count += 1,
         }
+
+        if let Some(warning) = ping_result.warning() {
+            match warning {
+                PingClientWarning::AppHandshakeFailed(_) => self.handshake_failed_count += 1,
+                PingClientWarning::DisconnectFailed(_) => self.disconnect_failed_count += 1,
+            }
+        };
 
         let latency_in_us = ping_result.round_trip_time().as_micros();
         if latency_in_us == 0 {
@@ -118,14 +133,24 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
         }
 
         println!(
-            "\n=== TCP connect statistics for {:?} ===",
-            self.target.unwrap()
+            "\n=== Connect statistics for {} {:?} ===",
+            self.protocol.as_ref().unwrap(),
+            self.target.as_ref().unwrap(),
         );
 
+        let mut warning: String = String::from("");
+        if self.handshake_failed_count > 0 || self.disconnect_failed_count > 0 {
+            let mut warning_messages = Vec::new();
+            if self.handshake_failed_count > 0 { warning_messages.push(format!("App Handshake Failed = {}", self.handshake_failed_count)); }
+            if self.disconnect_failed_count > 0 { warning_messages.push(format!("Disconnect Failed = {}", self.disconnect_failed_count)); }
+            warning = format!(" ({})", warning_messages.join(","));
+        }
+
         println!(
-            "- Packets: Sent = {}, Received = {}, Lost = {} ({:.2}% loss).",
+            "- Connects: Sent = {}, Succeeded = {}{}, Failed = {} ({:.2}%).",
             self.ping_count,
             self.success_count,
+            warning,
             self.failure_count,
             (self.failure_count as f64 * 100.0) / (self.ping_count as f64),
         );
