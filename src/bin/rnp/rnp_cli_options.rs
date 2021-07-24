@@ -1,5 +1,8 @@
 use rand::Rng;
-use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol};
+use rnp::{
+    PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
+    RnpCoreConfig, RnpSupportedProtocol,
+};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -10,7 +13,12 @@ use structopt::StructOpt;
 pub struct RnpCliOptions {
     pub target: SocketAddr,
 
-    #[structopt(short = "m", long = "mode", default_value = "TCP", help = "Specify protocol to use.")]
+    #[structopt(
+        short = "m",
+        long = "mode",
+        default_value = "TCP",
+        help = "Specify protocol to use."
+    )]
     pub protocol: RnpSupportedProtocol,
 
     #[structopt(
@@ -62,7 +70,11 @@ pub struct RnpCliOptions {
     #[structopt(long = "ttl", help = "Time to live.")]
     pub time_to_live: Option<u32>,
 
-    #[structopt(short = "d", long = "check-disconnect", help = "Check if connection can be correctly disconnected. Only available in TCP mode now.\nWhen enabled, we will use normal disconnect (w/ FIN) and check the connection disconnect.")]
+    #[structopt(
+        short = "d",
+        long = "check-disconnect",
+        help = "Check if connection can be correctly disconnected. Only available in TCP mode now.\nWhen enabled, we will use normal disconnect (w/ FIN) and check the connection disconnect."
+    )]
     pub check_disconnect: bool,
 
     #[structopt(
@@ -74,8 +86,14 @@ pub struct RnpCliOptions {
     pub parallel_ping_count: u32,
 
     #[structopt(flatten)]
-    quic_options: RnpQuicCliOptions,
+    quic_options: RnpCliQuicPingOptions,
 
+    #[structopt(flatten)]
+    output_options: RnpCliOutputOptions,
+}
+
+#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+pub struct RnpCliOutputOptions {
     #[structopt(
         short = "q",
         long,
@@ -128,17 +146,27 @@ pub struct RnpCliOptions {
 }
 
 #[derive(Debug, StructOpt, PartialOrd, PartialEq)]
-struct RnpQuicCliOptions {
+struct RnpCliQuicPingOptions {
     #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
     pub server_name: Option<String>,
 
-    #[structopt(long, help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
+    #[structopt(
+        long,
+        help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be larger than the real one, because logging key will also take time."
+    )]
     pub log_tls_key: bool,
 
-    #[structopt(long = "alpn", default_value = "h3-29", help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
+    #[structopt(
+        long = "alpn",
+        default_value = "h3-29",
+        help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids"
+    )]
     pub alpn_protocol: String,
 
-    #[structopt(long, help = "Calculate the RTT by checking the time of before and after doing QUIC connect instead of estimated RTT from QUIC. Not recommended, as this might cause the RTT time to be larger than the real one.")]
+    #[structopt(
+        long,
+        help = "Calculate the RTT by checking the time of before and after doing QUIC connect instead of estimated RTT from QUIC. Not recommended, as this might cause the RTT time to be larger than the real one."
+    )]
     pub use_timer_rtt: bool,
 }
 
@@ -193,7 +221,7 @@ impl RnpCliOptions {
             self.parallel_ping_count = 1;
         }
 
-        if let Some(latency_buckets) = &mut self.latency_buckets {
+        if let Some(latency_buckets) = &mut self.output_options.latency_buckets {
             tracing::debug!("Latency bucket set to 0. Use default one.");
             if latency_buckets.len() == 0
                 || (latency_buckets.len() == 1 && latency_buckets[0] == 0.0)
@@ -214,9 +242,15 @@ impl RnpCliOptions {
                     wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
                     time_to_live: self.time_to_live,
                     check_disconnect: self.check_disconnect,
-                    server_name: self.quic_options.server_name.as_ref().and_then(|s| Some(s.to_string())),
+                    server_name: self
+                        .quic_options
+                        .server_name
+                        .as_ref()
+                        .and_then(|s| Some(s.to_string())),
                     log_tls_key: self.quic_options.log_tls_key,
-                    alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase() != String::from("NONE") {
+                    alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase()
+                        != String::from("NONE")
+                    {
                         Some(self.quic_options.alpn_protocol.clone())
                     } else {
                         None
@@ -236,13 +270,15 @@ impl RnpCliOptions {
                 parallel_ping_count: self.parallel_ping_count,
             },
             result_processor_config: PingResultProcessorConfig {
-                no_console_log: self.no_console_log,
-                csv_log_path: self.csv_log_path.clone(),
-                json_log_path: self.json_log_path.clone(),
-                text_log_path: self.text_log_path.clone(),
-                show_result_scatter: self.show_result_scatter,
-                show_latency_scatter: self.show_latency_scatter,
-                latency_buckets: self.latency_buckets.as_ref().and_then(|buckets| Some(buckets.clone())),
+                no_console_log: self.output_options.no_console_log,
+                csv_log_path: self.output_options.csv_log_path.clone(),
+                json_log_path: self.output_options.json_log_path.clone(),
+                text_log_path: self.output_options.text_log_path.clone(),
+                show_result_scatter: self.output_options.show_result_scatter,
+                show_latency_scatter: self.output_options.show_latency_scatter,
+                latency_buckets: self.output_options.latency_buckets
+                    .as_ref()
+                    .and_then(|buckets| Some(buckets.clone())),
             },
         };
 
@@ -257,7 +293,10 @@ impl RnpCliOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol};
+    use rnp::{
+        PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
+        RnpCoreConfig, RnpSupportedProtocol,
+    };
     use std::path::PathBuf;
     use std::time::Duration;
     use structopt::StructOpt;
@@ -280,19 +319,21 @@ mod tests {
                 time_to_live: None,
                 check_disconnect: false,
                 parallel_ping_count: 1,
-                quic_options: RnpQuicCliOptions {
+                quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
                     alpn_protocol: String::from("h3-29"),
                     use_timer_rtt: false,
                 },
-                no_console_log: false,
-                csv_log_path: None,
-                json_log_path: None,
-                text_log_path: None,
-                show_result_scatter: false,
-                show_latency_scatter: false,
-                latency_buckets: None,
+                output_options: RnpCliOutputOptions {
+                    no_console_log: false,
+                    csv_log_path: None,
+                    json_log_path: None,
+                    text_log_path: None,
+                    show_result_scatter: false,
+                    show_latency_scatter: false,
+                    latency_buckets: None,
+                },
             },
             RnpCliOptions::from_iter(&["tp.exe", "10.0.0.1:443"])
         );
@@ -316,19 +357,21 @@ mod tests {
                 time_to_live: None,
                 check_disconnect: true,
                 parallel_ping_count: 10,
-                quic_options: RnpQuicCliOptions {
+                quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
                     alpn_protocol: String::from("h3-29"),
                     use_timer_rtt: false,
                 },
-                no_console_log: true,
-                csv_log_path: None,
-                json_log_path: None,
-                text_log_path: None,
-                show_result_scatter: true,
-                show_latency_scatter: true,
-                latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
+                output_options: RnpCliOutputOptions {
+                    no_console_log: true,
+                    csv_log_path: None,
+                    json_log_path: None,
+                    text_log_path: None,
+                    show_result_scatter: true,
+                    show_latency_scatter: true,
+                    latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
+                },
             },
             RnpCliOptions::from_iter(&[
                 "rnp.exe",
@@ -374,19 +417,21 @@ mod tests {
                 time_to_live: Some(128),
                 check_disconnect: true,
                 parallel_ping_count: 10,
-                quic_options: RnpQuicCliOptions {
+                quic_options: RnpCliQuicPingOptions {
                     server_name: Some(String::from("localhost")),
                     log_tls_key: true,
                     alpn_protocol: String::from("hq-29"),
                     use_timer_rtt: true,
                 },
-                no_console_log: true,
-                csv_log_path: Some(PathBuf::from("log.csv")),
-                json_log_path: Some(PathBuf::from("log.json")),
-                text_log_path: Some(PathBuf::from("log.txt")),
-                show_result_scatter: true,
-                show_latency_scatter: true,
-                latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
+                output_options: RnpCliOutputOptions {
+                    no_console_log: true,
+                    csv_log_path: Some(PathBuf::from("log.csv")),
+                    json_log_path: Some(PathBuf::from("log.json")),
+                    text_log_path: Some(PathBuf::from("log.txt")),
+                    show_result_scatter: true,
+                    show_latency_scatter: true,
+                    latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
+                },
             },
             RnpCliOptions::from_iter(&[
                 "rnp.exe",
@@ -487,19 +532,21 @@ mod tests {
                 time_to_live: Some(128),
                 check_disconnect: false,
                 parallel_ping_count: 1,
-                quic_options: RnpQuicCliOptions {
+                quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
                     alpn_protocol: String::from("none"),
                     use_timer_rtt: false,
                 },
-                no_console_log: false,
-                csv_log_path: None,
-                json_log_path: None,
-                text_log_path: None,
-                show_result_scatter: false,
-                show_latency_scatter: false,
-                latency_buckets: None,
+                output_options: RnpCliOutputOptions {
+                    no_console_log: false,
+                    csv_log_path: None,
+                    json_log_path: None,
+                    text_log_path: None,
+                    show_result_scatter: false,
+                    show_latency_scatter: false,
+                    latency_buckets: None,
+                },
             }
             .to_rnp_core_config()
         );
@@ -554,19 +601,21 @@ mod tests {
                 time_to_live: Some(128),
                 check_disconnect: true,
                 parallel_ping_count: 1,
-                quic_options: RnpQuicCliOptions {
+                quic_options: RnpCliQuicPingOptions {
                     server_name: Some(String::from("localhost")),
                     log_tls_key: true,
                     alpn_protocol: String::from("h3"),
                     use_timer_rtt: true,
                 },
-                no_console_log: true,
-                csv_log_path: Some(PathBuf::from("log.csv")),
-                json_log_path: Some(PathBuf::from("log.json")),
-                text_log_path: Some(PathBuf::from("log.txt")),
-                show_result_scatter: true,
-                show_latency_scatter: true,
-                latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
+                output_options: RnpCliOutputOptions {
+                    no_console_log: true,
+                    csv_log_path: Some(PathBuf::from("log.csv")),
+                    json_log_path: Some(PathBuf::from("log.json")),
+                    text_log_path: Some(PathBuf::from("log.txt")),
+                    show_result_scatter: true,
+                    show_latency_scatter: true,
+                    latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
+                },
             }
             .to_rnp_core_config()
         );
@@ -592,7 +641,7 @@ mod tests {
         opts.source_port_max = Some(1024);
         opts.ping_count = 0;
         opts.parallel_ping_count = 0;
-        opts.latency_buckets = Some(vec![0.0]);
+        opts.output_options.latency_buckets = Some(vec![0.0]);
         opts.prepare_to_use();
 
         assert_eq!(1024, opts.source_port_min.unwrap());
@@ -603,7 +652,7 @@ mod tests {
             Some(vec![
                 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0
             ]),
-            opts.latency_buckets
+            opts.output_options.latency_buckets
         );
 
         opts.source_port_min = Some(1024);
