@@ -21,10 +21,6 @@ To see more on how to use it, please check our README in our project: https://gi
     <releaseNotes>
 For release notes, please check our release in github: https://github.com/r12f/rnp/releases/tag/{build_tag}
     </releaseNotes>
-    <dependencies>
-      <!-- Taking dependency for chocolatey 0.10.15 for correctly detecting arm64 machine -->
-      <dependency id="chocolatey" version="0.10.15" />
-    </dependencies>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
