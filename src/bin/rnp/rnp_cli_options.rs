@@ -73,17 +73,8 @@ pub struct RnpCliOptions {
     )]
     pub parallel_ping_count: u32,
 
-    #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
-    pub server_name: Option<String>,
-
-    #[structopt(long, help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
-    pub log_tls_key: bool,
-
-    #[structopt(long = "alpn", default_value = "h3-29", help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
-    pub alpn_protocol: String,
-
-    #[structopt(long, help = "Calculate the RTT by checking the time of before and after doing QUIC connect instead of estimated RTT from QUIC. Not recommended, as this might cause the RTT time to be larger than the real one.")]
-    pub use_timer_rtt: bool,
+    #[structopt(flatten)]
+    quic_options: RnpQuicCliOptions,
 
     #[structopt(
         short = "q",
@@ -134,6 +125,21 @@ pub struct RnpCliOptions {
         help = "If set, bucket ping latency (round trip time) after ping is done. Set to 0.0 to use the default one: [0.1,0.5,1.0,10.0,50.0,100.0,300.0,500.0]"
     )]
     pub latency_buckets: Option<Vec<f64>>,
+}
+
+#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+struct RnpQuicCliOptions {
+    #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
+    pub server_name: Option<String>,
+
+    #[structopt(long, help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be larger than the real one, because logging key will also take time.")]
+    pub log_tls_key: bool,
+
+    #[structopt(long = "alpn", default_value = "h3-29", help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids")]
+    pub alpn_protocol: String,
+
+    #[structopt(long, help = "Calculate the RTT by checking the time of before and after doing QUIC connect instead of estimated RTT from QUIC. Not recommended, as this might cause the RTT time to be larger than the real one.")]
+    pub use_timer_rtt: bool,
 }
 
 impl RnpCliOptions {
@@ -208,14 +214,14 @@ impl RnpCliOptions {
                     wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
                     time_to_live: self.time_to_live,
                     check_disconnect: self.check_disconnect,
-                    server_name: self.server_name.as_ref().and_then(|s| Some(s.to_string())),
-                    log_tls_key: self.log_tls_key,
-                    alpn_protocol: if self.alpn_protocol.to_uppercase() != String::from("NONE") {
-                        Some(self.alpn_protocol.clone())
+                    server_name: self.quic_options.server_name.as_ref().and_then(|s| Some(s.to_string())),
+                    log_tls_key: self.quic_options.log_tls_key,
+                    alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase() != String::from("NONE") {
+                        Some(self.quic_options.alpn_protocol.clone())
                     } else {
                         None
                     },
-                    use_timer_rtt: self.use_timer_rtt,
+                    use_timer_rtt: self.quic_options.use_timer_rtt,
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
@@ -274,10 +280,12 @@ mod tests {
                 time_to_live: None,
                 check_disconnect: false,
                 parallel_ping_count: 1,
-                server_name: None,
-                log_tls_key: false,
-                alpn_protocol: String::from("h3-29"),
-                use_timer_rtt: false,
+                quic_options: RnpQuicCliOptions {
+                    server_name: None,
+                    log_tls_key: false,
+                    alpn_protocol: String::from("h3-29"),
+                    use_timer_rtt: false,
+                },
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -308,10 +316,12 @@ mod tests {
                 time_to_live: None,
                 check_disconnect: true,
                 parallel_ping_count: 10,
-                server_name: None,
-                log_tls_key: false,
-                alpn_protocol: String::from("h3-29"),
-                use_timer_rtt: false,
+                quic_options: RnpQuicCliOptions {
+                    server_name: None,
+                    log_tls_key: false,
+                    alpn_protocol: String::from("h3-29"),
+                    use_timer_rtt: false,
+                },
                 no_console_log: true,
                 csv_log_path: None,
                 json_log_path: None,
@@ -364,10 +374,12 @@ mod tests {
                 time_to_live: Some(128),
                 check_disconnect: true,
                 parallel_ping_count: 10,
-                server_name: Some(String::from("localhost")),
-                log_tls_key: true,
-                alpn_protocol: String::from("hq-29"),
-                use_timer_rtt: true,
+                quic_options: RnpQuicCliOptions {
+                    server_name: Some(String::from("localhost")),
+                    log_tls_key: true,
+                    alpn_protocol: String::from("hq-29"),
+                    use_timer_rtt: true,
+                },
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
@@ -475,10 +487,12 @@ mod tests {
                 time_to_live: Some(128),
                 check_disconnect: false,
                 parallel_ping_count: 1,
-                server_name: None,
-                log_tls_key: false,
-                alpn_protocol: String::from("none"),
-                use_timer_rtt: false,
+                quic_options: RnpQuicCliOptions {
+                    server_name: None,
+                    log_tls_key: false,
+                    alpn_protocol: String::from("none"),
+                    use_timer_rtt: false,
+                },
                 no_console_log: false,
                 csv_log_path: None,
                 json_log_path: None,
@@ -540,10 +554,12 @@ mod tests {
                 time_to_live: Some(128),
                 check_disconnect: true,
                 parallel_ping_count: 1,
-                server_name: Some(String::from("localhost")),
-                log_tls_key: true,
-                alpn_protocol: String::from("h3"),
-                use_timer_rtt: true,
+                quic_options: RnpQuicCliOptions {
+                    server_name: Some(String::from("localhost")),
+                    log_tls_key: true,
+                    alpn_protocol: String::from("h3"),
+                    use_timer_rtt: true,
+                },
                 no_console_log: true,
                 csv_log_path: Some(PathBuf::from("log.csv")),
                 json_log_path: Some(PathBuf::from("log.json")),
