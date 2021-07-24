@@ -86,10 +86,10 @@ pub struct RnpCliOptions {
     pub parallel_ping_count: u32,
 
     #[structopt(flatten)]
-    quic_options: RnpCliQuicPingOptions,
+    output_options: RnpCliOutputOptions,
 
     #[structopt(flatten)]
-    output_options: RnpCliOutputOptions,
+    quic_options: RnpCliQuicPingOptions,
 }
 
 #[derive(Debug, StructOpt, PartialOrd, PartialEq)]
