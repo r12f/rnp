@@ -103,7 +103,11 @@ impl RnpCore {
         return rnp_core;
     }
 
-    #[tracing::instrument(name = "Creating ping result processing worker", level = "debug", skip(extra_ping_result_processors))]
+    #[tracing::instrument(
+        name = "Creating ping result processing worker",
+        level = "debug",
+        skip(extra_ping_result_processors)
+    )]
     fn create_ping_result_processing_worker(
         result_processor_config: PingResultProcessorConfig,
         extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
@@ -134,6 +138,7 @@ impl RnpCore {
         );
     }
 
+    /// Run all warm up pings one by one and wait until they are all completed.
     #[tracing::instrument(name = "Running warmup pings", level = "debug", skip(self))]
     pub async fn run_warmup_pings(&mut self) {
         let warmup_count = self.config.worker_scheduler_config.warmup_count;
@@ -165,6 +170,7 @@ impl RnpCore {
         tracing::debug!("Warmup ping completed!");
     }
 
+    /// Start running all normal pings in the way that matches the specified config.
     #[tracing::instrument(name = "Start running normal pings", level = "debug", skip(self))]
     pub fn start_running_normal_pings(&mut self) {
         if self.stop_event.is_set() {
@@ -219,6 +225,7 @@ impl RnpCore {
         return worker_join_handles;
     }
 
+    /// Wait for all pings to complete.
     #[tracing::instrument(
         name = "Waiting for RNP core to be stopped.",
         level = "debug",
