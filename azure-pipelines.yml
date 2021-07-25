@@ -316,7 +316,7 @@ stages:
         displayName: 'Generate all packages'
         inputs:
           targetType: 'filePath'
-          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/pack/PackReleasePackages.ps1'
+          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/pack/PackReleasePackages.ps1'
           workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
       - task: CopyFiles@2
