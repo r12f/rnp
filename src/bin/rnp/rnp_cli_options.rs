@@ -193,7 +193,7 @@ impl RnpCliOptions {
     pub fn to_rnp_core_config(&self) -> RnpCoreConfig {
         let mut config = RnpCoreConfig {
             worker_config: PingWorkerConfig {
-                protocol: self.common_options.protocol,
+                protocol: self.common_options.protocol.clone(),
                 target: self.common_options.target,
                 source_ip: self.common_options.source_ip,
                 ping_interval: Duration::from_millis(self.common_options.ping_interval_in_ms.into()),
@@ -241,6 +241,7 @@ impl RnpCliOptions {
                     .as_ref()
                     .and_then(|buckets| Some(buckets.clone())),
             },
+            ping_client_factory: None,
         };
 
         if !self.common_options.ping_until_stopped {
@@ -536,6 +537,7 @@ mod tests {
                     show_latency_scatter: false,
                     latency_buckets: None,
                 },
+                ping_client_factory: None
             },
             RnpCliOptions {
                 common_options: RnpCliCommonOptions {
@@ -607,6 +609,7 @@ mod tests {
                     show_latency_scatter: true,
                     latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
                 },
+                ping_client_factory: None
             },
             RnpCliOptions {
                 common_options: RnpCliCommonOptions {
