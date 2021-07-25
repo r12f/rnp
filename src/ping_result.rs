@@ -135,7 +135,7 @@ impl PingResult {
             match warning {
                 PingClientWarning::AppHandshakeFailed(e) => {
                     return format!(
-                        "Reaching {} {} from {}{} succeeded, but handshake failed: RTT={:.2}ms, Error = {}",
+                        "Reaching {} {} from {}{} succeeded, but app handshake failed: RTT={:.2}ms, Error = {}",
                         self.protocol(),
                         self.target(),
                         self.source(),
@@ -323,7 +323,7 @@ mod tests {
             vec![
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 (warmup) succeeded: RTT=10.00ms",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: Timed out, RTT = 1000.00ms",
-                "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 succeeded, but handshake failed: RTT=20.00ms, Error = connect aborted",
+                "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 succeeded, but app handshake failed: RTT=20.00ms, Error = connect aborted",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 succeeded, but disconnect failed: RTT=20.00ms, Error = disconnect timeout",
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: connect failed",
                 "Unable to perform ping to TCP 1.2.3.4:443 from 5.6.7.8:8080, because failed preparing to ping: Error = address in use",

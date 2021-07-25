@@ -30,7 +30,13 @@ impl FromStr for RnpSupportedProtocol {
 
 impl fmt::Display for RnpSupportedProtocol {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        let protocol = match self {
+            RnpSupportedProtocol::TCP => "TCP",
+            RnpSupportedProtocol::QUIC => "QUIC",
+            RnpSupportedProtocol::External(p) => &p,
+        };
+
+        write!(f, "{}", protocol)
     }
 }
 
