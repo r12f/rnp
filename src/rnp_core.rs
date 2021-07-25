@@ -145,7 +145,7 @@ impl RnpCore {
             let worker_join_handle = PingWorker::run(
                 worker_id,
                 shared_worker_config.clone(),
-                self.config.ping_client_factory.clone(),
+                self.config.external_ping_client_factory.clone(),
                 source_port_picker.clone(),
                 self.stop_event.clone(),
                 self.result_sender.clone(),

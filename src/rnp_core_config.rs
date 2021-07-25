@@ -2,7 +2,7 @@ use std::net::{IpAddr, SocketAddr};
 use std::{time::Duration, path::PathBuf};
 use std::str::FromStr;
 use std::fmt;
-use crate::PingClient;
+use crate::{PingClient, PingResultProcessor};
 use std::fmt::Debug;
 
 pub const RNP_NAME: &str = "rnp";
@@ -36,12 +36,12 @@ impl fmt::Display for RnpSupportedProtocol {
 
 pub type ExternalPingClientFactory = fn(protocol: &RnpSupportedProtocol, config: &PingClientConfig) -> Option<Box<dyn PingClient + Send + Sync>>;
 
-#[derive(Clone)]
 pub struct RnpCoreConfig {
     pub worker_config: PingWorkerConfig,
     pub worker_scheduler_config: PingWorkerSchedulerConfig,
     pub result_processor_config: PingResultProcessorConfig,
-    pub ping_client_factory: Option<ExternalPingClientFactory>,
+    pub external_ping_client_factory: Option<ExternalPingClientFactory>,
+    pub extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
 }
 
 impl Debug for RnpCoreConfig {
@@ -50,7 +50,7 @@ impl Debug for RnpCoreConfig {
             .field("worker_config", &self.worker_config)
             .field("worker_scheduler_config", &self.worker_scheduler_config)
             .field("result_processor_config", &self.result_processor_config)
-            .field("ping_client_factory", &if self.ping_client_factory.is_some() { "Some(PingClientFactory)".to_string() } else { "None".to_string() } )
+            .field("external_ping_client_factory", &if self.external_ping_client_factory.is_some() { "Some(PingClientFactory)".to_string() } else { "None".to_string() } )
             .finish()
     }
 }
@@ -60,7 +60,7 @@ impl PartialEq for RnpCoreConfig {
         if self.worker_config != other.worker_config { return false; }
         if self.worker_scheduler_config != other.worker_scheduler_config { return false; }
         if self.result_processor_config != other.result_processor_config { return false; }
-        return self.ping_client_factory.is_some() == other.ping_client_factory.is_some();
+        return self.external_ping_client_factory.is_some() == other.external_ping_client_factory.is_some();
     }
 }
 
