@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 use tracing;
 
 const COUNT_PER_ROW: usize = 10;
-const SCATTER_SYMBOL_NOT_TESTED: &str = "   -   ";
-const SCATTER_SYMBOL_FAILED: &str = "   X   ";
+const SCATTER_SYMBOL_NOT_TESTED: &str = "    -    ";
+const SCATTER_SYMBOL_FAILED: &str = "    X    ";
 
 struct LatencyHits {
     bitmask: u32,
@@ -13,14 +13,14 @@ struct LatencyHits {
 }
 
 pub struct PingResultProcessorLatencyScatterLogger {
-    ping_history: BTreeMap<usize, LatencyHits>,
+    ping_history: Vec<BTreeMap<usize, LatencyHits>>,
 }
 
 impl PingResultProcessorLatencyScatterLogger {
     #[tracing::instrument(name = "Creating ping result latency scatter logger", level = "debug")]
     pub fn new() -> PingResultProcessorLatencyScatterLogger {
         return PingResultProcessorLatencyScatterLogger {
-            ping_history: BTreeMap::new(),
+            ping_history: vec![BTreeMap::new()],
         };
     }
 
@@ -42,7 +42,7 @@ impl PingResultProcessorLatencyScatterLogger {
                 if latency.is_nan() {
                     output_symbol = SCATTER_SYMBOL_FAILED;
                 } else {
-                    formatted_latency = format!("{:^7.2}", latency);
+                    formatted_latency = format!("{:^9.2}", latency);
                     output_symbol = &formatted_latency;
                 }
             }
@@ -73,15 +73,32 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
         let (row, col) = self.get_ping_history_item_pos(ping_result.source().port() as u32);
         let bit_mask_bit = 1 << col;
 
-        let results = self.ping_history.entry(row).or_insert(LatencyHits {
-            bitmask: 0,
-            results: vec![f64::NAN; COUNT_PER_ROW],
-        });
+        // Find the last iteration and update the result.
+        loop {
+            let last_iteration = self
+                .ping_history
+                .last_mut()
+                .expect("Ping history should always be non-empty.");
 
-        results.bitmask |= bit_mask_bit;
+            let last_iteration_results = last_iteration.entry(row).or_insert(LatencyHits {
+                bitmask: 0,
+                results: vec![f64::NAN; COUNT_PER_ROW],
+            });
 
-        if let None = ping_result.error() {
-            results.results[col] = ping_result.round_trip_time().as_micros() as f64 / 1000.0;
+            // If the source port is already tested in the last iteration, it means a new iteration is started,
+            // hence create a new iteration and update there.
+            if last_iteration_results.bitmask & bit_mask_bit != 0 {
+                self.ping_history.push(BTreeMap::new());
+                continue;
+            }
+
+            last_iteration_results.bitmask |= bit_mask_bit;
+
+            if let None = ping_result.error() {
+                last_iteration_results.results[col] = ping_result.round_trip_time().as_micros() as f64 / 1000.0;
+            }
+
+            break;
         }
     }
 
@@ -89,24 +106,27 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
         println!("\n=== Latency scatter map (in milliseconds) ===\n");
 
         println!(
-            "{:>10} | {} (\"{}\" = Fail, \"{}\" = Not Tested)",
+            "{:>7} | {:>8} | {} (\"{}\" = Fail, \"{}\" = Not Tested)",
+            "Iter #",
             "Src Port",
             "Results",
             SCATTER_SYMBOL_FAILED.trim(),
             SCATTER_SYMBOL_NOT_TESTED.trim()
         );
         println!(
-            "{:->12}-{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}{:-^7.2}",
-            "+", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+            "{:->9}{:->11}-{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}{:-^9.2}",
+            "+", "+", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
         );
 
-        for (port_bucket, latency_hits) in &self.ping_history {
-            print!("{:>10} | ", port_bucket);
+        for (iteration_index, iteration) in self.ping_history.iter().enumerate() {
+            for (port_bucket, latency_hits) in iteration {
+                print!("{:>7} | {:>8} | ", iteration_index, port_bucket);
 
-            let result = PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(
-                latency_hits,
-            );
-            println!("{}", result);
+                let result = PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(
+                    latency_hits,
+                );
+                println!("{}", result);
+            }
         }
     }
 }
