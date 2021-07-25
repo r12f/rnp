@@ -318,9 +318,9 @@ stages:
           targetType: 'filePath'
           filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/pack/PackReleasePackages.ps1'
           arguments:
-            -BuildBranchName variables['build.branch_name']
-            -BuildTag variables['build.tag']
-            -BuildNumber variables['build.version']
+            -BuildBranchName $(build.branch_name)
+            -BuildTag $(build.tag)
+            -BuildNumber $(build.version)
           workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
       - task: CopyFiles@2

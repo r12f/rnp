@@ -10,6 +10,8 @@ Param(
 )
 
 function PackAllReleasePackages() {
+    Write-Host "Pack all release packages: BuildBranch = $BuildBranchName, BuildTag = $BuildTag, BuildNumber = $BuildNumber"
+
     PackPerFlavorReleases
     PackSymbolsPackagesForGithubRelease
     PackRustCrate
