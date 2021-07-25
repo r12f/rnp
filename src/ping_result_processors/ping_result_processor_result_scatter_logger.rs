@@ -13,14 +13,14 @@ const SCATTER_SYMBOL_HANDSHAKE_FAILED: char = 'H';
 const SCATTER_SYMBOL_DISCONNECT_FAILED: char = 'D';
 
 pub struct PingResultProcessorResultScatterLogger {
-    ping_history: BTreeMap<u32, Vec<char>>,
+    ping_history: Vec<BTreeMap<u32, Vec<char>>>,
 }
 
 impl PingResultProcessorResultScatterLogger {
     #[tracing::instrument(name = "Creating ping result result scatter logger", level = "debug")]
     pub fn new() -> PingResultProcessorResultScatterLogger {
         return PingResultProcessorResultScatterLogger {
-            ping_history: BTreeMap::new(),
+            ping_history: vec![BTreeMap::new()],
         };
     }
 
@@ -46,9 +46,7 @@ impl PingResultProcessorResultScatterLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorResultScatterLogger {
-    fn name(&self) -> &'static str {
-        "ResultScatterLogger"
-    }
+    fn name(&self) -> &'static str { "ResultScatterLogger" }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.
@@ -76,30 +74,49 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             SCATTER_SYMBOL_PASSED
         };
 
-        let results = self
-            .ping_history
-            .entry(row)
-            .or_insert(vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20]);
+        // Find the last iteration and update the result.
+        loop {
+            let last_iteration = self
+                .ping_history
+                .last_mut()
+                .expect("Ping history should always be non-empty.");
 
-        results[index] = result;
+            let last_iteration_results = last_iteration
+                .entry(row)
+                .or_insert(vec![SCATTER_SYMBOL_NOT_TESTED_YET; COUNT_PER_ROW as usize]);
+
+            // If the source port is already tested in the last iteration, it means a new iteration is started,
+            // hence create a new iteration and update there.
+            if last_iteration_results[index] != SCATTER_SYMBOL_NOT_TESTED_YET {
+                self.ping_history.push(BTreeMap::new());
+                continue;
+            }
+
+            last_iteration_results[index] = result;
+
+            break;
+        }
     }
 
     fn rundown(&mut self) {
         println!("\n=== Ping result scatter map ===\n");
-
-        println!("{:>7} | {}", "Src", "Results");
         println!(
-            "{:>7} | (\"{}\" = Ok, \"{}\" = Fail, \"{}\" = Not tested yet, \"{}\" = Preparation failed, \"{}\" = App handshake failed, \"{}\" = Disconnect failed)",
-            "Port", SCATTER_SYMBOL_PASSED, SCATTER_SYMBOL_FAILED, SCATTER_SYMBOL_NOT_TESTED_YET, SCATTER_SYMBOL_PREPARE_FAILED, SCATTER_SYMBOL_HANDSHAKE_FAILED, SCATTER_SYMBOL_DISCONNECT_FAILED
+            "(\"{}\" = Ok, \"{}\" = Fail, \"{}\" = Not tested yet, \"{}\" = Preparation failed, \"{}\" = App handshake failed, \"{}\" = Disconnect failed)",
+            SCATTER_SYMBOL_PASSED, SCATTER_SYMBOL_FAILED, SCATTER_SYMBOL_NOT_TESTED_YET, SCATTER_SYMBOL_PREPARE_FAILED, SCATTER_SYMBOL_HANDSHAKE_FAILED, SCATTER_SYMBOL_DISCONNECT_FAILED
         );
-        println!("{:->9}-0---4-5---9-0---4-5---9-------------------", "+");
 
-        for (port_bucket, result_hits) in &self.ping_history {
-            print!("{:>7} | ", port_bucket);
+        println!("{:>7} | {:>7} | {}", "Iter #", "Src", "Results");
+        println!("{:>7} | {:>7} | ", "", "Port");
+        println!("{:>7} | {:->9}-0---4-5---9-0---4-5---9-------------------", "", "+");
 
-            let result =
-                PingResultProcessorResultScatterLogger::convert_result_hits_to_string(result_hits);
-            println!("{}", result);
+        for (iteration_index, iteration) in self.ping_history.iter().enumerate() {
+            for (port_bucket, result_hits) in iteration {
+                print!("{:>7} | {:>7} | ", iteration_index, port_bucket);
+
+                let result =
+                    PingResultProcessorResultScatterLogger::convert_result_hits_to_string(result_hits);
+                println!("{}", result);
+            }
         }
     }
 }
