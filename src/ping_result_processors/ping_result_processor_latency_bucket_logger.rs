@@ -1,4 +1,4 @@
-use crate::{PingResult, PingResultProcessor};
+use crate::*;
 use contracts::requires;
 use std::time::Duration;
 use tracing;
