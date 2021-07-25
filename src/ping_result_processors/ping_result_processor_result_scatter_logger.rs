@@ -1,6 +1,4 @@
-use crate::ping_clients::ping_client::{PingClientError, PingClientWarning};
-use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
-use crate::PingResult;
+use crate::{PingClientError, PingClientWarning, PingResult, PingResultProcessor};
 use std::collections::BTreeMap;
 use tracing;
 
@@ -46,7 +44,9 @@ impl PingResultProcessorResultScatterLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorResultScatterLogger {
-    fn name(&self) -> &'static str { "ResultScatterLogger" }
+    fn name(&self) -> &'static str {
+        "ResultScatterLogger"
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.
@@ -108,8 +108,9 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             for (port_bucket, result_hits) in iteration {
                 print!("{:>5} | {:>5} | ", iteration_index, port_bucket);
 
-                let result =
-                    PingResultProcessorResultScatterLogger::convert_result_hits_to_string(result_hits);
+                let result = PingResultProcessorResultScatterLogger::convert_result_hits_to_string(
+                    result_hits,
+                );
                 println!("{}", result);
             }
         }

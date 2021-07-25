@@ -1,6 +1,4 @@
-use crate::ping_clients::ping_client::PingClientWarning;
-use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
-use crate::PingResult;
+use crate::{PingResult, PingResultProcessor, PingClientWarning};
 use std::io::{stdout, Write};
 use std::net::SocketAddr;
 use std::time::Instant;
