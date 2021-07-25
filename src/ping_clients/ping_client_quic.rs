@@ -1,6 +1,6 @@
 use crate::*;
 use async_trait::async_trait;
-use quinn::{ClientConfigBuilder, ConnectionError, Endpoint, EndpointError};
+use quinn::{ClientConfig, ClientConfigBuilder, ConnectionError, Endpoint, EndpointError};
 use rustls::ServerCertVerified;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -41,6 +41,21 @@ impl PingClientQuic {
     }
 
     fn create_local_endpoint(&self, source: &SocketAddr) -> Result<Endpoint, EndpointError> {
+        let client_config = self.create_client_config();
+
+        let mut endpoint_builder = Endpoint::builder();
+        endpoint_builder.default_client_config(client_config);
+
+        let socket = std::net::UdpSocket::bind(source).map_err(EndpointError::Socket)?;
+        if let Some(ttl) = self.config.time_to_live {
+            socket.set_ttl(ttl).map_err(EndpointError::Socket)?;
+        }
+
+        let (endpoint, _) = endpoint_builder.with_socket(socket)?;
+        return Ok(endpoint);
+    }
+
+    fn create_client_config(&self) -> ClientConfig {
         let mut client_config_builder = ClientConfigBuilder::default();
 
         // Setup ALPN protocol if specified.
@@ -55,23 +70,22 @@ impl PingClientQuic {
 
         let mut client_config = client_config_builder.build();
         {
-            let tls_cfg: &mut rustls::ClientConfig =
-                Arc::get_mut(&mut client_config.crypto).unwrap();
+            let tls_cfg: &mut rustls::ClientConfig = Arc::get_mut(&mut client_config.crypto)
+                .expect("Failed to get QUIC client crypto config, which should never happen.");
+
             tls_cfg
                 .dangerous()
                 .set_certificate_verifier(Arc::new(SkipCertificationVerification));
 
-            let transport_config = Arc::get_mut(&mut client_config.transport).unwrap();
+            let transport_config = Arc::get_mut(&mut client_config.transport)
+                .expect("Failed to get QUIC client transport config, which should never happen.");
+
             transport_config
                 .max_idle_timeout(Some(self.config.wait_timeout))
-                .unwrap();
+                .expect("Failed to set QUIC client max idle timeout, which should never happen.");
         }
 
-        let mut endpoint_builder = Endpoint::builder();
-        endpoint_builder.default_client_config(client_config);
-
-        let (endpoint, _) = endpoint_builder.bind(source)?;
-        return Ok(endpoint);
+        return client_config;
     }
 
     async fn connect_to_target(
