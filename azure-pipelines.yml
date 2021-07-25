@@ -162,7 +162,7 @@ stages:
       displayName: Install build tools for linux
       condition: and(succeeded(), ne(variables['gcc_suffix'], ''), ne(variables['target'], 'i686-unknown-linux-gnu'))
 
-      #
+    #
     # Update version files and pack all source code for crate publishing
     #
     - bash: |
@@ -254,10 +254,17 @@ stages:
 
     - task: CopyFiles@2
       displayName: Copy package template to output
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+      condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/build/templates'
         targetFolder: '$(Build.ArtifactStagingDirectory)/templates'
+
+    - task: CopyFiles@2
+      displayName: Copy pack scripts to output
+      condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)/build/pack'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/pack'
 
     #
     # Publish all pipeline artifacts
@@ -305,101 +312,12 @@ stages:
           echo "Updated build.tag to $BUILD_TAG"
         displayName: 'Set environment variables'
 
-      - powershell: |
-          function EvaluateTemplate($template) {
-              return $template.Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
-          }
-
-          function EvaluateTemplateFile($templateFile, $targetFile) {
-              $templateFileContent = gc $templateFile;
-              $targetFileContent = EvaluateTemplate $templateFileContent
-
-              $utf8NoBom = New-Object System.Text.UTF8Encoding $False
-              [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
-          }
-
-          function EvaluateTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs) {
-              $templateFileContent = gc $templateFile;
-              $targetFileContent = EvaluateTemplate $templateFileContent
-              $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64);
-
-              $utf8NoBom = New-Object System.Text.UTF8Encoding $False
-              [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
-          }
-
-          New-Item -ItemType Directory -Path ".\Releases\Crate.io"
-          New-Item -ItemType Directory -Path ".\Releases\GithubReleases"
-          New-Item -ItemType Directory -Path ".\Releases\NugetPackages"
-          New-Item -ItemType Directory -Path ".\Releases\Chocolatey"
-          New-Item -ItemType Directory -Path ".\Staging\Chocolatey"
-          New-Item -ItemType Directory -Path ".\Staging\Chocolatey\tools"
-
-          $flavors= @{
-              "windows.x86" = @{"Root"="Build.Build.windowsx86"; "Target"="i686-pc-windows-msvc"};
-              "windows.x64" = @{"Root"="Build.Build.windowsx64";"Target"="x86_64-pc-windows-msvc"};
-              "windows.arm64" = @{"Root"="Build.Build.windowsarm64";"Target"="aarch64-pc-windows-msvc"};
-              "linux.x86" = @{"Root"="Build.Build.linuxx86"; "Target"="i686-unknown-linux-gnu"};
-              "linux.x64" = @{"Root"="Build.Build.linuxx64";"Target"="x86_64-unknown-linux-gnu"};
-              "linux.arm" = @{"Root"="Build.Build.linuxarm";"Target"="arm-unknown-linux-gnueabi"};
-              "linux.arm64" = @{"Root"="Build.Build.linuxarm64";"Target"="aarch64-unknown-linux-gnu"};
-              "macos.x64" = @{"Root"="Build.Build.macosx64";"Target"="x86_64-apple-darwin"};
-          }
-
-          $flavors.GetEnumerator() | ForEach-Object {
-              $flavor = $_.Name
-              $root = $_.Value["Root"]
-              $target = $_.Value["Target"]
-              Write-Host "Processing build: Flavor = $flavor, Root = $root, Target = $target"
-
-              # Create zip for github release
-              $zipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).$flavor.zip"
-              Write-Host "Packing to $zipFilePath"
-              7z -tzip a $zipFilePath .\$root\bin\*
-
-              # Create tar.gz for github release
-              $tarFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).$flavor.tar.gz"
-              Write-Host "Packing to $tarFilePath"
-              tar -cvzf $tarFilePath --directory .\$root\bin *
-
-              # Copy symbols for github release
-              $symbolDir = ".\Staging\Symbols\$flavor"
-              Write-Host "Copying symbol to $symbolDir"
-              New-Item -ItemType Directory -Path $symbolDir
-              Copy-Item -Path .\$root\symbols\* $symbolDir -Verbose -Force
-
-              # Generate nuget package
-              $nugetProjectRoot = ".\Staging\NugetPackages\$flavor"
-              Write-Host "Creating nuget package under $nugetProjectRoot"
-              New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
-              Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
-              EvaluateTemplateFile ".\Build.Build.linuxx64\templates\nuget_packages\rnp_nupkg.csproj" "$nugetProjectRoot\rnp_nupkg.csproj"
-              dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
-          }
-
-          # Pack symbols for github release
-          $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).symbols.zip"
-          Write-Host "Pack all symbols to $symbolsZipFilePath"
-          7z -tzip a $symbolsZipFilePath .\Staging\Symbols\*
-
-          # Crate.io
-          Write-Host "Pack source as crate to .\Releases\Crate.io"
-          Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
-
-          # Chocolatey
-          $fileHashs = [pscustomobject]@{
-              "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$(build.tag).windows.x86.zip" -Algorithm SHA256).Hash;
-              "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$(build.tag).windows.x64.zip" -Algorithm SHA256).Hash;
-              "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash;
-              "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash;
-          }
-          Write-Host "File hash: $fileHashs"
-          EvaluateTemplateFileWithFileHash ".\Build.Build.linuxx64\chocolatey\rnp.nuspec" ".\Staging\Chocolatey\rnp.nuspec" $fileHashs
-          EvaluateTemplateFileWithFileHash ".\Build.Build.linuxx64\chocolatey\tools\chocolateyInstall.ps1" ".\Staging\Chocolatey\tools\chocolateyInstall.ps1" $fileHashs
-          EvaluateTemplateFileWithFileHash ".\Build.Build.linuxx64\chocolatey\tools\VERIFICATION.txt" ".\Staging\Chocolatey\tools\VERIFICATION.txt" $fileHashs
-          EvaluateTemplateFileWithFileHash ".\Build.Build.linuxx64\chocolatey\tools\LICENSE.txt" ".\Staging\Chocolatey\tools\LICENSE.txt" $fileHashs
-          choco pack ".\Staging\Chocolatey\rnp.nuspec" --outputdirectory ".\Releases\Chocolatey\"
-        workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
+      - task: PowerShell@2
         displayName: 'Generate all packages'
+        inputs:
+          targetType: 'filePath'
+          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/pack/PackReleasePackages.ps1'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
       - task: CopyFiles@2
         displayName: Copy packages to staging folder
