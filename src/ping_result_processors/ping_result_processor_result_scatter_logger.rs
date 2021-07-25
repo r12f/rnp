@@ -2,19 +2,18 @@ use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::PingResult;
 use std::collections::BTreeMap;
 use tracing;
+use crate::ping_clients::ping_client::{PingClientError, PingClientWarning};
 
 const COUNT_PER_ROW: u32 = 20;
-const SCATTER_SYMBOL_NOT_TESTED: char = '-';
-const SCATTER_SYMBOL_PASSED: char = '1';
-const SCATTER_SYMBOL_FAILED: char = '0';
-
-struct ResultHits {
-    bitmask: u32,
-    results: u32,
-}
+const SCATTER_SYMBOL_NOT_TESTED_YET: char = '.';
+const SCATTER_SYMBOL_PASSED: char = 'O';
+const SCATTER_SYMBOL_FAILED: char = 'X';
+const SCATTER_SYMBOL_PREPARE_FAILED: char = '-';
+const SCATTER_SYMBOL_HANDSHAKE_FAILED: char = 'H';
+const SCATTER_SYMBOL_DISCONNECT_FAILED: char = 'D';
 
 pub struct PingResultProcessorResultScatterLogger {
-    ping_history: BTreeMap<u32, ResultHits>,
+    ping_history: BTreeMap<u32, Vec<char>>,
 }
 
 impl PingResultProcessorResultScatterLogger {
@@ -25,26 +24,17 @@ impl PingResultProcessorResultScatterLogger {
         };
     }
 
-    fn get_ping_history_bit_pos(&self, port: u32) -> (u32, u32) {
+    fn get_ping_history_position(&self, port: u32) -> (u32, usize) {
         let row: u32 = (port / COUNT_PER_ROW) * COUNT_PER_ROW;
-        let bit_index = port % COUNT_PER_ROW;
-        return (row, bit_index);
+        let index = port % COUNT_PER_ROW;
+        return (row, index as usize);
     }
 
-    fn convert_result_hits_to_string(hits: &ResultHits) -> String {
+    fn convert_result_hits_to_string(hits: &Vec<char>) -> String {
         let mut s: String = String::new();
 
         for index in 0..COUNT_PER_ROW {
-            let test_bit = 1 << index;
-            let mut output_symbol: char = SCATTER_SYMBOL_NOT_TESTED;
-            if hits.bitmask & test_bit != 0 {
-                output_symbol = if hits.results & test_bit != 0 {
-                    SCATTER_SYMBOL_PASSED
-                } else {
-                    SCATTER_SYMBOL_FAILED
-                };
-            }
-            s.push(output_symbol);
+            s.push(hits[index as usize]);
 
             if (index != COUNT_PER_ROW - 1) && ((index + 1) % 5 == 0) {
                 s.push(' ');
@@ -67,21 +57,27 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             return;
         }
 
-        let (row, bit_index) = self.get_ping_history_bit_pos(ping_result.source().port() as u32);
-        let bit_mask_bit = 1 << bit_index;
-        let success_bit = if let Some(_) = ping_result.error() {
-            0
+        let (row, index) = self.get_ping_history_position(ping_result.source().port() as u32);
+        let result = if let Some(e) = ping_result.error() {
+            match e {
+                PingClientError::PreparationFailed(_) => SCATTER_SYMBOL_PREPARE_FAILED,
+                PingClientError::PingFailed(_) => SCATTER_SYMBOL_FAILED,
+            }
+        } else if let Some(e) = ping_result.warning() {
+            match e {
+                PingClientWarning::AppHandshakeFailed(_) => SCATTER_SYMBOL_HANDSHAKE_FAILED,
+                PingClientWarning::DisconnectFailed(_) => SCATTER_SYMBOL_DISCONNECT_FAILED,
+            }
         } else {
-            1 << bit_index
+            SCATTER_SYMBOL_PASSED
         };
 
-        let failure_hits = self
+        let results = self
             .ping_history
             .entry(row)
-            .or_insert(ResultHits { bitmask: 0, results: 0 });
+            .or_insert(vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20]);
 
-        failure_hits.bitmask |= bit_mask_bit;
-        failure_hits.results |= success_bit;
+        results[index] = result;
     }
 
     fn rundown(&mut self) {
@@ -89,8 +85,8 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
 
         println!("{:>7} | {}", "Src", "Results");
         println!(
-            "{:>7} | (\"{}\" = Ok, \"{}\" = Fail, \"{}\" = Not Tested)",
-            "Port", SCATTER_SYMBOL_PASSED, SCATTER_SYMBOL_FAILED, SCATTER_SYMBOL_NOT_TESTED
+            "{:>7} | (\"{}\" = Ok, \"{}\" = Fail, \"{}\" = Not tested yet, \"{}\" = Preparation failed, \"{}\" = App handshake failed, \"{}\" = Disconnect failed)",
+            "Port", SCATTER_SYMBOL_PASSED, SCATTER_SYMBOL_FAILED, SCATTER_SYMBOL_NOT_TESTED_YET, SCATTER_SYMBOL_PREPARE_FAILED, SCATTER_SYMBOL_HANDSHAKE_FAILED, SCATTER_SYMBOL_DISCONNECT_FAILED
         );
         println!("{:->9}-0---4-5---9-0---4-5---9-------------------", "+");
 
@@ -105,23 +101,21 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
 
 #[cfg(test)]
 mod tests {
-    use crate::ping_result_processors::ping_result_processor_result_scatter_logger::{
-        PingResultProcessorResultScatterLogger, ResultHits,
-    };
+    use super::*;
 
     #[test]
     fn convert_result_info_to_string_should_work() {
-        let results = vec![
-            ResultHits { bitmask: 0, results: 0 },
-            ResultHits {
-                bitmask: 0b1,
-                results: 0b1,
-            },
-            ResultHits {
-                bitmask: 0b1110,
-                results: 0b1100,
-            },
+        let mut results = vec![
+            vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20],
+            vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20],
+            vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20],
         ];
+
+        results[1][0] = SCATTER_SYMBOL_PASSED;
+        results[2][1] = SCATTER_SYMBOL_FAILED;
+        results[2][2] = SCATTER_SYMBOL_PREPARE_FAILED;
+        results[2][3] = SCATTER_SYMBOL_HANDSHAKE_FAILED;
+        results[2][4] = SCATTER_SYMBOL_DISCONNECT_FAILED;
 
         let formatted_results: Vec<String> = results
             .into_iter()
@@ -130,9 +124,9 @@ mod tests {
 
         assert_eq!(
             vec![
-                "----- ----- ----- -----",
-                "1---- ----- ----- -----",
-                "-011- ----- ----- -----",
+                "..... ..... ..... .....",
+                "O.... ..... ..... .....",
+                ".X-HD ..... ..... .....",
             ],
             formatted_results
         );
