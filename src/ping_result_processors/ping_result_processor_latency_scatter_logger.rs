@@ -73,15 +73,15 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
         let (row, col) = self.get_ping_history_item_pos(ping_result.source().port() as u32);
         let bit_mask_bit = 1 << col;
 
-        let failure_hits = self.ping_history.entry(row).or_insert(LatencyHits {
+        let results = self.ping_history.entry(row).or_insert(LatencyHits {
             bitmask: 0,
             results: vec![f64::NAN; COUNT_PER_ROW],
         });
 
-        failure_hits.bitmask |= bit_mask_bit;
+        results.bitmask |= bit_mask_bit;
 
         if let None = ping_result.error() {
-            failure_hits.results[col] = ping_result.round_trip_time().as_micros() as f64 / 1000.0;
+            results.results[col] = ping_result.round_trip_time().as_micros() as f64 / 1000.0;
         }
     }
 
