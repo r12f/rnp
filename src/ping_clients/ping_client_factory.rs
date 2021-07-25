@@ -25,7 +25,7 @@ pub fn new(
 
 #[cfg(all(target_os = "windows", target_arch = "aarch64"))]
 pub fn new(
-    protocol: RnpSupportedProtocol,
+    protocol: &RnpSupportedProtocol,
     config: &PingClientConfig,
     external_ping_client_factory: Option<ExternalPingClientFactory>,
 ) -> Box<dyn PingClient + Send + Sync> {
