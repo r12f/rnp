@@ -29,7 +29,8 @@ pub async fn run_ping_client_tests(
     ping_client_should_fail_when_pinging_non_existing_host(ping_client, expected_results).await;
     ping_client_should_fail_when_pinging_non_existing_port(ping_client, expected_results).await;
     ping_client_should_fail_when_binding_invalid_source_ip(ping_client, expected_results).await;
-    ping_client_should_fail_when_binding_unavailable_source_port(ping_client, expected_results).await;
+    ping_client_should_fail_when_binding_unavailable_source_port(ping_client, expected_results)
+        .await;
 }
 
 async fn ping_client_should_work_when_pinging_good_host(
@@ -44,7 +45,8 @@ async fn ping_client_should_work_when_pinging_good_host(
         &target,
         expected_results.timeout_min_time,
         &ExpectedTestCaseResult::Ok,
-    ).await;
+    )
+    .await;
 }
 
 async fn ping_client_should_fail_when_pinging_non_existing_host(
@@ -59,7 +61,8 @@ async fn ping_client_should_fail_when_pinging_non_existing_host(
         &target,
         expected_results.timeout_min_time,
         &expected_results.ping_non_existing_host_result,
-    ).await;
+    )
+    .await;
 }
 
 async fn ping_client_should_fail_when_pinging_non_existing_port(
@@ -74,7 +77,8 @@ async fn ping_client_should_fail_when_pinging_non_existing_port(
         &target,
         expected_results.timeout_min_time,
         &expected_results.ping_non_existing_port_result,
-    ).await;
+    )
+    .await;
 }
 
 async fn ping_client_should_fail_when_binding_invalid_source_ip(
@@ -89,7 +93,8 @@ async fn ping_client_should_fail_when_binding_invalid_source_ip(
         &target,
         expected_results.timeout_min_time,
         &expected_results.binding_invalid_source_ip_result,
-    ).await;
+    )
+    .await;
 }
 
 async fn ping_client_should_fail_when_binding_unavailable_source_port(
@@ -104,7 +109,8 @@ async fn ping_client_should_fail_when_binding_unavailable_source_port(
         &target,
         expected_results.timeout_min_time,
         &expected_results.binding_unavailable_source_port_result,
-    ).await;
+    )
+    .await;
 }
 
 async fn ping_client_result_should_be_expected(

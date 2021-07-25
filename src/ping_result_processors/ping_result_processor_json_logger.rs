@@ -35,7 +35,9 @@ impl PingResultProcessorJsonLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorJsonLogger {
-    fn name(&self) -> &'static str { "JsonLogger" }
+    fn name(&self) -> &'static str {
+        "JsonLogger"
+    }
 
     fn initialize(&mut self) {
         // Writer json start
@@ -66,19 +68,21 @@ mod tests {
     use super::*;
     use crate::ping_result_processors::ping_result_processor_test_common;
     use crate::rnp_dto::PingResultJsonDto;
+    use chrono::{TimeZone, Utc};
     use pretty_assertions::assert_eq;
-    use chrono::{Utc, TimeZone};
     use std::io::BufReader;
 
     #[test]
     fn ping_result_process_json_logger_should_work() {
         let test_log_file_path = "tests_data\\test_log.json";
-        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorJsonLogger::new(&PathBuf::from(test_log_file_path)));
+        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(
+            PingResultProcessorJsonLogger::new(&PathBuf::from(test_log_file_path)),
+        );
         ping_result_processor_test_common::run_ping_result_processor_with_test_samples(
             &mut processor,
         );
 
-        let actual_logged_records : Vec<PingResultJsonDto>;
+        let actual_logged_records: Vec<PingResultJsonDto>;
         {
             let test_log_file = File::open(test_log_file_path).unwrap();
             let test_log_reader = BufReader::new(test_log_file);

@@ -21,7 +21,9 @@ impl PingResultProcessorTextLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorTextLogger {
-    fn name(&self) -> &'static str { "TextLogger" }
+    fn name(&self) -> &'static str {
+        "TextLogger"
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         let log_content: String = ping_result.format_as_console_log();

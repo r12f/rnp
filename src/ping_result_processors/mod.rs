@@ -1,12 +1,12 @@
-pub mod ping_result_processor_factory;
 pub mod ping_result_processor;
 mod ping_result_processor_console_logger;
 mod ping_result_processor_csv_logger;
+pub mod ping_result_processor_factory;
 mod ping_result_processor_json_logger;
-mod ping_result_processor_text_logger;
-mod ping_result_processor_result_scatter_logger;
-mod ping_result_processor_latency_scatter_logger;
 mod ping_result_processor_latency_bucket_logger;
+mod ping_result_processor_latency_scatter_logger;
+mod ping_result_processor_result_scatter_logger;
+mod ping_result_processor_text_logger;
 
 #[cfg(test)]
 mod ping_result_processor_test_common;

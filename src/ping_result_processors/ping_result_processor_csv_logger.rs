@@ -26,7 +26,9 @@ impl PingResultProcessorCsvLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorCsvLogger {
-    fn name(&self) -> &'static str { "CsvLogger" }
+    fn name(&self) -> &'static str {
+        "CsvLogger"
+    }
 
     fn initialize(&mut self) {
         // Writer CSV header
@@ -51,13 +53,15 @@ mod tests {
     use super::*;
     use crate::ping_result_processors::ping_result_processor_test_common;
     use crate::rnp_dto::PingResultCsvDto;
+    use chrono::{TimeZone, Utc};
     use pretty_assertions::assert_eq;
-    use chrono::{Utc, TimeZone};
 
     #[test]
     fn ping_result_process_csv_logger_should_work() {
         let test_log_file_path = "tests_data\\test_log.csv";
-        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorCsvLogger::new(&PathBuf::from(test_log_file_path)));
+        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(
+            PingResultProcessorCsvLogger::new(&PathBuf::from(test_log_file_path)),
+        );
         ping_result_processor_test_common::run_ping_result_processor_with_test_samples(
             &mut processor,
         );

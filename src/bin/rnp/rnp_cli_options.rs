@@ -196,9 +196,13 @@ impl RnpCliOptions {
                 protocol: self.common_options.protocol.clone(),
                 target: self.common_options.target,
                 source_ip: self.common_options.source_ip,
-                ping_interval: Duration::from_millis(self.common_options.ping_interval_in_ms.into()),
+                ping_interval: Duration::from_millis(
+                    self.common_options.ping_interval_in_ms.into(),
+                ),
                 ping_client_config: PingClientConfig {
-                    wait_timeout: Duration::from_millis(self.common_options.wait_timeout_in_ms.into()),
+                    wait_timeout: Duration::from_millis(
+                        self.common_options.wait_timeout_in_ms.into(),
+                    ),
                     time_to_live: self.common_options.time_to_live,
                     check_disconnect: self.common_options.check_disconnect,
                     server_name: self
@@ -660,7 +664,8 @@ mod tests {
         assert!(opts.common_options.source_port_max.is_some());
         assert_eq!(
             10000,
-            opts.common_options.source_port_max.unwrap() - opts.common_options.source_port_min.unwrap()
+            opts.common_options.source_port_max.unwrap()
+                - opts.common_options.source_port_min.unwrap()
         );
     }
 

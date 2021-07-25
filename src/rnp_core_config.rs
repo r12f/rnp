@@ -1,9 +1,9 @@
-use std::net::{IpAddr, SocketAddr};
-use std::{time::Duration, path::PathBuf};
-use std::str::FromStr;
-use std::fmt;
 use crate::{PingClient, PingResultProcessor};
+use std::fmt;
 use std::fmt::Debug;
+use std::net::{IpAddr, SocketAddr};
+use std::str::FromStr;
+use std::{path::PathBuf, time::Duration};
 
 pub const RNP_NAME: &str = "rnp";
 pub const RNP_AUTHOR: &str = "r12f (r12f.com, github.com/r12f)";
@@ -23,18 +23,27 @@ impl FromStr for RnpSupportedProtocol {
         match input.to_uppercase().as_str() {
             "TCP" => Ok(RnpSupportedProtocol::TCP),
             "QUIC" => Ok(RnpSupportedProtocol::QUIC),
-            _      => Err(String::from("Invalid protocol")),
+            _ => Err(String::from("Invalid protocol")),
         }
     }
 }
 
 impl fmt::Display for RnpSupportedProtocol {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        let protocol = match self {
+            RnpSupportedProtocol::TCP => "TCP",
+            RnpSupportedProtocol::QUIC => "QUIC",
+            RnpSupportedProtocol::External(p) => &p,
+        };
+
+        write!(f, "{}", protocol)
     }
 }
 
-pub type ExternalPingClientFactory = fn(protocol: &RnpSupportedProtocol, config: &PingClientConfig) -> Option<Box<dyn PingClient + Send + Sync>>;
+pub type ExternalPingClientFactory = fn(
+    protocol: &RnpSupportedProtocol,
+    config: &PingClientConfig,
+) -> Option<Box<dyn PingClient + Send + Sync>>;
 
 pub struct RnpCoreConfig {
     pub worker_config: PingWorkerConfig,
@@ -50,20 +59,50 @@ impl Debug for RnpCoreConfig {
             .field("worker_config", &self.worker_config)
             .field("worker_scheduler_config", &self.worker_scheduler_config)
             .field("result_processor_config", &self.result_processor_config)
-            .field("external_ping_client_factory", &if self.external_ping_client_factory.is_some() { "Some(PingClientFactory)".to_string() } else { "None".to_string() } )
-            .field("extra_ping_result_processors", &self.extra_ping_result_processors.iter().map(|p| p.name()).collect::<Vec<&'static str>>() )
+            .field(
+                "external_ping_client_factory",
+                &if self.external_ping_client_factory.is_some() {
+                    "Some(PingClientFactory)".to_string()
+                } else {
+                    "None".to_string()
+                },
+            )
+            .field(
+                "extra_ping_result_processors",
+                &self
+                    .extra_ping_result_processors
+                    .iter()
+                    .map(|p| p.name())
+                    .collect::<Vec<&'static str>>(),
+            )
             .finish()
     }
 }
 
 impl PartialEq for RnpCoreConfig {
     fn eq(&self, other: &RnpCoreConfig) -> bool {
-        if self.worker_config != other.worker_config { return false; }
-        if self.worker_scheduler_config != other.worker_scheduler_config { return false; }
-        if self.result_processor_config != other.result_processor_config { return false; }
-        if self.external_ping_client_factory.is_some() != other.external_ping_client_factory.is_some() { return false; }
-        let matching_processor_count = self.extra_ping_result_processors.iter().zip(other.extra_ping_result_processors.iter()).filter(|&(a, b)| a.name() == b.name()).count();
-        return matching_processor_count == self.extra_ping_result_processors.len() && matching_processor_count == other.extra_ping_result_processors.len();
+        if self.worker_config != other.worker_config {
+            return false;
+        }
+        if self.worker_scheduler_config != other.worker_scheduler_config {
+            return false;
+        }
+        if self.result_processor_config != other.result_processor_config {
+            return false;
+        }
+        if self.external_ping_client_factory.is_some()
+            != other.external_ping_client_factory.is_some()
+        {
+            return false;
+        }
+        let matching_processor_count = self
+            .extra_ping_result_processors
+            .iter()
+            .zip(other.extra_ping_result_processors.iter())
+            .filter(|&(a, b)| a.name() == b.name())
+            .count();
+        return matching_processor_count == self.extra_ping_result_processors.len()
+            && matching_processor_count == other.extra_ping_result_processors.len();
     }
 }
 

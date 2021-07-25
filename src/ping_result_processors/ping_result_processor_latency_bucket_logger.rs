@@ -1,8 +1,8 @@
 use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::PingResult;
+use contracts::requires;
 use std::time::Duration;
 use tracing;
-use contracts::requires;
 
 pub struct PingResultProcessorLatencyBucketLogger {
     buckets_in_us: Vec<u128>,
@@ -79,7 +79,9 @@ impl PingResultProcessorLatencyBucketLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
-    fn name(&self) -> &'static str { "LatencyBucketLogger" }
+    fn name(&self) -> &'static str {
+        "LatencyBucketLogger"
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
@@ -91,10 +93,13 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
         println!("{:->17}------------ ", "+");
 
         for (bucket_index, bucket_time_upper_bound_in_us) in self.buckets_in_us.iter().enumerate() {
-            let bucket_range = if bucket_index <  self.buckets_in_us.len() - 1 {
+            let bucket_range = if bucket_index < self.buckets_in_us.len() - 1 {
                 format!("< {:.2}ms", *bucket_time_upper_bound_in_us as f64 / 1000.0)
             } else {
-                format!(">= {:.2}ms", self.buckets_in_us[bucket_index - 1] as f64 / 1000.0)
+                format!(
+                    ">= {:.2}ms",
+                    self.buckets_in_us[bucket_index - 1] as f64 / 1000.0
+                )
             };
 
             println!(

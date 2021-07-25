@@ -55,7 +55,9 @@ impl PingResultProcessorLatencyScatterLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
-    fn name(&self) -> &'static str { "LatencyScatterLogger" }
+    fn name(&self) -> &'static str {
+        "LatencyScatterLogger"
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.
@@ -101,7 +103,9 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
         for (port_bucket, latency_hits) in &self.ping_history {
             print!("{:>10} | ", port_bucket);
 
-            let result = PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(latency_hits);
+            let result = PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(
+                latency_hits,
+            );
             println!("{}", result);
         }
     }
@@ -124,7 +128,18 @@ mod tests {
             },
             LatencyHits {
                 bitmask: 0b11110,
-                results: vec![0.0, f64::NAN, 12.34, 345.67, 234.56, 0.0, 0.0, 0.0, 0.0, 0.0],
+                results: vec![
+                    0.0,
+                    f64::NAN,
+                    12.34,
+                    345.67,
+                    234.56,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
             },
         ];
 
