@@ -132,9 +132,14 @@ impl RnpCore {
     }
 
     fn log_header_to_console(&self) {
+        let ttl_message = match self.config.worker_config.ping_client_config.time_to_live {
+            Some(ttl) => format!(" with TTL={}", ttl),
+            None => "".to_string(),
+        };
+
         println!(
-            "Start testing {} {:?}:",
-            self.config.worker_config.protocol, self.config.worker_config.target
+            "Start testing {} {:?}{}:",
+            self.config.worker_config.protocol, self.config.worker_config.target, ttl_message,
         );
     }
 

@@ -70,9 +70,12 @@ impl PingClientQuic {
         let mut endpoint_builder = Endpoint::builder();
         endpoint_builder.default_client_config(client_config);
 
-        let socket = std::net::UdpSocket::bind(addr).map_err(EndpointError::Socket)?;
-        let (endpoint, _) = endpoint_builder.with_socket(socket)?;
+        let socket = std::net::UdpSocket::bind(source).map_err(EndpointError::Socket)?;
+        if let Some(ttl) = self.config.time_to_live {
+            socket.set_ttl(ttl).map_err(EndpointError::Socket)?;
+        }
 
+        let (endpoint, _) = endpoint_builder.with_socket(socket)?;
         return Ok(endpoint);
     }
 
