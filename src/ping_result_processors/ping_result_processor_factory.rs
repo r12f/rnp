@@ -1,13 +1,16 @@
 use crate::ping_result_processors::ping_result_processor_console_logger::PingResultProcessorConsoleLogger;
 use crate::ping_result_processors::ping_result_processor_csv_logger::PingResultProcessorCsvLogger;
 use crate::ping_result_processors::ping_result_processor_json_logger::PingResultProcessorJsonLogger;
-use crate::ping_result_processors::ping_result_processor_latency_scatter_logger::PingResultProcessorLatencyScatterLogger;
 use crate::ping_result_processors::ping_result_processor_latency_bucket_logger::PingResultProcessorLatencyBucketLogger;
+use crate::ping_result_processors::ping_result_processor_latency_scatter_logger::PingResultProcessorLatencyScatterLogger;
 use crate::ping_result_processors::ping_result_processor_result_scatter_logger::PingResultProcessorResultScatterLogger;
 use crate::ping_result_processors::ping_result_processor_text_logger::PingResultProcessorTextLogger;
 use crate::{PingResultProcessor, PingResultProcessorConfig};
 
-pub fn new(config: &PingResultProcessorConfig) -> Vec<Box<dyn PingResultProcessor + Send + Sync>> {
+pub fn new(
+    config: &PingResultProcessorConfig,
+    mut extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
+) -> Vec<Box<dyn PingResultProcessor + Send + Sync>> {
     let mut processors = Vec::new();
 
     // We always create the console logger for keeping our user informed.
@@ -51,6 +54,9 @@ pub fn new(config: &PingResultProcessorConfig) -> Vec<Box<dyn PingResultProcesso
         processors.push(latency_bucket_logger);
     }
 
+    // Move all extra ping result processors into the processors
+    processors.append(&mut extra_ping_result_processors);
+
     return processors;
 }
 
@@ -72,7 +78,7 @@ mod tests {
             latency_buckets: None,
         };
 
-        let ping_clients = new(&config);
+        let ping_clients = new(&config, vec![]);
         assert_eq!(1, ping_clients.len());
     }
 
@@ -88,7 +94,7 @@ mod tests {
             latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
         };
 
-        let ping_clients = new(&config);
+        let ping_clients = new(&config, vec![]);
         assert_eq!(7, ping_clients.len());
     }
 }
