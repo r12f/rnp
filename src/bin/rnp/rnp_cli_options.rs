@@ -12,7 +12,7 @@ use structopt::StructOpt;
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
 pub struct RnpCliOptions {
     #[structopt(flatten)]
-    common_options: RnpCliPingCommonOptions,
+    common_options: RnpCliCommonOptions,
 
     #[structopt(flatten)]
     output_options: RnpCliOutputOptions,
@@ -22,7 +22,7 @@ pub struct RnpCliOptions {
 }
 
 #[derive(Debug, StructOpt, PartialOrd, PartialEq)]
-pub struct RnpCliPingCommonOptions {
+pub struct RnpCliCommonOptions {
     pub target: SocketAddr,
 
     #[structopt(
@@ -251,7 +251,7 @@ impl RnpCliOptions {
     }
 }
 
-impl RnpCliPingCommonOptions {
+impl RnpCliCommonOptions {
     pub fn prepare_to_use(&mut self) {
         if self.target.is_ipv4() != self.source_ip.is_ipv4() {
             match &self.source_ip {
@@ -319,7 +319,7 @@ mod tests {
     fn parsing_default_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                common_options: RnpCliPingCommonOptions {
+                common_options: RnpCliCommonOptions {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "0.0.0.0".parse().unwrap(),
@@ -359,7 +359,7 @@ mod tests {
     fn parsing_short_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                common_options: RnpCliPingCommonOptions {
+                common_options: RnpCliCommonOptions {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "10.0.0.2".parse().unwrap(),
@@ -421,7 +421,7 @@ mod tests {
     fn parsing_long_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                common_options: RnpCliPingCommonOptions {
+                common_options: RnpCliCommonOptions {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::QUIC,
                     source_ip: "10.0.0.2".parse().unwrap(),
@@ -538,7 +538,7 @@ mod tests {
                 },
             },
             RnpCliOptions {
-                common_options: RnpCliPingCommonOptions {
+                common_options: RnpCliCommonOptions {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     ping_count: 4,
@@ -609,7 +609,7 @@ mod tests {
                 },
             },
             RnpCliOptions {
-                common_options: RnpCliPingCommonOptions {
+                common_options: RnpCliCommonOptions {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::QUIC,
                     ping_count: 4,
