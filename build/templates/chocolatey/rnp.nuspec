@@ -4,6 +4,7 @@
     <id>rnp-cli</id>
     <version>{version}</version>
     <title>Rnp</title>
+    <!-- I am the author of this software, so owners field is not set in this spec file -->
     <authors>r12f</authors>
     <licenseUrl>https://github.com/r12f/rnp/blob/main/LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/r12f/rnp</projectUrl>
