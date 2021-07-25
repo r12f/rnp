@@ -34,14 +34,14 @@ impl fmt::Display for RnpSupportedProtocol {
     }
 }
 
-type PingClientFactory = fn(protocol: RnpSupportedProtocol, config: &PingClientConfig) -> Box<dyn PingClient + Send + Sync>;
+pub type ExternalPingClientFactory = fn(protocol: &RnpSupportedProtocol, config: &PingClientConfig) -> Option<Box<dyn PingClient + Send + Sync>>;
 
 #[derive(Clone)]
 pub struct RnpCoreConfig {
     pub worker_config: PingWorkerConfig,
     pub worker_scheduler_config: PingWorkerSchedulerConfig,
     pub result_processor_config: PingResultProcessorConfig,
-    pub ping_client_factory: Option<PingClientFactory>,
+    pub ping_client_factory: Option<ExternalPingClientFactory>,
 }
 
 impl Debug for RnpCoreConfig {
@@ -52,6 +52,15 @@ impl Debug for RnpCoreConfig {
             .field("result_processor_config", &self.result_processor_config)
             .field("ping_client_factory", &if self.ping_client_factory.is_some() { "Some(PingClientFactory)".to_string() } else { "None".to_string() } )
             .finish()
+    }
+}
+
+impl PartialEq for RnpCoreConfig {
+    fn eq(&self, other: &RnpCoreConfig) -> bool {
+        if self.worker_config != other.worker_config { return false; }
+        if self.worker_scheduler_config != other.worker_scheduler_config { return false; }
+        if self.result_processor_config != other.result_processor_config { return false; }
+        return self.ping_client_factory.is_some() == other.ping_client_factory.is_some();
     }
 }
 

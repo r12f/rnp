@@ -537,6 +537,7 @@ mod tests {
                     show_latency_scatter: false,
                     latency_buckets: None,
                 },
+                ping_client_factory: None
             },
             RnpCliOptions {
                 common_options: RnpCliCommonOptions {
@@ -608,6 +609,7 @@ mod tests {
                     show_latency_scatter: true,
                     latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
                 },
+                ping_client_factory: None
             },
             RnpCliOptions {
                 common_options: RnpCliCommonOptions {

@@ -1,5 +1,5 @@
 use crate::ping_clients::ping_client::{PingClientPingResultDetails, PingClientError};
-use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWorkerConfig};
+use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWorkerConfig, ExternalPingClientFactory};
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
 use std::{net::SocketAddr, sync::Arc, sync::Mutex};
@@ -20,18 +20,19 @@ impl PingWorker {
     #[tracing::instrument(
         name = "Starting worker",
         level = "debug",
-        skip(config, port_picker, stop_event, result_sender)
+        skip(config, external_ping_client_factory, port_picker, stop_event, result_sender)
     )]
     pub fn run(
         worker_id: u32,
         config: Arc<PingWorkerConfig>,
+        external_ping_client_factory: Option<ExternalPingClientFactory>,
         port_picker: Arc<Mutex<PingPortPicker>>,
         stop_event: Arc<ManualResetEvent>,
         result_sender: mpsc::Sender<PingResult>,
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let ping_client = ping_client_factory::new(&config.protocol, &config.ping_client_config);
+            let ping_client = ping_client_factory::new(&config.protocol, &config.ping_client_config, external_ping_client_factory);
 
             let mut worker = PingWorker {
                 id: worker_id,

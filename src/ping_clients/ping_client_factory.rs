@@ -1,4 +1,4 @@
-use crate::{PingClient, PingClientConfig, RnpSupportedProtocol};
+use crate::{PingClient, PingClientConfig, RnpSupportedProtocol, ExternalPingClientFactory};
 use crate::ping_clients::ping_client_tcp::PingClientTcp;
 
 #[cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))]
@@ -8,7 +8,14 @@ use crate::ping_clients::ping_client_quic::PingClientQuic;
 pub fn new(
     protocol: &RnpSupportedProtocol,
     config: &PingClientConfig,
+    external_ping_client_factory: Option<ExternalPingClientFactory>,
 ) -> Box<dyn PingClient + Send + Sync> {
+    if let Some(factory) = external_ping_client_factory {
+        if let Some(ping_client) = factory(protocol, config) {
+            return ping_client;
+        }
+    }
+
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
         RnpSupportedProtocol::QUIC => return Box::new(PingClientQuic::new(config)),
@@ -20,7 +27,14 @@ pub fn new(
 pub fn new(
     protocol: RnpSupportedProtocol,
     config: &PingClientConfig,
+    external_ping_client_factory: Option<ExternalPingClientFactory>,
 ) -> Box<dyn PingClient + Send + Sync> {
+    if let Some(factory) = external_ping_client_factory {
+        if let Some(ping_client) = factory(protocol, config) {
+            return ping_client;
+        }
+    }
+
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
         RnpSupportedProtocol::QUIC => panic!("Sorry, QUIC ping is not supported yet for Windows ARM64."),
@@ -46,7 +60,7 @@ mod tests {
             use_timer_rtt: false,
         };
 
-        let ping_client = new(RnpSupportedProtocol::TCP, &config);
+        let ping_client = new(&RnpSupportedProtocol::TCP, &config, None);
         assert_eq!("TCP", ping_client.protocol());
     }
 }
