@@ -6,12 +6,13 @@ use crate::ping_clients::ping_client_quic::PingClientQuic;
 
 #[cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))]
 pub fn new(
-    protocol: RnpSupportedProtocol,
+    protocol: &RnpSupportedProtocol,
     config: &PingClientConfig,
 ) -> Box<dyn PingClient + Send + Sync> {
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
         RnpSupportedProtocol::QUIC => return Box::new(PingClientQuic::new(config)),
+        RnpSupportedProtocol::External(p) => panic!("Protocol {} is not supported!", p),
     }
 }
 
@@ -23,6 +24,7 @@ pub fn new(
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
         RnpSupportedProtocol::QUIC => panic!("Sorry, QUIC ping is not supported yet for Windows ARM64."),
+        RnpSupportedProtocol::External(p) => panic!(format!("Protocol {} is not supported!", p)),
     }
 }
 

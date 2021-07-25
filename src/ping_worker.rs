@@ -31,7 +31,7 @@ impl PingWorker {
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let ping_client = ping_client_factory::new(config.protocol, &config.ping_client_config);
+            let ping_client = ping_client_factory::new(&config.protocol, &config.ping_client_config);
 
             let mut worker = PingWorker {
                 id: worker_id,
