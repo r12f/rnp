@@ -1,5 +1,4 @@
-use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
-use crate::{rnp_utils, PingResult};
+use crate::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;

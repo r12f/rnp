@@ -1,4 +1,4 @@
-use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
+use crate::PingResultProcessor;
 use crate::rnp_test_common;
 
 pub fn run_ping_result_processor_with_test_samples(

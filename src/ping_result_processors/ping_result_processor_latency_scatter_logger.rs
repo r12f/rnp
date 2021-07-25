@@ -1,5 +1,4 @@
-use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
-use crate::PingResult;
+use crate::*;
 use std::collections::BTreeMap;
 use tracing;
 

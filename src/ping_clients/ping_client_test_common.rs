@@ -1,4 +1,4 @@
-use crate::ping_clients::ping_client::PingClient;
+use crate::*;
 use pretty_assertions::assert_eq;
 use std::net::SocketAddr;
 use std::time::Duration;
