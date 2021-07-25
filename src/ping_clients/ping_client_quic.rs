@@ -41,7 +41,7 @@ impl PingClientQuic {
     }
 
     fn create_local_endpoint(&self, source: &SocketAddr) -> Result<Endpoint, EndpointError> {
-        let mut client_config = self.create_client_config();
+        let client_config = self.create_client_config();
 
         let mut endpoint_builder = Endpoint::builder();
         endpoint_builder.default_client_config(client_config);
