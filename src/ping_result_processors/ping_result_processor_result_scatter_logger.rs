@@ -100,13 +100,13 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             SCATTER_SYMBOL_PASSED, SCATTER_SYMBOL_FAILED, SCATTER_SYMBOL_NOT_TESTED_YET, SCATTER_SYMBOL_PREPARE_FAILED, SCATTER_SYMBOL_HANDSHAKE_FAILED, SCATTER_SYMBOL_DISCONNECT_FAILED
         );
 
-        println!("\n{:>5} | {:>6} | {}", "Iter", "Src", "Results");
-        println!("{:>5} | {:>6} | ", "#", "Port");
-        println!("{:->6}|{:->9}-0---4-5---9-0---4-5---9-", "", "+");
+        println!("\n{:>5} | {:>5} | {}", "Iter", "Src", "Results");
+        println!("{:>5} | {:>5} | ", "#", "Port");
+        println!("{:->6}|{:->8}-0---4-5---9-0---4-5---9-", "", "+");
 
         for (iteration_index, iteration) in self.ping_history.iter().enumerate() {
             for (port_bucket, result_hits) in iteration {
-                print!("{:>5} | {:>6} | ", iteration_index, port_bucket);
+                print!("{:>5} | {:>5} | ", iteration_index, port_bucket);
 
                 let result =
                     PingResultProcessorResultScatterLogger::convert_result_hits_to_string(result_hits);
