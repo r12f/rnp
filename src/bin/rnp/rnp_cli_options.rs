@@ -11,6 +11,18 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt, PartialOrd, PartialEq)]
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
 pub struct RnpCliOptions {
+    #[structopt(flatten)]
+    common_options: RnpCliPingCommonOptions,
+
+    #[structopt(flatten)]
+    output_options: RnpCliOutputOptions,
+
+    #[structopt(flatten)]
+    quic_options: RnpCliQuicPingOptions,
+}
+
+#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+pub struct RnpCliPingCommonOptions {
     pub target: SocketAddr,
 
     #[structopt(
@@ -84,12 +96,6 @@ pub struct RnpCliOptions {
         help = "Count of pings running in parallel."
     )]
     pub parallel_ping_count: u32,
-
-    #[structopt(flatten)]
-    output_options: RnpCliOutputOptions,
-
-    #[structopt(flatten)]
-    quic_options: RnpCliQuicPingOptions,
 }
 
 #[derive(Debug, StructOpt, PartialOrd, PartialEq)]
@@ -172,6 +178,81 @@ struct RnpCliQuicPingOptions {
 
 impl RnpCliOptions {
     pub fn prepare_to_use(&mut self) {
+        self.common_options.prepare_to_use();
+
+        if let Some(latency_buckets) = &mut self.output_options.latency_buckets {
+            tracing::debug!("Latency bucket set to 0. Use default one.");
+            if latency_buckets.len() == 0
+                || (latency_buckets.len() == 1 && latency_buckets[0] == 0.0)
+            {
+                *latency_buckets = vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0];
+            }
+        }
+    }
+
+    pub fn to_rnp_core_config(&self) -> RnpCoreConfig {
+        let mut config = RnpCoreConfig {
+            worker_config: PingWorkerConfig {
+                protocol: self.common_options.protocol,
+                target: self.common_options.target,
+                source_ip: self.common_options.source_ip,
+                ping_interval: Duration::from_millis(self.common_options.ping_interval_in_ms.into()),
+                ping_client_config: PingClientConfig {
+                    wait_timeout: Duration::from_millis(self.common_options.wait_timeout_in_ms.into()),
+                    time_to_live: self.common_options.time_to_live,
+                    check_disconnect: self.common_options.check_disconnect,
+                    server_name: self
+                        .quic_options
+                        .server_name
+                        .as_ref()
+                        .and_then(|s| Some(s.to_string())),
+                    log_tls_key: self.quic_options.log_tls_key,
+                    alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase()
+                        != String::from("NONE")
+                    {
+                        Some(self.quic_options.alpn_protocol.clone())
+                    } else {
+                        None
+                    },
+                    use_timer_rtt: self.quic_options.use_timer_rtt,
+                },
+            },
+            worker_scheduler_config: PingWorkerSchedulerConfig {
+                source_port_min: self.common_options.source_port_min.unwrap(),
+                source_port_max: self.common_options.source_port_max.unwrap(),
+                source_port_list: match &self.common_options.source_port_list {
+                    Some(port_list) => Some(port_list.clone()),
+                    None => None,
+                },
+                ping_count: None,
+                warmup_count: self.common_options.warmup_count,
+                parallel_ping_count: self.common_options.parallel_ping_count,
+            },
+            result_processor_config: PingResultProcessorConfig {
+                no_console_log: self.output_options.no_console_log,
+                csv_log_path: self.output_options.csv_log_path.clone(),
+                json_log_path: self.output_options.json_log_path.clone(),
+                text_log_path: self.output_options.text_log_path.clone(),
+                show_result_scatter: self.output_options.show_result_scatter,
+                show_latency_scatter: self.output_options.show_latency_scatter,
+                latency_buckets: self
+                    .output_options
+                    .latency_buckets
+                    .as_ref()
+                    .and_then(|buckets| Some(buckets.clone())),
+            },
+        };
+
+        if !self.common_options.ping_until_stopped {
+            config.worker_scheduler_config.ping_count = Some(self.common_options.ping_count);
+        }
+
+        return config;
+    }
+}
+
+impl RnpCliPingCommonOptions {
+    pub fn prepare_to_use(&mut self) {
         if self.target.is_ipv4() != self.source_ip.is_ipv4() {
             match &self.source_ip {
                 IpAddr::V4(source_ip_v4) if *source_ip_v4 == Ipv4Addr::UNSPECIFIED => {
@@ -220,73 +301,6 @@ impl RnpCliOptions {
             tracing::warn!("Parallel ping count cannot be 0. Setting to 1 as minimum.");
             self.parallel_ping_count = 1;
         }
-
-        if let Some(latency_buckets) = &mut self.output_options.latency_buckets {
-            tracing::debug!("Latency bucket set to 0. Use default one.");
-            if latency_buckets.len() == 0
-                || (latency_buckets.len() == 1 && latency_buckets[0] == 0.0)
-            {
-                *latency_buckets = vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0];
-            }
-        }
-    }
-
-    pub fn to_rnp_core_config(&self) -> RnpCoreConfig {
-        let mut config = RnpCoreConfig {
-            worker_config: PingWorkerConfig {
-                protocol: self.protocol,
-                target: self.target,
-                source_ip: self.source_ip,
-                ping_interval: Duration::from_millis(self.ping_interval_in_ms.into()),
-                ping_client_config: PingClientConfig {
-                    wait_timeout: Duration::from_millis(self.wait_timeout_in_ms.into()),
-                    time_to_live: self.time_to_live,
-                    check_disconnect: self.check_disconnect,
-                    server_name: self
-                        .quic_options
-                        .server_name
-                        .as_ref()
-                        .and_then(|s| Some(s.to_string())),
-                    log_tls_key: self.quic_options.log_tls_key,
-                    alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase()
-                        != String::from("NONE")
-                    {
-                        Some(self.quic_options.alpn_protocol.clone())
-                    } else {
-                        None
-                    },
-                    use_timer_rtt: self.quic_options.use_timer_rtt,
-                },
-            },
-            worker_scheduler_config: PingWorkerSchedulerConfig {
-                source_port_min: self.source_port_min.unwrap(),
-                source_port_max: self.source_port_max.unwrap(),
-                source_port_list: match &self.source_port_list {
-                    Some(port_list) => Some(port_list.clone()),
-                    None => None,
-                },
-                ping_count: None,
-                warmup_count: self.warmup_count,
-                parallel_ping_count: self.parallel_ping_count,
-            },
-            result_processor_config: PingResultProcessorConfig {
-                no_console_log: self.output_options.no_console_log,
-                csv_log_path: self.output_options.csv_log_path.clone(),
-                json_log_path: self.output_options.json_log_path.clone(),
-                text_log_path: self.output_options.text_log_path.clone(),
-                show_result_scatter: self.output_options.show_result_scatter,
-                show_latency_scatter: self.output_options.show_latency_scatter,
-                latency_buckets: self.output_options.latency_buckets
-                    .as_ref()
-                    .and_then(|buckets| Some(buckets.clone())),
-            },
-        };
-
-        if !self.ping_until_stopped {
-            config.worker_scheduler_config.ping_count = Some(self.ping_count);
-        }
-
-        return config;
     }
 }
 
@@ -305,20 +319,22 @@ mod tests {
     fn parsing_default_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                target: "10.0.0.1:443".parse().unwrap(),
-                protocol: RnpSupportedProtocol::TCP,
-                source_ip: "0.0.0.0".parse().unwrap(),
-                source_port_min: None,
-                source_port_max: None,
-                source_port_list: None,
-                ping_count: 4,
-                ping_until_stopped: false,
-                warmup_count: 1,
-                wait_timeout_in_ms: 2000,
-                ping_interval_in_ms: 1000,
-                time_to_live: None,
-                check_disconnect: false,
-                parallel_ping_count: 1,
+                common_options: RnpCliPingCommonOptions {
+                    target: "10.0.0.1:443".parse().unwrap(),
+                    protocol: RnpSupportedProtocol::TCP,
+                    source_ip: "0.0.0.0".parse().unwrap(),
+                    source_port_min: None,
+                    source_port_max: None,
+                    source_port_list: None,
+                    ping_count: 4,
+                    ping_until_stopped: false,
+                    warmup_count: 1,
+                    wait_timeout_in_ms: 2000,
+                    ping_interval_in_ms: 1000,
+                    time_to_live: None,
+                    check_disconnect: false,
+                    parallel_ping_count: 1,
+                },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
@@ -343,20 +359,22 @@ mod tests {
     fn parsing_short_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                target: "10.0.0.1:443".parse().unwrap(),
-                protocol: RnpSupportedProtocol::TCP,
-                source_ip: "10.0.0.2".parse().unwrap(),
-                source_port_min: None,
-                source_port_max: None,
-                source_port_list: None,
-                ping_count: 10,
-                ping_until_stopped: true,
-                warmup_count: 1,
-                wait_timeout_in_ms: 1000,
-                ping_interval_in_ms: 1500,
-                time_to_live: None,
-                check_disconnect: true,
-                parallel_ping_count: 10,
+                common_options: RnpCliPingCommonOptions {
+                    target: "10.0.0.1:443".parse().unwrap(),
+                    protocol: RnpSupportedProtocol::TCP,
+                    source_ip: "10.0.0.2".parse().unwrap(),
+                    source_port_min: None,
+                    source_port_max: None,
+                    source_port_list: None,
+                    ping_count: 10,
+                    ping_until_stopped: true,
+                    warmup_count: 1,
+                    wait_timeout_in_ms: 1000,
+                    ping_interval_in_ms: 1500,
+                    time_to_live: None,
+                    check_disconnect: true,
+                    parallel_ping_count: 10,
+                },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
@@ -403,20 +421,22 @@ mod tests {
     fn parsing_long_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                target: "10.0.0.1:443".parse().unwrap(),
-                protocol: RnpSupportedProtocol::QUIC,
-                source_ip: "10.0.0.2".parse().unwrap(),
-                source_port_min: Some(1024),
-                source_port_max: Some(2048),
-                source_port_list: Some(vec![1024, 1025, 1026]),
-                ping_count: 10,
-                ping_until_stopped: false,
-                warmup_count: 3,
-                wait_timeout_in_ms: 1000,
-                ping_interval_in_ms: 1500,
-                time_to_live: Some(128),
-                check_disconnect: true,
-                parallel_ping_count: 10,
+                common_options: RnpCliPingCommonOptions {
+                    target: "10.0.0.1:443".parse().unwrap(),
+                    protocol: RnpSupportedProtocol::QUIC,
+                    source_ip: "10.0.0.2".parse().unwrap(),
+                    source_port_min: Some(1024),
+                    source_port_max: Some(2048),
+                    source_port_list: Some(vec![1024, 1025, 1026]),
+                    ping_count: 10,
+                    ping_until_stopped: false,
+                    warmup_count: 3,
+                    wait_timeout_in_ms: 1000,
+                    ping_interval_in_ms: 1500,
+                    time_to_live: Some(128),
+                    check_disconnect: true,
+                    parallel_ping_count: 10,
+                },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: Some(String::from("localhost")),
                     log_tls_key: true,
@@ -518,20 +538,22 @@ mod tests {
                 },
             },
             RnpCliOptions {
-                target: "10.0.0.1:443".parse().unwrap(),
-                protocol: RnpSupportedProtocol::TCP,
-                ping_count: 4,
-                ping_until_stopped: false,
-                warmup_count: 1,
-                source_ip: "10.0.0.2".parse().unwrap(),
-                source_port_min: Some(1024),
-                source_port_max: Some(2047),
-                source_port_list: Some(vec![1024, 1025, 1026]),
-                wait_timeout_in_ms: 1000,
-                ping_interval_in_ms: 1500,
-                time_to_live: Some(128),
-                check_disconnect: false,
-                parallel_ping_count: 1,
+                common_options: RnpCliPingCommonOptions {
+                    target: "10.0.0.1:443".parse().unwrap(),
+                    protocol: RnpSupportedProtocol::TCP,
+                    ping_count: 4,
+                    ping_until_stopped: false,
+                    warmup_count: 1,
+                    source_ip: "10.0.0.2".parse().unwrap(),
+                    source_port_min: Some(1024),
+                    source_port_max: Some(2047),
+                    source_port_list: Some(vec![1024, 1025, 1026]),
+                    wait_timeout_in_ms: 1000,
+                    ping_interval_in_ms: 1500,
+                    time_to_live: Some(128),
+                    check_disconnect: false,
+                    parallel_ping_count: 1,
+                },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
@@ -587,20 +609,22 @@ mod tests {
                 },
             },
             RnpCliOptions {
-                target: "10.0.0.1:443".parse().unwrap(),
-                protocol: RnpSupportedProtocol::QUIC,
-                ping_count: 4,
-                ping_until_stopped: true,
-                warmup_count: 3,
-                source_ip: "10.0.0.2".parse().unwrap(),
-                source_port_min: Some(1024),
-                source_port_max: Some(2047),
-                source_port_list: Some(vec![1024, 1025, 1026]),
-                wait_timeout_in_ms: 2000,
-                ping_interval_in_ms: 1500,
-                time_to_live: Some(128),
-                check_disconnect: true,
-                parallel_ping_count: 1,
+                common_options: RnpCliPingCommonOptions {
+                    target: "10.0.0.1:443".parse().unwrap(),
+                    protocol: RnpSupportedProtocol::QUIC,
+                    ping_count: 4,
+                    ping_until_stopped: true,
+                    warmup_count: 3,
+                    source_ip: "10.0.0.2".parse().unwrap(),
+                    source_port_min: Some(1024),
+                    source_port_max: Some(2047),
+                    source_port_list: Some(vec![1024, 1025, 1026]),
+                    wait_timeout_in_ms: 2000,
+                    ping_interval_in_ms: 1500,
+                    time_to_live: Some(128),
+                    check_disconnect: true,
+                    parallel_ping_count: 1,
+                },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: Some(String::from("localhost")),
                     log_tls_key: true,
@@ -626,28 +650,28 @@ mod tests {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
         opts.prepare_to_use();
 
-        assert!(opts.source_port_min.is_some());
-        assert!(opts.source_port_max.is_some());
+        assert!(opts.common_options.source_port_min.is_some());
+        assert!(opts.common_options.source_port_max.is_some());
         assert_eq!(
             10000,
-            opts.source_port_max.unwrap() - opts.source_port_min.unwrap()
+            opts.common_options.source_port_max.unwrap() - opts.common_options.source_port_min.unwrap()
         );
     }
 
     #[test]
     fn invalid_options_for_ipv4_should_be_fixed() {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
-        opts.source_port_min = Some(2048);
-        opts.source_port_max = Some(1024);
-        opts.ping_count = 0;
-        opts.parallel_ping_count = 0;
+        opts.common_options.source_port_min = Some(2048);
+        opts.common_options.source_port_max = Some(1024);
+        opts.common_options.ping_count = 0;
+        opts.common_options.parallel_ping_count = 0;
         opts.output_options.latency_buckets = Some(vec![0.0]);
         opts.prepare_to_use();
 
-        assert_eq!(1024, opts.source_port_min.unwrap());
-        assert_eq!(2048, opts.source_port_max.unwrap());
-        assert_eq!(1, opts.ping_count);
-        assert_eq!(1, opts.parallel_ping_count);
+        assert_eq!(1024, opts.common_options.source_port_min.unwrap());
+        assert_eq!(2048, opts.common_options.source_port_max.unwrap());
+        assert_eq!(1, opts.common_options.ping_count);
+        assert_eq!(1, opts.common_options.parallel_ping_count);
         assert_eq!(
             Some(vec![
                 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0
@@ -655,18 +679,18 @@ mod tests {
             opts.output_options.latency_buckets
         );
 
-        opts.source_port_min = Some(1024);
-        opts.source_port_max = Some(1047);
-        opts.parallel_ping_count = 100;
+        opts.common_options.source_port_min = Some(1024);
+        opts.common_options.source_port_max = Some(1047);
+        opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
-        assert_eq!(24, opts.parallel_ping_count);
+        assert_eq!(24, opts.common_options.parallel_ping_count);
 
-        opts.source_port_min = None;
-        opts.source_port_max = None;
-        opts.source_port_list = Some(vec![1024, 1025, 1026]);
-        opts.parallel_ping_count = 100;
+        opts.common_options.source_port_min = None;
+        opts.common_options.source_port_max = None;
+        opts.common_options.source_port_list = Some(vec![1024, 1025, 1026]);
+        opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
-        assert_eq!(3, opts.parallel_ping_count);
+        assert_eq!(3, opts.common_options.parallel_ping_count);
     }
 
     #[test]
@@ -675,7 +699,7 @@ mod tests {
         opts.prepare_to_use();
 
         // If source ip is not set (unspecified/any), we update the IP accordingly to match our target.
-        assert!(opts.source_ip.is_ipv6());
-        assert_eq!(Ipv6Addr::UNSPECIFIED, opts.source_ip);
+        assert!(opts.common_options.source_ip.is_ipv6());
+        assert_eq!(Ipv6Addr::UNSPECIFIED, opts.common_options.source_ip);
     }
 }
