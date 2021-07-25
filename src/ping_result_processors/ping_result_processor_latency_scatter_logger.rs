@@ -95,7 +95,8 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
             last_iteration_results.bitmask |= bit_mask_bit;
 
             if let None = ping_result.error() {
-                last_iteration_results.results[col] = ping_result.round_trip_time().as_micros() as f64 / 1000.0;
+                last_iteration_results.results[col] =
+                    ping_result.round_trip_time().as_micros() as f64 / 1000.0;
             }
 
             break;
@@ -122,9 +123,10 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
             for (port_bucket, latency_hits) in iteration {
                 print!("{:>7} | {:>8} | ", iteration_index, port_bucket);
 
-                let result = PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(
-                    latency_hits,
-                );
+                let result =
+                    PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(
+                        latency_hits,
+                    );
                 println!("{}", result);
             }
         }
@@ -134,6 +136,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn convert_result_info_to_string_should_work() {
@@ -170,9 +173,9 @@ mod tests {
 
         assert_eq!(
             vec![
-                "   -      -      -      -      -      -      -      -      -      -   ",
-                " 12.34    -      -      -      -      -      -      -      -      -   ",
-                "   -      X    12.34 345.67 234.56    -      -      -      -      -   ",
+                "    -        -        -        -        -        -        -        -        -        -    ",
+                "  12.34      -        -        -        -        -        -        -        -        -    ",
+                "    -        X      12.34   345.67   234.56      -        -        -        -        -    ",
             ],
             formatted_results
         );
