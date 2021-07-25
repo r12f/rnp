@@ -80,14 +80,14 @@ function PackPerFlavorReleases() {
 
         # Create zip for github release
         if ($settings.PackZip) {
-            $zipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).$flavor.zip"
+            $zipFilePath = ".\Releases\GithubReleases\rnp.$BuildTag.$flavor.zip"
             Write-Host "Packing to $zipFilePath"
             7z -tzip a $zipFilePath .\$root\bin\*
         }
 
         # Create tar.gz for github release
         if ($settings.PackTar) {
-            $tarFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).$flavor.tar.gz"
+            $tarFilePath = ".\Releases\GithubReleases\rnp.$BuildTag.$flavor.tar.gz"
             Write-Host "Packing to $tarFilePath"
             tar -cvzf $tarFilePath --directory .\$root\bin *
         }
@@ -110,7 +110,7 @@ function PackPerFlavorReleases() {
 
 # Pack symbols for github release
 function PackSymbolsPackagesForGithubRelease() {
-    $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$(build.tag).symbols.zip"
+    $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$BuildTag.symbols.zip"
     Write-Host "Pack all symbols to $symbolsZipFilePath"
     7z -tzip a $symbolsZipFilePath .\Staging\Symbols\*
 }
@@ -129,8 +129,8 @@ function PackChocolateyPackages() {
     New-Item -ItemType Directory -Path ".\Staging\Chocolatey\tools"
 
     $fileHashs = [pscustomobject]@{
-        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$(build.tag).windows.x86.zip" -Algorithm SHA256).Hash;
-        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$(build.tag).windows.x64.zip" -Algorithm SHA256).Hash;
+        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x86.zip" -Algorithm SHA256).Hash;
+        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x64.zip" -Algorithm SHA256).Hash;
         "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash;
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash;
     }
