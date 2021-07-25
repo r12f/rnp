@@ -35,6 +35,8 @@ impl PingResultProcessorJsonLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorJsonLogger {
+    fn name(&self) -> &'static str { "JsonLogger" }
+
     fn initialize(&mut self) {
         // Writer json start
         self.log_file.write("[".as_bytes()).expect(&format!(

@@ -15,11 +15,12 @@ pub struct PingResultProcessingWorker {
 impl PingResultProcessingWorker {
     pub fn run(
         config: Arc<PingResultProcessorConfig>,
+        extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
         stop_event: Arc<ManualResetEvent>,
         receiver: mpsc::Receiver<PingResult>,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let processors = ping_result_processor_factory::new(&config);
+            let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors);
             let mut worker = PingResultProcessingWorker {
                 stop_event,
                 receiver,

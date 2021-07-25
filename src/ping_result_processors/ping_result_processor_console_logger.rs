@@ -116,6 +116,8 @@ impl PingResultProcessorConsoleLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorConsoleLogger {
+    fn name(&self) -> &'static str { "ConsoleLogger" }
+
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
         self.output_result_to_console(ping_result);

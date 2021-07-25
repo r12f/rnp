@@ -46,6 +46,8 @@ impl PingResultProcessorResultScatterLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorResultScatterLogger {
+    fn name(&self) -> &'static str { "ResultScatterLogger" }
+
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.
         if ping_result.is_warmup() {

@@ -26,6 +26,8 @@ impl PingResultProcessorCsvLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorCsvLogger {
+    fn name(&self) -> &'static str { "CsvLogger" }
+
     fn initialize(&mut self) {
         // Writer CSV header
         self.log_file
