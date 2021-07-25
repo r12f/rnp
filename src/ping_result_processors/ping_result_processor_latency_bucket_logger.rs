@@ -79,6 +79,8 @@ impl PingResultProcessorLatencyBucketLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
+    fn name(&self) -> &'static str { "LatencyBucketLogger" }
+
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
     }
