@@ -70,7 +70,9 @@ impl PingClientQuic {
         let mut endpoint_builder = Endpoint::builder();
         endpoint_builder.default_client_config(client_config);
 
-        let (endpoint, _) = endpoint_builder.bind(source)?;
+        let socket = std::net::UdpSocket::bind(addr).map_err(EndpointError::Socket)?;
+        let (endpoint, _) = endpoint_builder.with_socket(socket)?;
+
         return Ok(endpoint);
     }
 
