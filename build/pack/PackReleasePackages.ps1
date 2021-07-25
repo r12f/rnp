@@ -1,3 +1,14 @@
+Param(
+    [Parameter(Mandatory = $true)]
+    [string] $BuildBranchName,
+
+    [Parameter(Mandatory = $true)]
+    [string] $BuildTag,
+
+    [Parameter(Mandatory = $true)]
+    [string] $BuildNumber
+)
+
 function PackAllReleasePackages() {
     PackPerFlavorReleases
     PackSymbolsPackagesForGithubRelease
@@ -92,7 +103,7 @@ function PackPerFlavorReleases() {
         Write-Host "Creating nuget package under $nugetProjectRoot"
         New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
         Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
-        EvaluateTemplateFile ".\Build.Build.windowsx64\templates\nuget_packages\rnp_nupkg.csproj" "$nugetProjectRoot\rnp_nupkg.csproj"
+        EvaluateTemplateFile ".\Build.Build.windowsx64\templates\nuget_packages\rnp_nupkg.csproj" "$nugetProjectRoot\rnp_nupkg.csproj" $flavor $target
         dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
     }
 }
@@ -124,33 +135,33 @@ function PackChocolateyPackages() {
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash;
     }
     Write-Host "File hash: $fileHashs"
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\rnp.nuspec" ".\Staging\Chocolatey\rnp.nuspec" $fileHashs
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\chocolateyInstall.ps1" ".\Staging\Chocolatey\tools\chocolateyInstall.ps1" $fileHashs
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\VERIFICATION.txt" ".\Staging\Chocolatey\tools\VERIFICATION.txt" $fileHashs
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\LICENSE.txt" ".\Staging\Chocolatey\tools\LICENSE.txt" $fileHashs
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\rnp.nuspec" ".\Staging\Chocolatey\rnp.nuspec" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\chocolateyInstall.ps1" ".\Staging\Chocolatey\tools\chocolateyInstall.ps1" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\VERIFICATION.txt" ".\Staging\Chocolatey\tools\VERIFICATION.txt" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\LICENSE.txt" ".\Staging\Chocolatey\tools\LICENSE.txt" $fileHashs "" ""
     choco pack ".\Staging\Chocolatey\rnp.nuspec" --outputdirectory ".\Releases\Chocolatey\"
 }
 
 # Utility functions for evaluating templates
-function EvaluateTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs) {
-    $templateFileContent = gc $templateFile;
-    $targetFileContent = EvaluateTemplate $templateFileContent
+function EvaluateTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs, $targetShortName, $targetFullName) {
+    $templateFileContent = Get-Content $templateFile;
+    $targetFileContent = EvaluateTemplate $templateFileContent $targetShortName $targetFullName
     $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64);
 
     $utf8NoBom = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
 }
 
-function EvaluateTemplateFile($templateFile, $targetFile) {
-    $templateFileContent = gc $templateFile;
-    $targetFileContent = EvaluateTemplate $templateFileContent
+function EvaluateTemplateFile($templateFile, $targetFile, $targetShortName, $targetFullName) {
+    $templateFileContent = Get-Content $templateFile;
+    $targetFileContent = EvaluateTemplate $templateFileContent $targetShortName $targetFullName
 
     $utf8NoBom = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
 }
 
-function EvaluateTemplate($template) {
-    return $template.Replace("{build_branch_name}", "$(build.branch_name)").Replace("{build_tag}", "$(build.tag)").Replace("{version}", "$(Build.BuildNumber)").Replace("{target_short}", $flavor).Replace("{target}", $target)
+function EvaluateTemplate($template, $targetShortName, $targetFullName) {
+    return $template.Replace("{build_branch_name}", $BuildBranchName).Replace("{build_tag}", $BuildTag).Replace("{version}", $BuildNumber).Replace("{target_short}", $targetShortName).Replace("{target}", $targetFullName)
 }
 
 PackAllReleasePackages
