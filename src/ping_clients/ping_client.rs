@@ -1,6 +1,6 @@
-use std::time::Duration;
-use std::net::SocketAddr;
 use async_trait::async_trait;
+use std::net::SocketAddr;
+use std::time::Duration;
 
 #[derive(thiserror::Error, Debug)]
 pub enum PingClientWarning {
@@ -19,7 +19,6 @@ pub enum PingClientError {
     #[error("{0}")]
     PingFailed(Box<dyn std::error::Error + Send>),
 }
-
 
 #[derive(Debug)]
 pub struct PingClientPingResultDetails {
@@ -50,5 +49,9 @@ pub type PingClientResult<T, E = PingClientError> = std::result::Result<T, E>;
 #[async_trait]
 pub trait PingClient {
     fn protocol(&self) -> &'static str;
-    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails>;
+    async fn ping(
+        &self,
+        source: &SocketAddr,
+        target: &SocketAddr,
+    ) -> PingClientResult<PingClientPingResultDetails>;
 }

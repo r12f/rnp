@@ -1,5 +1,5 @@
-pub mod ping_client_factory;
 pub mod ping_client;
+pub mod ping_client_factory;
 mod ping_client_tcp;
 
 // quinn cannot be built for windows.arm64, because it doesn't support uint128 and cause compile

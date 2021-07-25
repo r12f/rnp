@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialOrd, PartialEq)]
 #[serde(rename_all = "camelCase")]

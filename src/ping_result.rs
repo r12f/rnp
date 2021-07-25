@@ -1,8 +1,8 @@
 use crate::ping_clients::ping_client::PingClientError;
-use chrono::{offset::Utc, DateTime};
-use std::{net::SocketAddr, time::Duration};
-use contracts::requires;
 use crate::ping_clients::ping_client::PingClientWarning;
+use chrono::{offset::Utc, DateTime};
+use contracts::requires;
+use std::{net::SocketAddr, time::Duration};
 
 #[derive(Debug)]
 pub struct PingResult {
@@ -171,19 +171,35 @@ impl PingResult {
 
     pub fn format_as_json_string(&self) -> String {
         let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
+            if let PingClientError::PreparationFailed(pe) = e {
+                pe.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PingFailed(pe) = e { pe.to_string() } else { String::from("") }
+            if let PingClientError::PingFailed(pe) = e {
+                pe.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::AppHandshakeFailed(hw) = w { hw.to_string() } else { String::from("") }
+            if let PingClientWarning::AppHandshakeFailed(hw) = w {
+                hw.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let disconnect_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::DisconnectFailed(dw) = w { dw.to_string() } else { String::from("") }
+            if let PingClientWarning::DisconnectFailed(dw) = w {
+                dw.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let json = format!(
@@ -210,19 +226,35 @@ impl PingResult {
 
     pub fn format_as_csv_string(&self) -> String {
         let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PreparationFailed(pe) = e { pe.to_string() } else { String::from("") }
+            if let PingClientError::PreparationFailed(pe) = e {
+                pe.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PingFailed(pe) = e { pe.to_string() } else { String::from("") }
+            if let PingClientError::PingFailed(pe) = e {
+                pe.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::AppHandshakeFailed(hw) = w { hw.to_string() } else { String::from("") }
+            if let PingClientWarning::AppHandshakeFailed(hw) = w {
+                hw.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let disconnect_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::DisconnectFailed(dw) = w { dw.to_string() } else { String::from("") }
+            if let PingClientWarning::DisconnectFailed(dw) = w {
+                dw.to_string()
+            } else {
+                String::from("")
+            }
         });
 
         let csv = format!(
@@ -251,11 +283,11 @@ impl PingResult {
 #[cfg(test)]
 mod tests {
     use crate::ping_result::PingResult;
+    use crate::rnp_test_common;
     use chrono::Utc;
     use pretty_assertions::assert_eq;
     use std::net::SocketAddr;
     use std::time::Duration;
-    use crate::rnp_test_common;
 
     #[test]
     fn new_ping_result_should_work() {

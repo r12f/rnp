@@ -1,11 +1,13 @@
-use crate::ping_clients::ping_client::{PingClient, PingClientResult, PingClientPingResultDetails, PingClientError, PingClientWarning};
+use crate::ping_clients::ping_client::{
+    PingClient, PingClientError, PingClientPingResultDetails, PingClientResult, PingClientWarning,
+};
 use crate::PingClientConfig;
+use async_trait::async_trait;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
-use std::time::{Duration, Instant};
-use std::net::{SocketAddr, Shutdown};
-use async_trait::async_trait;
 use std::mem::MaybeUninit;
+use std::net::{Shutdown, SocketAddr};
+use std::time::{Duration, Instant};
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -19,11 +21,18 @@ impl PingClientTcp {
     }
 
     #[tracing::instrument(name = "Running TCP ping in ping client", level = "debug", skip(self))]
-    fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
-        let socket = self.prepare_socket_for_ping(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
+    fn ping_target(
+        &self,
+        source: &SocketAddr,
+        target: &SocketAddr,
+    ) -> PingClientResult<PingClientPingResultDetails> {
+        let socket = self
+            .prepare_socket_for_ping(source)
+            .map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
 
         let start_time = Instant::now();
-        let connect_result = socket.connect_timeout(&SockAddr::from(target.clone()), self.config.wait_timeout);
+        let connect_result =
+            socket.connect_timeout(&SockAddr::from(target.clone()), self.config.wait_timeout);
         let rtt = Instant::now().duration_since(start_time);
         match connect_result {
             // Timeout is an expected value instead of an actual failure, so here we should return Ok.
@@ -47,13 +56,22 @@ impl PingClientTcp {
         // If getting local address failed, we ignore it.
         // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
         return match local_addr {
-            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false, warning)),
+            Ok(addr) => Ok(PingClientPingResultDetails::new(
+                Some(addr.as_socket().unwrap()),
+                rtt,
+                false,
+                warning,
+            )),
             Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false, warning)),
         };
     }
 
     fn prepare_socket_for_ping(&self, source: &SocketAddr) -> io::Result<Socket> {
-        let socket_domain = if source.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
+        let socket_domain = if source.is_ipv4() {
+            Domain::IPV4
+        } else {
+            Domain::IPV6
+        };
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&SockAddr::from(source.clone()))?;
         socket.set_read_timeout(Some(self.config.wait_timeout))?;
@@ -86,21 +104,25 @@ impl PingClient for PingClientTcp {
         "TCP"
     }
 
-    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+    async fn ping(
+        &self,
+        source: &SocketAddr,
+        target: &SocketAddr,
+    ) -> PingClientResult<PingClientPingResultDetails> {
         return self.ping_target(source, target);
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::ping_clients::ping_client_test_common::*;
     use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol};
     use futures_intrusive::sync::ManualResetEvent;
     use std::sync::Arc;
+    use std::time::Duration;
     use tide::prelude::*;
     use tide::Request;
     use tokio::runtime::Runtime;
-    use std::time::Duration;
-    use crate::ping_clients::ping_client_test_common::*;
 
     #[test]
     fn ping_client_tcp_should_work() {
@@ -146,5 +168,7 @@ mod tests {
         });
     }
 
-    async fn valid_http_handler(_req: Request<()>) -> tide::Result { Ok("It works!".into()) }
+    async fn valid_http_handler(_req: Request<()>) -> tide::Result {
+        Ok("It works!".into())
+    }
 }

@@ -1,10 +1,13 @@
-use crate::ping_clients::ping_client::{PingClientPingResultDetails, PingClientError};
-use crate::{ping_client_factory, PingClient, PingPortPicker, PingResult, PingWorkerConfig, ExternalPingClientFactory};
+use crate::ping_clients::ping_client::{PingClientError, PingClientPingResultDetails};
+use crate::{
+    ping_client_factory, ExternalPingClientFactory, PingClient, PingPortPicker, PingResult,
+    PingWorkerConfig,
+};
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
+use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc, sync::Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
-use std::time::Duration;
 
 pub struct PingWorker {
     id: u32,
@@ -20,7 +23,13 @@ impl PingWorker {
     #[tracing::instrument(
         name = "Starting worker",
         level = "debug",
-        skip(config, external_ping_client_factory, port_picker, stop_event, result_sender)
+        skip(
+            config,
+            external_ping_client_factory,
+            port_picker,
+            stop_event,
+            result_sender
+        )
     )]
     pub fn run(
         worker_id: u32,
@@ -32,7 +41,11 @@ impl PingWorker {
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let ping_client = ping_client_factory::new(&config.protocol, &config.ping_client_config, external_ping_client_factory);
+            let ping_client = ping_client_factory::new(
+                &config.protocol,
+                &config.ping_client_config,
+                external_ping_client_factory,
+            );
 
             let mut worker = PingWorker {
                 id: worker_id,

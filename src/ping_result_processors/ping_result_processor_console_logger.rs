@@ -1,5 +1,5 @@
-use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::ping_clients::ping_client::PingClientWarning;
+use crate::ping_result_processors::ping_result_processor::PingResultProcessor;
 use crate::PingResult;
 use std::io::{stdout, Write};
 use std::net::SocketAddr;
@@ -116,7 +116,9 @@ impl PingResultProcessorConsoleLogger {
 }
 
 impl PingResultProcessor for PingResultProcessorConsoleLogger {
-    fn name(&self) -> &'static str { "ConsoleLogger" }
+    fn name(&self) -> &'static str {
+        "ConsoleLogger"
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
@@ -143,8 +145,18 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
         let mut warning: String = String::from("");
         if self.handshake_failed_count > 0 || self.disconnect_failed_count > 0 {
             let mut warning_messages = Vec::new();
-            if self.handshake_failed_count > 0 { warning_messages.push(format!("App Handshake Failed = {}", self.handshake_failed_count)); }
-            if self.disconnect_failed_count > 0 { warning_messages.push(format!("Disconnect Failed = {}", self.disconnect_failed_count)); }
+            if self.handshake_failed_count > 0 {
+                warning_messages.push(format!(
+                    "App Handshake Failed = {}",
+                    self.handshake_failed_count
+                ));
+            }
+            if self.disconnect_failed_count > 0 {
+                warning_messages.push(format!(
+                    "Disconnect Failed = {}",
+                    self.disconnect_failed_count
+                ));
+            }
             warning = format!(" ({})", warning_messages.join(","));
         }
 

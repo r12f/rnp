@@ -1,7 +1,9 @@
-use crate::ping_clients::ping_client::{PingClient, PingClientError, PingClientPingResultDetails, PingClientResult, PingClientWarning};
+use crate::ping_clients::ping_client::{
+    PingClient, PingClientError, PingClientPingResultDetails, PingClientResult, PingClientWarning,
+};
 use crate::PingClientConfig;
 use async_trait::async_trait;
-use quinn::{ClientConfigBuilder, Endpoint, EndpointError, ConnectionError};
+use quinn::{ClientConfigBuilder, ConnectionError, Endpoint, EndpointError};
 use rustls::ServerCertVerified;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -29,8 +31,14 @@ impl PingClientQuic {
             .map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
         let server_name = self.config.server_name.as_ref().map_or("", |s| &s);
         let use_timer_rtt = self.config.use_timer_rtt;
-        let ping_result =
-            PingClientQuic::connect_to_target(&endpoint, source, target, server_name, use_timer_rtt).await;
+        let ping_result = PingClientQuic::connect_to_target(
+            &endpoint,
+            source,
+            target,
+            server_name,
+            use_timer_rtt,
+        )
+        .await;
         endpoint.wait_idle().await;
         return ping_result;
     }
@@ -92,15 +100,21 @@ impl PingClientQuic {
             Err(e) => match e {
                 ConnectionError::TimedOut => Err(PingClientError::PingFailed(Box::new(e))),
                 ConnectionError::LocallyClosed => Err(PingClientError::PingFailed(Box::new(e))),
-                _ => return Ok(PingClientPingResultDetails::new(
-                    None,
-                    rtt,
-                    false,
-                    Some(PingClientWarning::AppHandshakeFailed(Box::new(e))))),
-            }
+                _ => {
+                    return Ok(PingClientPingResultDetails::new(
+                        None,
+                        rtt,
+                        false,
+                        Some(PingClientWarning::AppHandshakeFailed(Box::new(e))),
+                    ))
+                }
+            },
         }?;
 
-        let local_ip = connection.connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
+        let local_ip = connection
+            .connection
+            .local_ip()
+            .map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
         if !use_timer_rtt {
             rtt = connection.connection.rtt();
         }
