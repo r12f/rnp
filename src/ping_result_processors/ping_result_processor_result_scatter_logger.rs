@@ -54,11 +54,6 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             return;
         }
 
-        // Skip preparation errors in analysis, since it is not a remote issue.
-        if ping_result.is_preparation_error() {
-            return;
-        }
-
         let (row, index) = self.get_ping_history_position(ping_result.source().port() as u32);
         let result = if let Some(e) = ping_result.error() {
             match e {
@@ -99,19 +94,19 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
     }
 
     fn rundown(&mut self) {
-        println!("\n=== Ping result scatter map ===\n");
+        println!("\n=== Ping result scatter map ===");
         println!(
             "(\"{}\" = Ok, \"{}\" = Fail, \"{}\" = Not tested yet, \"{}\" = Preparation failed, \"{}\" = App handshake failed, \"{}\" = Disconnect failed)",
             SCATTER_SYMBOL_PASSED, SCATTER_SYMBOL_FAILED, SCATTER_SYMBOL_NOT_TESTED_YET, SCATTER_SYMBOL_PREPARE_FAILED, SCATTER_SYMBOL_HANDSHAKE_FAILED, SCATTER_SYMBOL_DISCONNECT_FAILED
         );
 
-        println!("{:>7} | {:>7} | {}", "Iter #", "Src", "Results");
-        println!("{:>7} | {:>7} | ", "", "Port");
-        println!("{:>7} | {:->9}-0---4-5---9-0---4-5---9-------------------", "", "+");
+        println!("\n{:>5} | {:>6} | {}", "Iter", "Src", "Results");
+        println!("{:>5} | {:>6} | ", "#", "Port");
+        println!("{:->6}|{:->9}-0---4-5---9-0---4-5---9-", "", "+");
 
         for (iteration_index, iteration) in self.ping_history.iter().enumerate() {
             for (port_bucket, result_hits) in iteration {
-                print!("{:>7} | {:>7} | ", iteration_index, port_bucket);
+                print!("{:>5} | {:>6} | ", iteration_index, port_bucket);
 
                 let result =
                     PingResultProcessorResultScatterLogger::convert_result_hits_to_string(result_hits);
