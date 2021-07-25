@@ -135,10 +135,10 @@ function PackChocolateyPackages() {
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash;
     }
     Write-Host "File hash: $fileHashs"
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\rnp.nuspec" ".\Staging\Chocolatey\rnp.nuspec" $fileHashs "" ""
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\chocolateyInstall.ps1" ".\Staging\Chocolatey\tools\chocolateyInstall.ps1" $fileHashs "" ""
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\VERIFICATION.txt" ".\Staging\Chocolatey\tools\VERIFICATION.txt" $fileHashs "" ""
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\chocolatey\tools\LICENSE.txt" ".\Staging\Chocolatey\tools\LICENSE.txt" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\rnp.nuspec" ".\Staging\Chocolatey\rnp.nuspec" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\tools\chocolateyInstall.ps1" ".\Staging\Chocolatey\tools\chocolateyInstall.ps1" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\tools\VERIFICATION.txt" ".\Staging\Chocolatey\tools\VERIFICATION.txt" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\tools\LICENSE.txt" ".\Staging\Chocolatey\tools\LICENSE.txt" $fileHashs "" ""
     choco pack ".\Staging\Chocolatey\rnp.nuspec" --outputdirectory ".\Releases\Chocolatey\"
 }
 
