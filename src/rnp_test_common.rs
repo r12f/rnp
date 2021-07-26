@@ -1,9 +1,17 @@
-use crate::ping_clients::ping_client::PingClientError::{PingFailed, PreparationFailed};
-use crate::ping_clients::ping_client::PingClientWarning;
-use crate::ping_result::PingResult;
+use crate::*;
 use chrono::{TimeZone, Utc};
 use std::io;
 use std::time::Duration;
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+pub fn initialize() {
+    INIT.call_once(|| {
+        // initialization code here
+        let _ = env_logger::builder().is_test(true).try_init();
+    });
+}
 
 pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
     vec![
@@ -79,7 +87,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             Duration::from_millis(0),
             false,
             None,
-            Some(PingFailed(Box::new(io::Error::new(
+            Some(PingClientError::PingFailed(Box::new(io::Error::new(
                 io::ErrorKind::ConnectionRefused,
                 "connect failed",
             )))),
@@ -96,7 +104,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             Duration::from_millis(0),
             false,
             None,
-            Some(PreparationFailed(Box::new(io::Error::new(
+            Some(PingClientError::PreparationFailed(Box::new(io::Error::new(
                 io::ErrorKind::AddrInUse,
                 "address in use",
             )))),

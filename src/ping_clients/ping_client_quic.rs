@@ -109,7 +109,9 @@ impl PingClientQuic {
         let connection = match connecting_result {
             Ok(connection) => Ok(connection),
             Err(e) => match e {
-                ConnectionError::TimedOut => Err(PingClientError::PingFailed(Box::new(e))),
+                ConnectionError::TimedOut => {
+                    return Ok(PingClientPingResultDetails::new(None, rtt, true, None));
+                },
                 ConnectionError::LocallyClosed => Err(PingClientError::PingFailed(Box::new(e))),
                 _ => {
                     return Ok(PingClientPingResultDetails::new(
@@ -117,7 +119,7 @@ impl PingClientQuic {
                         rtt,
                         false,
                         Some(PingClientWarning::AppHandshakeFailed(Box::new(e))),
-                    ))
+                    ));
                 }
             },
         }?;
@@ -159,5 +161,44 @@ impl rustls::ServerCertVerifier for SkipCertificationVerification {
         _ocsp_response: &[u8],
     ) -> Result<rustls::ServerCertVerified, rustls::TLSError> {
         Ok(ServerCertVerified::assertion())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ping_clients::ping_client_test_common::*;
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol, rnp_test_common};
+    use std::time::Duration;
+    use tokio::runtime::Runtime;
+
+    #[test]
+    fn ping_client_quic_should_work() {
+        rnp_test_common::initialize();
+
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            let config = PingClientConfig {
+                wait_timeout: Duration::from_millis(300),
+                time_to_live: None,
+                check_disconnect: false,
+                server_name: Some("localhost".to_string()),
+                log_tls_key: false,
+                alpn_protocol: Some("hq-29".to_string()),
+                use_timer_rtt: false,
+            };
+            let mut ping_client = ping_client_factory::new(&RnpSupportedProtocol::QUIC, &config, None);
+
+            // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
+            let expected_results = ExpectedPingClientTestResults {
+                timeout_min_time: Duration::from_millis(200),
+                ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,
+                ping_non_existing_port_result: ExpectedTestCaseResult::Timeout,
+                binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: The requested address is not valid in its context. (os error 10049)"),
+                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
+            };
+
+            run_ping_client_tests(&mut ping_client, &"127.0.0.1:4433".parse().unwrap(), &expected_results).await;
+        });
     }
 }
