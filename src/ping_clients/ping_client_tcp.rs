@@ -161,7 +161,7 @@ mod tests {
                 binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
             };
 
-            run_ping_client_tests(&mut ping_client, &expected_results).await;
+            run_ping_client_tests(&mut ping_client, &"127.0.0.1:11337".parse().unwrap(), &expected_results).await;
         });
     }
 
