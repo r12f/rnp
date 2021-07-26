@@ -2,6 +2,16 @@ use crate::*;
 use chrono::{TimeZone, Utc};
 use std::io;
 use std::time::Duration;
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+pub fn initialize() {
+    INIT.call_once(|| {
+        // initialization code here
+        let _ = env_logger::builder().is_test(true).try_init();
+    });
+}
 
 pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
     vec![

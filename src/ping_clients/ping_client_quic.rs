@@ -167,7 +167,7 @@ impl rustls::ServerCertVerifier for SkipCertificationVerification {
 #[cfg(test)]
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol};
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol, rnp_test_common};
     use futures_intrusive::sync::ManualResetEvent;
     use std::sync::Arc;
     use std::time::Duration;
@@ -177,6 +177,8 @@ mod tests {
 
     #[test]
     fn ping_client_quic_should_work() {
+        rnp_test_common::initialize();
+
         let rt = Runtime::new().unwrap();
 
         let ready_event = Arc::new(ManualResetEvent::new(false));
