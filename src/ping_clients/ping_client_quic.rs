@@ -168,11 +168,7 @@ impl rustls::ServerCertVerifier for SkipCertificationVerification {
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
     use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol, rnp_test_common};
-    use futures_intrusive::sync::ManualResetEvent;
-    use std::sync::Arc;
     use std::time::Duration;
-    use tide::prelude::*;
-    use tide::Request;
     use tokio::runtime::Runtime;
 
     #[test]
@@ -180,17 +176,6 @@ mod tests {
         rnp_test_common::initialize();
 
         let rt = Runtime::new().unwrap();
-
-        let ready_event = Arc::new(ManualResetEvent::new(false));
-        let ready_event_clone = ready_event.clone();
-        let _server = rt.spawn(async move {
-            let mut app = tide::new();
-            app.at("/test").get(valid_http_handler);
-            let mut listener = app.bind("127.0.0.1:11337").await.unwrap();
-            ready_event_clone.set();
-            listener.accept().await.unwrap_or_default();
-        });
-        rt.block_on(ready_event.wait());
 
         rt.block_on(async {
             let config = PingClientConfig {
@@ -215,9 +200,5 @@ mod tests {
 
             run_ping_client_tests(&mut ping_client, &"127.0.0.1:4433".parse().unwrap(), &expected_results).await;
         });
-    }
-
-    async fn valid_http_handler(_req: Request<()>) -> tide::Result {
-        Ok("It works!".into())
     }
 }
