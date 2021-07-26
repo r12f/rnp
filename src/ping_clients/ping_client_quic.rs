@@ -195,9 +195,9 @@ mod tests {
                 wait_timeout: Duration::from_millis(300),
                 time_to_live: None,
                 check_disconnect: false,
-                server_name: Some("r12f.com".to_string()),
+                server_name: Some("localhost".to_string()),
                 log_tls_key: false,
-                alpn_protocol: None,
+                alpn_protocol: Some("hq-29".to_string()),
                 use_timer_rtt: false,
             };
             let mut ping_client = ping_client_factory::new(&RnpSupportedProtocol::QUIC, &config, None);
@@ -212,10 +212,10 @@ mod tests {
                     ExpectedTestCaseResult::Failed("connection refused")
                 },
                 binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: The requested address is not valid in its context. (os error 10049)"),
-                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
+                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
             };
 
-            run_ping_client_tests(&mut ping_client, &"127.0.0.1:0".parse().unwrap(), &expected_results).await;
+            run_ping_client_tests(&mut ping_client, &"127.0.0.1:4433".parse().unwrap(), &expected_results).await;
         });
     }
 

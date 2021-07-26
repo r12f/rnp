@@ -19,27 +19,27 @@ pub struct ExpectedPingClientTestResults {
 
 pub async fn run_ping_client_tests(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    good_server_addr: &SocketAddr,
+    mock_server_addr: &SocketAddr,
     expected_results: &ExpectedPingClientTestResults,
 ) {
     // TODO: This is failing on Linux and MAC, need to figure out why.
     if cfg!(windows) {
-        ping_client_should_work_when_pinging_good_host(ping_client, good_server_addr, expected_results).await;
+        ping_client_should_work_when_pinging_good_host(ping_client, mock_server_addr, expected_results).await;
     }
 
     ping_client_should_fail_when_pinging_non_existing_host(ping_client, expected_results).await;
     ping_client_should_fail_when_pinging_non_existing_port(ping_client, expected_results).await;
     ping_client_should_fail_when_binding_invalid_source_ip(ping_client, expected_results).await;
-    ping_client_should_fail_when_binding_unavailable_source_port(ping_client, expected_results)
+    ping_client_should_fail_when_binding_unavailable_source_port(ping_client, mock_server_addr, expected_results)
         .await;
 }
 
 async fn ping_client_should_work_when_pinging_good_host(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    good_server_addr: &SocketAddr,
+    mock_server_addr: &SocketAddr,
     expected_results: &ExpectedPingClientTestResults,
 ) {
-    let target = good_server_addr.clone();
+    let target = mock_server_addr.clone();
     if target.port() == 0 {
         return;
     }
@@ -105,9 +105,10 @@ async fn ping_client_should_fail_when_binding_invalid_source_ip(
 
 async fn ping_client_should_fail_when_binding_unavailable_source_port(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
+    mock_server_addr: &SocketAddr,
     expected_results: &ExpectedPingClientTestResults,
 ) {
-    let source = "127.0.0.1:11337".parse::<SocketAddr>().unwrap();
+    let source = mock_server_addr.clone();
     let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
     ping_client_result_should_be_expected(
         ping_client,
