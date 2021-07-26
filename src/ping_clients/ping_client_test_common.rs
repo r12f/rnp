@@ -22,7 +22,6 @@ pub async fn run_ping_client_tests(
     mock_server_addr: &SocketAddr,
     expected_results: &ExpectedPingClientTestResults,
 ) {
-    // TODO: This is failing on Linux and MAC, need to figure out why.
     if ping_client.protocol() != "QUIC" {
         ping_client_should_work_when_pinging_good_host(ping_client, mock_server_addr, expected_results).await;
     }
