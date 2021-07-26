@@ -208,11 +208,7 @@ mod tests {
             let expected_results = ExpectedPingClientTestResults {
                 timeout_min_time: Duration::from_millis(200),
                 ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,
-                ping_non_existing_port_result: if cfg!(windows) {
-                    ExpectedTestCaseResult::Timeout
-                } else {
-                    ExpectedTestCaseResult::Failed("connection refused")
-                },
+                ping_non_existing_port_result: ExpectedTestCaseResult::Timeout,
                 binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: The requested address is not valid in its context. (os error 10049)"),
                 binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
             };
