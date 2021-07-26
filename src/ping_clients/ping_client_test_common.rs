@@ -23,7 +23,7 @@ pub async fn run_ping_client_tests(
     expected_results: &ExpectedPingClientTestResults,
 ) {
     // TODO: This is failing on Linux and MAC, need to figure out why.
-    if cfg!(windows) || ping_client.protocol() != "QUIC" {
+    if ping_client.protocol() != "QUIC" {
         ping_client_should_work_when_pinging_good_host(ping_client, mock_server_addr, expected_results).await;
     }
 
@@ -31,7 +31,7 @@ pub async fn run_ping_client_tests(
     ping_client_should_fail_when_pinging_non_existing_port(ping_client, expected_results).await;
     ping_client_should_fail_when_binding_invalid_source_ip(ping_client, expected_results).await;
 
-    if cfg!(windows) || ping_client.protocol() != "QUIC" {
+    if ping_client.protocol() != "QUIC" {
         ping_client_should_fail_when_binding_unavailable_source_port(ping_client, mock_server_addr, expected_results).await;
     }
 }
