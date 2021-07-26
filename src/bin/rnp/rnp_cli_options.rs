@@ -60,7 +60,7 @@ pub struct RnpCliCommonOptions {
     #[structopt(short = "t", help = "Ping until stopped.")]
     pub ping_until_stopped: bool,
 
-    #[structopt(long = "warmup", default_value = "1", help = "Warm up ping count.")]
+    #[structopt(long = "warmup", default_value = "0", help = "Warm up ping count.")]
     pub warmup_count: u32,
 
     #[structopt(
@@ -276,7 +276,7 @@ impl RnpCliCommonOptions {
         }
 
         if self.source_port_max.is_none() {
-            self.source_port_max = Some(self.source_port_min.unwrap() + 10000);
+            self.source_port_max = Some(self.source_port_min.unwrap() + 2000);
         }
 
         if self.source_port_min > self.source_port_max {
@@ -334,7 +334,7 @@ mod tests {
                     source_port_list: None,
                     ping_count: 4,
                     ping_until_stopped: false,
-                    warmup_count: 1,
+                    warmup_count: 0,
                     wait_timeout_in_ms: 2000,
                     ping_interval_in_ms: 1000,
                     time_to_live: None,
@@ -374,7 +374,7 @@ mod tests {
                     source_port_list: None,
                     ping_count: 10,
                     ping_until_stopped: true,
-                    warmup_count: 1,
+                    warmup_count: 0,
                     wait_timeout_in_ms: 1000,
                     ping_interval_in_ms: 1500,
                     time_to_live: None,
@@ -663,7 +663,7 @@ mod tests {
         assert!(opts.common_options.source_port_min.is_some());
         assert!(opts.common_options.source_port_max.is_some());
         assert_eq!(
-            10000,
+            2000,
             opts.common_options.source_port_max.unwrap()
                 - opts.common_options.source_port_min.unwrap()
         );
