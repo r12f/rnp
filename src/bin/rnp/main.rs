@@ -8,11 +8,11 @@ use tokio::runtime::Runtime;
 mod rnp_cli_options;
 
 fn main() {
-    println!("{} - {} - {}\n", RNP_NAME, RNP_AUTHOR, RNP_ABOUT);
-
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
     let mut opts = RnpCliOptions::from_args();
+    println!("{} - {} - {}\n", RNP_NAME, RNP_AUTHOR, RNP_ABOUT);
+
     opts.prepare_to_use();
     let rnp_core_config = opts.to_rnp_core_config();
 
