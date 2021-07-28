@@ -189,10 +189,10 @@ stages:
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         sourceFolder: '$(System.DefaultWorkingDirectory)/staging/crate'
-        Contents: '.git*'
+        Contents: '.git'
 
     - task: ArchiveFiles@2
-      displayName: Pack source as zip  for crate publishing
+      displayName: Pack source as zip for crate publishing
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
@@ -296,14 +296,14 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
 - stage: Pack
   jobs:
   - job: Pack
-    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines
