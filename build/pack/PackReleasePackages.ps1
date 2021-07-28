@@ -122,6 +122,9 @@ function PackRustCrate() {
     New-Item -ItemType Directory -Path ".\Releases\Crate.io"
     Write-Host "Pack source as crate to .\Releases\Crate.io"
     Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
+    
+    Write-Host "Publish source packages to .\Releases\GithubReleases"
+    Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\GithubReleases -Verbose -Force
 }
 
 # Chocolatey
