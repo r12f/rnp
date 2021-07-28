@@ -16,9 +16,13 @@ pr:
 # Version and jobs
 #
 variables:
-  buildVersionMajor: 0
-  buildVersionMinor: 1
-  buildVersionRevision: $[counter(format('{0}.{1}.{2}', variables['Build.SourceBranch'], variables['buildVersionMajor'], variables['buildVersionMinor']), 100)]
+- group: RnpCodeSign
+- name: buildVersionMajor
+  value: 0
+- name: buildVersionMinor
+  value: 1
+- name: buildVersionRevision
+  value: $[counter(format('{0}.{1}.{2}', variables['Build.SourceBranch'], variables['buildVersionMajor'], variables['buildVersionMinor']), 100)]
 
 # Run
 name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
