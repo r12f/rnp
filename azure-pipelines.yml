@@ -197,7 +197,7 @@ stages:
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
         archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.$(build.tag).$(TARGET_SHORT).zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.$(build.tag).zip'
 
     - task: ArchiveFiles@2
       displayName: Pack source as tar.gz for crate publishing
@@ -206,7 +206,7 @@ stages:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
         archiveType: 'tar'
         tarCompression: 'gz'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.$(build.tag).$(TARGET_SHORT).tar.gz'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.$(build.tag).tar.gz'
 
     - task: CopyFiles@2
       displayName: Copy chocolatey template to output
