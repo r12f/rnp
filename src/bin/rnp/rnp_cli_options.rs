@@ -4,11 +4,38 @@ use rnp::{
     RnpCoreConfig, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::num::ParseIntError;
+use std::ops::Range;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+fn parse_range<Idx: FromStr<Err = ParseIntError> + Ord>(input: &str) -> Result<Range<Idx>, String> {
+    let range_parts: Vec<&str> = input.split("-").collect();
+    if range_parts.len() != 2 {
+        return Err(format!(
+            "{} is not a valid range. The expected format of a range is start-end.",
+            input
+        ));
+    }
+
+    let start = Idx::from_str(range_parts[0])
+        .map_err(|e| format!("Parsing range start failed! Error = {:?}", e))?;
+    let end = Idx::from_str(range_parts[1])
+        .map_err(|e| format!("Parsing range end failed! Error = {:?}", e))?;
+
+    if start > end {
+        return Err(format!(
+            "{} is not a valid range. Range start should be less or equal than range end.",
+            input
+        ));
+    }
+
+    return Ok(Range { start, end });
+}
+
+#[derive(Debug, StructOpt, PartialEq)]
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
 pub struct RnpCliOptions {
     #[structopt(flatten)]
@@ -21,7 +48,7 @@ pub struct RnpCliOptions {
     quic_options: RnpCliQuicPingOptions,
 }
 
-#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+#[derive(Debug, StructOpt, PartialEq)]
 pub struct RnpCliCommonOptions {
     pub target: SocketAddr,
 
@@ -41,16 +68,19 @@ pub struct RnpCliCommonOptions {
     )]
     pub source_ip: IpAddr,
 
-    #[structopt(long = "src-port-min", help = "First source port to use in ping.")]
-    pub source_port_min: Option<u16>,
-
-    #[structopt(long = "src-port-max", help = "Last source port to use in ping.")]
-    pub source_port_max: Option<u16>,
+    #[structopt(
+        long = "src-port-range",
+        alias = "spr",
+        help = "Source port range to use in ping. Format: start-end, e.g. 10000-11000. [alias: --spr]",
+        parse(try_from_str = parse_range::<u16>)
+    )]
+    pub source_port_range: Option<Range<u16>>,
 
     #[structopt(
-        long = "src-port",
+        long = "src-ports",
+        alias = "sp",
         use_delimiter = true,
-        help = "Source port list to use in ping."
+        help = "Source port list to use in ping. [alias: --sp]"
     )]
     pub source_port_list: Option<Vec<u16>>,
 
@@ -98,7 +128,7 @@ pub struct RnpCliCommonOptions {
     pub parallel_ping_count: u32,
 }
 
-#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+#[derive(Debug, StructOpt, PartialEq)]
 pub struct RnpCliOutputOptions {
     #[structopt(
         short = "q",
@@ -151,7 +181,7 @@ pub struct RnpCliOutputOptions {
     pub latency_buckets: Option<Vec<f64>>,
 }
 
-#[derive(Debug, StructOpt, PartialOrd, PartialEq)]
+#[derive(Debug, StructOpt, PartialEq)]
 struct RnpCliQuicPingOptions {
     #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
     pub server_name: Option<String>,
@@ -222,8 +252,13 @@ impl RnpCliOptions {
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
-                source_port_min: self.common_options.source_port_min.unwrap(),
-                source_port_max: self.common_options.source_port_max.unwrap(),
+                source_port_min: self
+                    .common_options
+                    .source_port_range
+                    .as_ref()
+                    .unwrap()
+                    .start,
+                source_port_max: self.common_options.source_port_range.as_ref().unwrap().end,
                 source_port_list: match &self.common_options.source_port_list {
                     Some(port_list) => Some(port_list.clone()),
                     None => None,
@@ -271,17 +306,12 @@ impl RnpCliCommonOptions {
             }
         }
 
-        if self.source_port_min.is_none() {
-            self.source_port_min = Some(rand::thread_rng().gen_range(10000..30000));
-        }
-
-        if self.source_port_max.is_none() {
-            self.source_port_max = Some(self.source_port_min.unwrap() + 2000);
-        }
-
-        if self.source_port_min > self.source_port_max {
-            tracing::warn!("Min source port is larger than max, swapping to fix.");
-            std::mem::swap(&mut self.source_port_min, &mut self.source_port_max);
+        if self.source_port_range.is_none() {
+            let range_start = rand::thread_rng().gen_range(10000..30000);
+            self.source_port_range = Some(Range {
+                start: range_start,
+                end: range_start + 2000,
+            });
         }
 
         if !self.ping_until_stopped && self.ping_count < 1 {
@@ -291,7 +321,11 @@ impl RnpCliCommonOptions {
 
         let available_source_port_count = match &self.source_port_list {
             Some(port_list) => port_list.len() as u32,
-            None => self.source_port_max.unwrap() as u32 - self.source_port_min.unwrap() as u32 + 1,
+            None => {
+                self.source_port_range.as_ref().unwrap().end as u32
+                    - self.source_port_range.as_ref().unwrap().start as u32
+                    + 1
+            }
         };
 
         if self.parallel_ping_count > available_source_port_count {
@@ -329,8 +363,7 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "0.0.0.0".parse().unwrap(),
-                    source_port_min: None,
-                    source_port_max: None,
+                    source_port_range: None,
                     source_port_list: None,
                     ping_count: 4,
                     ping_until_stopped: false,
@@ -369,9 +402,11 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_min: None,
-                    source_port_max: None,
-                    source_port_list: None,
+                    source_port_range: Some(Range {
+                        start: 1024,
+                        end: 2048
+                    }),
+                    source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: 10,
                     ping_until_stopped: true,
                     warmup_count: 0,
@@ -404,6 +439,10 @@ mod tests {
                 "tcp",
                 "-s",
                 "10.0.0.2",
+                "--spr",
+                "1024-2048",
+                "--sp",
+                "1024,1025,1026",
                 "-n",
                 "10",
                 "-t",
@@ -431,8 +470,10 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::QUIC,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_min: Some(1024),
-                    source_port_max: Some(2048),
+                    source_port_range: Some(Range {
+                        start: 1024,
+                        end: 2048
+                    }),
                     source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: 10,
                     ping_until_stopped: false,
@@ -466,11 +507,9 @@ mod tests {
                 "quic",
                 "--src-ip",
                 "10.0.0.2",
-                "--src-port-min",
-                "1024",
-                "--src-port-max",
-                "2048",
-                "--src-port",
+                "--src-port-range",
+                "1024-2048",
+                "--src-ports",
                 "1024,1025,1026",
                 "--count",
                 "10",
@@ -553,8 +592,10 @@ mod tests {
                     ping_until_stopped: false,
                     warmup_count: 1,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_min: Some(1024),
-                    source_port_max: Some(2047),
+                    source_port_range: Some(Range {
+                        start: 1024,
+                        end: 2047
+                    }),
                     source_port_list: Some(vec![1024, 1025, 1026]),
                     wait_timeout_in_ms: 1000,
                     ping_interval_in_ms: 1500,
@@ -626,8 +667,10 @@ mod tests {
                     ping_until_stopped: true,
                     warmup_count: 3,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_min: Some(1024),
-                    source_port_max: Some(2047),
+                    source_port_range: Some(Range {
+                        start: 1024,
+                        end: 2047
+                    }),
                     source_port_list: Some(vec![1024, 1025, 1026]),
                     wait_timeout_in_ms: 2000,
                     ping_interval_in_ms: 1500,
@@ -660,27 +703,28 @@ mod tests {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
         opts.prepare_to_use();
 
-        assert!(opts.common_options.source_port_min.is_some());
-        assert!(opts.common_options.source_port_max.is_some());
+        assert!(opts.common_options.source_port_range.is_some());
         assert_eq!(
             2000,
-            opts.common_options.source_port_max.unwrap()
-                - opts.common_options.source_port_min.unwrap()
+            opts.common_options.source_port_range.as_ref().unwrap().end
+                - opts
+                    .common_options
+                    .source_port_range
+                    .as_ref()
+                    .unwrap()
+                    .start
         );
     }
 
     #[test]
     fn invalid_options_for_ipv4_should_be_fixed() {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
-        opts.common_options.source_port_min = Some(2048);
-        opts.common_options.source_port_max = Some(1024);
+        opts.common_options.source_port_range = None;
         opts.common_options.ping_count = 0;
         opts.common_options.parallel_ping_count = 0;
         opts.output_options.latency_buckets = Some(vec![0.0]);
         opts.prepare_to_use();
 
-        assert_eq!(1024, opts.common_options.source_port_min.unwrap());
-        assert_eq!(2048, opts.common_options.source_port_max.unwrap());
         assert_eq!(1, opts.common_options.ping_count);
         assert_eq!(1, opts.common_options.parallel_ping_count);
         assert_eq!(
@@ -690,14 +734,15 @@ mod tests {
             opts.output_options.latency_buckets
         );
 
-        opts.common_options.source_port_min = Some(1024);
-        opts.common_options.source_port_max = Some(1047);
+        opts.common_options.source_port_range = Some(Range {
+            start: 1024,
+            end: 1047,
+        });
         opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
         assert_eq!(24, opts.common_options.parallel_ping_count);
 
-        opts.common_options.source_port_min = None;
-        opts.common_options.source_port_max = None;
+        opts.common_options.source_port_range = None;
         opts.common_options.source_port_list = Some(vec![1024, 1025, 1026]);
         opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();

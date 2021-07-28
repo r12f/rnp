@@ -158,7 +158,7 @@ $ $ports
 18282,18281,18284,18283
 
 # Retry
-$ rnp.exe 8.8.8.8:443 --src-port $ports -t
+$ rnp.exe 8.8.8.8:443 --src-ports $ports -t
 rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
 
 Start testing TCP 8.8.8.8:443:
@@ -188,16 +188,30 @@ USAGE:
     rnp.exe [FLAGS] [OPTIONS] <target>
 
 FLAGS:
+    -d, --check-disconnect        Check if connection can be correctly disconnected. Only available in TCP mode now.
+                                  When enabled, we will use normal disconnect (w/ FIN) and check the connection
+                                  disconnect.
     -h, --help                    Prints help information
+        --log-tls-key             Enable key logger in TLS for helping packet capture.
+                                  Please note that it might cause RTT to be larger than the real one, because logging
+                                  key will also take time.
     -q, --no-console-log          Don't log each ping result to console. Summary and other things will still be written
                                   to console.
     -t                            Ping until stopped.
     -l, --show-latency-scatter    Show latency (round trip time) scatter map after ping is done.
     -r, --show-result-scatter     Show ping result scatter map after ping is done.
-        --use-fin                 Use regular TCP disconnect (w/ FIN) instead of RST.
+        --use-timer-rtt           Calculate the RTT by checking the time of before and after doing QUIC connect instead
+                                  of estimated RTT from QUIC. Not recommended, as this might cause the RTT time to be
+                                  larger than the real one.
     -V, --version                 Prints version information
 
 OPTIONS:
+        --alpn <alpn-protocol>
+            ALPN protocol used in QUIC. Specify "none" to disable ALPN.
+            It is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.
+            For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-
+            extensiontype-values.xhtml#alpn-protocol-ids
+            [default: h3-29]
         --log-csv <csv-log-path>                  Log ping results a csv file.
         --log-json <json-log-path>                Log ping results to a json file.
     -b, --latency-buckets <latency-buckets>...
@@ -206,14 +220,15 @@ OPTIONS:
     -p, --parallel <parallel-ping-count>          Count of pings running in parallel. [default: 1]
     -n, --count <ping-count>                      Ping count. [default: 4]
     -i, --interval <ping-interval-in-ms>          Sleep between each ping in milliseconds. [default: 1000]
+    -m, --mode <protocol>                         Specify protocol to use. [default: TCP]
+        --server-name <server-name>               Specify the server name in the pings, such as QUIC.
     -s, --src-ip <source-ip>                      Source IP address. [default: 0.0.0.0]
         --src-port <source-port-list>...          Source port list to use in ping.
-        --src-port-max <source-port-max>          Last source port to use in ping.
-        --src-port-min <source-port-min>          First source port to use in ping.
+        --src-port-range <source-port-range>      Source port range to use in ping. Format = start-end, e.g. 10000-11000
         --log-text <text-log-path>                Log ping results to a text file.
         --ttl <time-to-live>                      Time to live.
     -w, --timeout <wait-timeout-in-ms>            Wait time for each ping in milliseconds. [default: 2000]
-        --warmup <warmup-count>                   Warm up ping count. [default: 1]
+        --warmup <warmup-count>                   Warm up ping count. [default: 0]
 
 ARGS:
     <target>
