@@ -175,11 +175,27 @@ stages:
       displayName: Update crate version
       condition: and(succeeded(), eq(variables['target'], 'x86_64-apple-darwin'))
 
+    - task: CopyFiles@2
+      displayName: Copy code for crate publishing
+      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)'
+        targetFolder: '$(System.DefaultWorkingDirectory)/staging/crate'
+        cleanTargetFolder: true
+        overWrite: true
+
+    - task: DeleteFiles@1
+      displayName: Remove git info for source code publishing
+      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+      inputs:
+        sourceFolder: '$(System.DefaultWorkingDirectory)/staging/crate'
+        Contents: '.git*'
+
     - task: ArchiveFiles@2
       displayName: Pack source folder for crate publishing
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
-        rootFolderOrFile: '$(Build.SourcesDirectory)'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
         archiveType: '7z'
         archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.7z'
 
