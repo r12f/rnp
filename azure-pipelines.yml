@@ -287,7 +287,7 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
