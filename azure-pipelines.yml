@@ -151,6 +151,14 @@ stages:
 
     - script: rustup target install $(TARGET)
       displayName: rustup install target
+      
+    - task: DotNetCoreCLI@2
+      displayName: Install AzureSignTool
+      condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
+      inputs:
+        command: 'custom'
+        custom: 'tool'
+        arguments: 'install --global azuresigntool'
 
     - bash: |
         sudo apt install gcc make gcc-multilib
@@ -244,6 +252,12 @@ stages:
       displayName: Generate GCC symbol files
       condition: and(succeeded(), startsWith(variables['target_short'], 'macos.'))
       workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
+    
+    - task: CmdLine@2
+      displayName: 'Sign files with AzureSignTool'
+      condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
+      inputs:
+        script: AzureSignTool sign -du "$(RnpSigningURL)" -kvu "$(RnpSigningVaultURL)" -kvi "$(RnpSigningClientId)" -kvs "$(RnpSigningClientSecret)" -kvc "$(RnpSigningCertName)" -v $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.exe"
 
     #
     # Publish files for release
