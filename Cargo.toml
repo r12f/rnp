@@ -10,6 +10,12 @@ categories = ["command-line-utilities", "network-programming"]
 repository = "https://github.com/r12f/rnp"
 build = "build.rs"
 
+[package.metadata.winres]
+ProductName = "Rnp"
+OriginalFilename = "rnp.exe"
+CompanyName = "r12f"
+LegalCopyright = "Copyright (c) 2021"
+
 [dependencies]
 log = "0.4"
 tracing = { version = "0.1", features = ["log"] }
@@ -25,12 +31,14 @@ rand = "0.8"
 thiserror = "1.0.26"
 async-trait = "0.1.50"
 serde = { version = "1.0", features = ["derive"] }
-winres = "0.1.11"
 
 [target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
 quinn = "0.7.2"
 rustls = { version = "0.19.1", features = ["dangerous_configuration", "quic"] }
 webpki = "0.21"
+
+[build-dependencies]
+winres = "0.1.11"
 
 [dev-dependencies]
 tide = "0.16.0"
