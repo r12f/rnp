@@ -260,7 +260,7 @@ stages:
     
     - task: CmdLine@2
       displayName: 'Sign files with AzureSignTool'
-      condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
+      condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         script: AzureSignTool sign -du "$(RnpSigningURL)" -kvu "$(RnpSigningVaultURL)" -kvi "$(RnpSigningClientId)" -kvs "$(RnpSigningClientSecret)" -kvc "$(RnpSigningCertName)" -v $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.exe"
 
@@ -315,7 +315,7 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
