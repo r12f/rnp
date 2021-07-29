@@ -8,6 +8,13 @@ license = "Apache-2.0"
 keywords = ["network", "utility", "ping", "tcpping", "tcp"]
 categories = ["command-line-utilities", "network-programming"]
 repository = "https://github.com/r12f/rnp"
+build = "build.rs"
+
+[package.metadata.winres]
+ProductName = "Rnp"
+OriginalFilename = "rnp.exe"
+CompanyName = "r12f"
+LegalCopyright = "Copyright (c) 2021"
 
 [dependencies]
 log = "0.4"
@@ -29,6 +36,9 @@ serde = { version = "1.0", features = ["derive"] }
 quinn = "0.7.2"
 rustls = { version = "0.19.1", features = ["dangerous_configuration", "quic"] }
 webpki = "0.21"
+
+[build-dependencies]
+winres = "0.1.11"
 
 [dev-dependencies]
 tide = "0.16.0"
