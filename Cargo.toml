@@ -8,6 +8,7 @@ license = "Apache-2.0"
 keywords = ["network", "utility", "ping", "tcpping", "tcp"]
 categories = ["command-line-utilities", "network-programming"]
 repository = "https://github.com/r12f/rnp"
+build = "build.rs"
 
 [dependencies]
 log = "0.4"
@@ -24,6 +25,7 @@ rand = "0.8"
 thiserror = "1.0.26"
 async-trait = "0.1.50"
 serde = { version = "1.0", features = ["derive"] }
+winres = "0.1.11"
 
 [target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
 quinn = "0.7.2"
