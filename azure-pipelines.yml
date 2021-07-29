@@ -242,18 +242,18 @@ stages:
       displayName: Cargo build
 
     - bash: |
-        $(GCC_PREFIX)objcopy --only-keep-debug rnp rnp.symbols
+        $(GCC_PREFIX)objcopy --only-keep-debug rnp rnp.debug
         $(GCC_PREFIX)strip --strip-debug --strip-unneeded -p rnp
-        $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.symbols rnp
+        $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.debug rnp
       displayName: Generate GCC symbol files
       condition: and(succeeded(), startsWith(variables['target_short'], 'linux.'))
       workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
 
     - bash: |
         brew install binutils
-        /usr/local/opt/binutils/bin/gobjcopy --only-keep-debug rnp rnp.symbols
+        /usr/local/opt/binutils/bin/gobjcopy --only-keep-debug rnp rnp.debug
         strip -S rnp
-        /usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=rnp.symbols rnp
+        /usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=rnp.debug rnp
       displayName: Generate GCC symbol files
       condition: and(succeeded(), startsWith(variables['target_short'], 'macos.'))
       workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
@@ -274,7 +274,7 @@ stages:
         contents: |
           rnp*
           !rnp.pdb
-          !rnp.symbols
+          !rnp.debug
           !rnp.d
         targetFolder: '$(Build.ArtifactStagingDirectory)/bin'
 
@@ -293,7 +293,7 @@ stages:
         sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
         contents: |
           rnp.pdb
-          rnp.symbols
+          rnp.debug
         targetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
 
     - task: CopyFiles@2
