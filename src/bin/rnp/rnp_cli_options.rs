@@ -1,39 +1,13 @@
 use rand::Rng;
 use rnp::{
     PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    RnpCoreConfig, RnpSupportedProtocol,
+    PortRanges, RnpCoreConfig, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::num::ParseIntError;
 use std::ops::Range;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
-
-fn parse_range<Idx: FromStr<Err = ParseIntError> + Ord>(input: &str) -> Result<Range<Idx>, String> {
-    let range_parts: Vec<&str> = input.split("-").collect();
-    if range_parts.len() != 2 {
-        return Err(format!(
-            "{} is not a valid range. The expected format of a range is start-end.",
-            input
-        ));
-    }
-
-    let start = Idx::from_str(range_parts[0])
-        .map_err(|e| format!("Parsing range start failed! Error = {:?}", e))?;
-    let end = Idx::from_str(range_parts[1])
-        .map_err(|e| format!("Parsing range end failed! Error = {:?}", e))?;
-
-    if start > end {
-        return Err(format!(
-            "{} is not a valid range. Range start should be less or equal than range end.",
-            input
-        ));
-    }
-
-    return Ok(Range { start, end });
-}
 
 #[derive(Debug, StructOpt, PartialEq)]
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
@@ -69,20 +43,11 @@ pub struct RnpCliCommonOptions {
     pub source_ip: IpAddr,
 
     #[structopt(
-        long = "src-port-range",
-        alias = "spr",
-        help = "Source port range to use in ping. Format: start-end, e.g. 10000-11000. [alias: --spr]",
-        parse(try_from_str = parse_range::<u16>)
-    )]
-    pub source_port_range: Option<Range<u16>>,
-
-    #[structopt(
         long = "src-ports",
         alias = "sp",
-        use_delimiter = true,
-        help = "Source port list to use in ping. [alias: --sp]"
+        help = "Source port ranges to rotate in ping. Format: port,start-end. Example: 1024,10000-11000. [alias: --sp]"
     )]
-    pub source_port_list: Option<Vec<u16>>,
+    pub source_ports: Option<PortRanges>,
 
     #[structopt(short = "n", long = "count", default_value = "4", help = "Ping count.")]
     pub ping_count: u32,
@@ -186,7 +151,10 @@ pub struct RnpCliOutputOptions {
 
 #[derive(Debug, StructOpt, PartialEq)]
 struct RnpCliQuicPingOptions {
-    #[structopt(long, help = "Specify the server name in the QUIC pings. Example: localhost.")]
+    #[structopt(
+        long,
+        help = "Specify the server name in the QUIC pings. Example: localhost."
+    )]
     pub server_name: Option<String>,
 
     #[structopt(
@@ -255,17 +223,7 @@ impl RnpCliOptions {
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
-                source_port_min: self
-                    .common_options
-                    .source_port_range
-                    .as_ref()
-                    .unwrap()
-                    .start,
-                source_port_max: self.common_options.source_port_range.as_ref().unwrap().end,
-                source_port_list: match &self.common_options.source_port_list {
-                    Some(port_list) => Some(port_list.clone()),
-                    None => None,
-                },
+                source_ports: self.common_options.source_ports.as_ref().unwrap().clone(),
                 ping_count: None,
                 warmup_count: self.common_options.warmup_count,
                 parallel_ping_count: self.common_options.parallel_ping_count,
@@ -309,11 +267,13 @@ impl RnpCliCommonOptions {
             }
         }
 
-        if self.source_port_range.is_none() {
+        if self.source_ports.is_none() {
             let range_start = rand::thread_rng().gen_range(10000..30000);
-            self.source_port_range = Some(Range {
-                start: range_start,
-                end: range_start + 2000,
+            self.source_ports = Some(PortRanges {
+                ranges: vec![Range {
+                    start: range_start,
+                    end: range_start + 2000,
+                }],
             });
         }
 
@@ -322,15 +282,7 @@ impl RnpCliCommonOptions {
             self.ping_count = 1;
         }
 
-        let available_source_port_count = match &self.source_port_list {
-            Some(port_list) => port_list.len() as u32,
-            None => {
-                self.source_port_range.as_ref().unwrap().end as u32
-                    - self.source_port_range.as_ref().unwrap().start as u32
-                    + 1
-            }
-        };
-
+        let available_source_port_count = self.source_ports.as_ref().unwrap().calculate_total_port_count();
         if self.parallel_ping_count > available_source_port_count {
             tracing::warn!(
                 "Parallel ping count ({}) is larger than available source port count ({}), to avoid port conflict reducing parallel ping count down to the same as available source port count.",
