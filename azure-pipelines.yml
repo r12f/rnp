@@ -188,8 +188,16 @@ stages:
       displayName: Update crate version
       condition: and(succeeded(), eq(variables['target'], 'x86_64-apple-darwin'))
 
+    - task: ArchiveFiles@2
+      displayName: Pack source folder for crate publishing
+      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)'
+        archiveType: '7z'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.7z'
+
     - task: CopyFiles@2
-      displayName: Copy code for crate publishing
+      displayName: Copy code for source code publishing
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)'
@@ -205,28 +213,21 @@ stages:
         Contents: '.git'
 
     - task: ArchiveFiles@2
-      displayName: Pack source as zip for crate publishing
+      displayName: Pack source as zip for source code publishing
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
         archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.$(build.tag).zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).zip'
 
     - task: ArchiveFiles@2
-      displayName: Pack source as tar.gz for crate publishing
+      displayName: Pack source as tar.gz for source publishing
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
         archiveType: 'tar'
         tarCompression: 'gz'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.$(build.tag).tar.gz'
-
-    - task: CopyFiles@2
-      displayName: Copy chocolatey template to output
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/build/templates/chocolatey'
-        targetFolder: '$(Build.ArtifactStagingDirectory)/chocolatey'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).tar.gz'
 
     #
     # Running all tests
@@ -315,7 +316,7 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
