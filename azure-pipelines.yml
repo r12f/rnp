@@ -229,13 +229,6 @@ stages:
         tarCompression: 'gz'
         archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).tar.gz'
 
-    - task: CopyFiles@2
-      displayName: Copy chocolatey template to output
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/build/templates/chocolatey'
-        targetFolder: '$(Build.ArtifactStagingDirectory)/chocolatey'
-
     #
     # Running all tests
     #
