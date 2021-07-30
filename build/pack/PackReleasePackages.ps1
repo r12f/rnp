@@ -13,6 +13,7 @@ function PackAllReleasePackages() {
     Write-Host "Pack all release packages: BuildBranch = $BuildBranchName, BuildTag = $BuildTag, BuildNumber = $BuildNumber"
 
     PackPerFlavorReleases
+    PackSourcePackagesForGithubRelease
     PackSymbolsPackagesForGithubRelease
     PackRustCrate
     PackChocolateyPackages
@@ -110,6 +111,14 @@ function PackPerFlavorReleases() {
     }
 }
 
+# Pack source packages for github release.
+# The reason we are doing it is because we modify the version on the fly during our build process instead of
+# checking in into our code base, so only the build pipeline have the final source code package.
+function PackSourcePackagesForGithubRelease() {
+    Write-Host "Publish source packages to .\Releases\GithubReleases"
+    Copy-Item -Path .\Build.Build.linuxx64\source\* .\Releases\GithubReleases -Verbose -Force
+}
+
 # Pack symbols for github release
 function PackSymbolsPackagesForGithubRelease() {
     $symbolsZipFilePath = ".\Releases\GithubReleases\rnp.$BuildTag.symbols.zip"
@@ -122,11 +131,6 @@ function PackRustCrate() {
     New-Item -ItemType Directory -Path ".\Releases\Crate.io"
     Write-Host "Pack source as crate to .\Releases\Crate.io"
     Copy-Item -Path .\Build.Build.linuxx64\crate\* .\Releases\Crate.io -Verbose -Force
-}
-
-function PackSourcePackages() {
-    Write-Host "Publish source packages to .\Releases\GithubReleases"
-    Copy-Item -Path .\Build.Build.linuxx64\source\* .\Releases\GithubReleases -Verbose -Force
 }
 
 # Chocolatey

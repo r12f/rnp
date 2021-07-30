@@ -193,6 +193,7 @@ stages:
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         rootFolderOrFile: '$(Build.SourcesDirectory)'
+        includeRootFolder: false
         archiveType: '7z'
         archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.7z'
 
@@ -217,6 +218,7 @@ stages:
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
+        includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).zip'
 
@@ -225,6 +227,7 @@ stages:
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
+        includeRootFolder: false
         archiveType: 'tar'
         tarCompression: 'gz'
         archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).tar.gz'
@@ -316,7 +319,7 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
