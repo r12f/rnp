@@ -217,7 +217,7 @@ stages:
       displayName: Pack source as zip for source code publishing
       condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate/*'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
         includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).zip'
