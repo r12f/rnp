@@ -139,19 +139,22 @@ pub struct RnpCliOutputOptions {
 
     #[structopt(
         long = "log-csv",
+        alias = "oc",
         parse(from_os_str),
-        help = "Log ping results a csv file."
+        help = "Log ping results a csv file. [alias: --oc]"
     )]
     pub csv_log_path: Option<PathBuf>,
 
     #[structopt(
         long = "log-json",
+        alias = "oj",
         parse(from_os_str),
-        help = "Log ping results to a json file."
+        help = "Log ping results to a json file. [alias: --oj]"
     )]
     pub json_log_path: Option<PathBuf>,
 
     #[structopt(
+        short = "o",
         long = "log-text",
         parse(from_os_str),
         help = "Log ping results to a text file."
@@ -183,12 +186,12 @@ pub struct RnpCliOutputOptions {
 
 #[derive(Debug, StructOpt, PartialEq)]
 struct RnpCliQuicPingOptions {
-    #[structopt(long, help = "Specify the server name in the pings, such as QUIC.")]
+    #[structopt(long, help = "Specify the server name in the QUIC pings. Example: localhost.")]
     pub server_name: Option<String>,
 
     #[structopt(
         long,
-        help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be larger than the real one, because logging key will also take time."
+        help = "Enable key logger in TLS for helping packet capture.\nPlease note that it might cause RTT to be slightly larger than the real one, because logging key will also take time."
     )]
     pub log_tls_key: bool,
 
@@ -424,9 +427,9 @@ mod tests {
                 },
                 output_options: RnpCliOutputOptions {
                     no_console_log: true,
-                    csv_log_path: None,
-                    json_log_path: None,
-                    text_log_path: None,
+                    csv_log_path: Some(PathBuf::from("log.csv")),
+                    json_log_path: Some(PathBuf::from("log.json")),
+                    text_log_path: Some(PathBuf::from("log.txt")),
                     show_result_scatter: true,
                     show_latency_scatter: true,
                     latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
@@ -454,6 +457,12 @@ mod tests {
                 "-p",
                 "10",
                 "-q",
+                "--oc",
+                "log.csv",
+                "--oj",
+                "log.json",
+                "-o",
+                "log.txt",
                 "-r",
                 "-l",
                 "-b",
