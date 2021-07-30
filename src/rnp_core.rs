@@ -26,6 +26,7 @@ impl RnpCore {
     ///
     /// ```
     /// use rnp::*;
+    /// use std::ops::Range;
     /// use std::time::Duration;
     /// use std::sync::Arc;
     /// use futures_intrusive::sync::ManualResetEvent;
@@ -48,9 +49,22 @@ impl RnpCore {
     ///         },
     ///     },
     ///     worker_scheduler_config: PingWorkerSchedulerConfig {
-    ///         source_port_min: 1024,
-    ///         source_port_max: 2047,
-    ///         source_port_list: Some(vec![1024, 1025, 1026]),
+    ///         source_ports: PortRanges {
+    ///             ranges: vec![
+    ///                 Range {
+    ///                     start: 1024,
+    ///                     end: 2048
+    ///                 },
+    ///                 Range {
+    ///                     start: 3096,
+    ///                     end: 3096
+    ///                 },
+    ///                 Range {
+    ///                     start: 3097,
+    ///                     end: 3097
+    ///                 },
+    ///             ]
+    ///         },
     ///         ping_count: Some(4),
     ///         warmup_count: 1,
     ///         parallel_ping_count: 1,
