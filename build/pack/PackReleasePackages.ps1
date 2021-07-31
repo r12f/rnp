@@ -160,7 +160,7 @@ function PackChocolateyPackages($fileHashs) {
 function PackHomebrewPackages($fileHashs) {
     New-Item -ItemType Directory -Path ".\Releases\Homebrew"
 
-    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\homebrew\rnp.rb" ".\Release\Homebrew\rnp.rb" $fileHashs "" ""
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\homebrew\rnp.rb" ".\Releases\Homebrew\rnp.rb" $fileHashs "" ""
 }
 
 # Utility functions for evaluating templates
