@@ -270,7 +270,7 @@ impl RnpCliCommonOptions {
             let range_start = rand::thread_rng().gen_range(10000..30000);
             let range_end = range_start + 2000;
             self.source_ports = Some(PortRangeList {
-                ranges: vec![(range_start..=range_end)]
+                ranges: vec![(range_start..=range_end)],
             });
         }
 
@@ -358,20 +358,7 @@ mod tests {
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "10.0.0.2".parse().unwrap(),
                     source_ports: Some(PortRangeList {
-                        ranges: vec![
-                            Range {
-                                start: 1024,
-                                end: 2048
-                            },
-                            Range {
-                                start: 3096,
-                                end: 3096
-                            },
-                            Range {
-                                start: 3097,
-                                end: 3097
-                            },
-                        ]
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
                     ping_count: 10,
                     ping_until_stopped: true,
@@ -441,20 +428,7 @@ mod tests {
                     protocol: RnpSupportedProtocol::QUIC,
                     source_ip: "10.0.0.2".parse().unwrap(),
                     source_ports: Some(PortRangeList {
-                        ranges: vec![
-                            Range {
-                                start: 1024,
-                                end: 2048
-                            },
-                            Range {
-                                start: 3096,
-                                end: 3096
-                            },
-                            Range {
-                                start: 3097,
-                                end: 3097
-                            },
-                        ]
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
                     ping_count: 10,
                     ping_until_stopped: false,
@@ -545,20 +519,7 @@ mod tests {
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
                     source_ports: PortRangeList {
-                        ranges: vec![
-                            Range {
-                                start: 1024,
-                                end: 2048
-                            },
-                            Range {
-                                start: 3096,
-                                end: 3096
-                            },
-                            Range {
-                                start: 3097,
-                                end: 3097
-                            },
-                        ]
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     },
                     ping_count: Some(4),
                     warmup_count: 1,
@@ -585,20 +546,7 @@ mod tests {
                     warmup_count: 1,
                     source_ip: "10.0.0.2".parse().unwrap(),
                     source_ports: Some(PortRangeList {
-                        ranges: vec![
-                            Range {
-                                start: 1024,
-                                end: 2048
-                            },
-                            Range {
-                                start: 3096,
-                                end: 3096
-                            },
-                            Range {
-                                start: 3097,
-                                end: 3097
-                            },
-                        ]
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
                     wait_timeout_in_ms: 1000,
                     ping_interval_in_ms: 1500,
@@ -644,20 +592,7 @@ mod tests {
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
                     source_ports: PortRangeList {
-                        ranges: vec![
-                            Range {
-                                start: 1024,
-                                end: 2048
-                            },
-                            Range {
-                                start: 3096,
-                                end: 3096
-                            },
-                            Range {
-                                start: 3097,
-                                end: 3097
-                            },
-                        ]
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     },
                     ping_count: None,
                     warmup_count: 3,
@@ -684,20 +619,7 @@ mod tests {
                     warmup_count: 3,
                     source_ip: "10.0.0.2".parse().unwrap(),
                     source_ports: Some(PortRangeList {
-                        ranges: vec![
-                            Range {
-                                start: 1024,
-                                end: 2048
-                            },
-                            Range {
-                                start: 3096,
-                                end: 3096
-                            },
-                            Range {
-                                start: 3097,
-                                end: 3097
-                            },
-                        ]
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
                     wait_timeout_in_ms: 2000,
                     ping_interval_in_ms: 1500,
@@ -731,16 +653,19 @@ mod tests {
         opts.prepare_to_use();
 
         assert!(opts.common_options.source_ports.is_some());
-        assert_eq!(1, opts.common_options.source_ports.as_ref().unwrap().ranges.len());
+        assert_eq!(
+            1,
+            opts.common_options
+                .source_ports
+                .as_ref()
+                .unwrap()
+                .ranges
+                .len()
+        );
         assert_eq!(
             2000,
-            opts.common_options.source_ports.as_ref().unwrap().ranges[0].end
-                - opts
-                    .common_options
-                    .source_ports
-                    .as_ref()
-                    .unwrap().ranges[0]
-                    .start
+            opts.common_options.source_ports.as_ref().unwrap().ranges[0].end()
+                - opts.common_options.source_ports.as_ref().unwrap().ranges[0].start()
         );
     }
 
@@ -763,30 +688,14 @@ mod tests {
         );
 
         opts.common_options.source_ports = Some(PortRangeList {
-            ranges: vec![Range {
-                start: 1024,
-                end: 1047,
-            }],
+            ranges: vec![(1024..=1047)],
         });
         opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
         assert_eq!(24, opts.common_options.parallel_ping_count);
 
         opts.common_options.source_ports = Some(PortRangeList {
-            ranges: vec![
-                Range {
-                    start: 1024,
-                    end: 1024,
-                },
-                Range {
-                    start: 1025,
-                    end: 1025,
-                },
-                Range {
-                    start: 1026,
-                    end: 1026,
-                },
-            ],
+            ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)],
         });
         opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
