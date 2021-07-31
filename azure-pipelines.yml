@@ -438,7 +438,7 @@ stages:
       - task: ExtractFiles@1
         displayName: 'Extract packed source code'
         inputs:
-          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack\Releases\GithubReleases\rnp.source.$(build.tag).zip' 
+          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.$(build.tag).zip' 
           destinationFolder: $(System.DefaultWorkingDirectory)/Source
           cleanDestinationFolder: true 
         
