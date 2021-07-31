@@ -309,7 +309,7 @@ stages:
 
     - task: CopyFiles@2
       displayName: Copy pack scripts to output
-      # condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
+      condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/build/pack'
         targetFolder: '$(Build.ArtifactStagingDirectory)/pack'
@@ -319,7 +319,7 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
