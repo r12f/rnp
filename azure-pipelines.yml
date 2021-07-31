@@ -319,14 +319,14 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
 - stage: Pack
   jobs:
   - job: Pack
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines
@@ -386,7 +386,7 @@ stages:
 - stage: Validate
   jobs:
   - job: Validate
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     
     #
     # Flavors to validate
@@ -435,6 +435,17 @@ stages:
           echo "Updated build.tag to $BUILD_TAG"
         displayName: 'Set environment variables'
         
+      - task: ExtractFiles@1
+        displayName: 'Extract packed source code'
+        inputs:
+          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.$(build.tag).zip' 
+          destinationFolder: $(System.DefaultWorkingDirectory)/Source
+          cleanDestinationFolder: true 
+        
+      - bash: |
+          cargo install --path .
+        displayName: 'Install Rnp from source package'
+        workingDirectory: $(System.DefaultWorkingDirectory)/Source
         
       - task: PublishPipelineArtifact@1
         displayName: Publish pipeline artifact
