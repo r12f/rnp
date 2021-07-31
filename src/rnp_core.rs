@@ -49,7 +49,7 @@ impl RnpCore {
     ///         },
     ///     },
     ///     worker_scheduler_config: PingWorkerSchedulerConfig {
-    ///         source_ports: PortRanges {
+    ///         source_ports: PortRangeList {
     ///             ranges: vec![
     ///                 Range {
     ///                     start: 1024,

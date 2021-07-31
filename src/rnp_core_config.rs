@@ -203,11 +203,11 @@ impl<Idx: fmt::Display + PartialEq> fmt::Display for RangeList<Idx> {
     }
 }
 
-pub type PortRanges = RangeList<u16>;
+pub type PortRangeList = RangeList<u16>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PingWorkerSchedulerConfig {
-    pub source_ports: PortRanges,
+    pub source_ports: PortRangeList,
     pub ping_count: Option<u32>,
     pub warmup_count: u32,
     pub parallel_ping_count: u32,

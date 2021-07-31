@@ -1,7 +1,7 @@
 use rand::Rng;
 use rnp::{
     PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    PortRanges, RnpCoreConfig, RnpSupportedProtocol,
+    PortRangeList, RnpCoreConfig, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::ops::Range;
@@ -47,7 +47,7 @@ pub struct RnpCliCommonOptions {
         alias = "sp",
         help = "Source port ranges to rotate in ping. Format: port,start-end. Example: 1024,10000-11000. [alias: --sp]"
     )]
-    pub source_ports: Option<PortRanges>,
+    pub source_ports: Option<PortRangeList>,
 
     #[structopt(short = "n", long = "count", default_value = "4", help = "Ping count.")]
     pub ping_count: u32,
@@ -269,7 +269,7 @@ impl RnpCliCommonOptions {
 
         if self.source_ports.is_none() {
             let range_start = rand::thread_rng().gen_range(10000..30000);
-            self.source_ports = Some(PortRanges {
+            self.source_ports = Some(PortRangeList {
                 ranges: vec![Range {
                     start: range_start,
                     end: range_start + 2000,
@@ -360,7 +360,7 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_ports: Some(PortRanges {
+                    source_ports: Some(PortRangeList {
                         ranges: vec![
                             Range {
                                 start: 1024,
@@ -443,7 +443,7 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::QUIC,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_ports: Some(PortRanges {
+                    source_ports: Some(PortRangeList {
                         ranges: vec![
                             Range {
                                 start: 1024,
@@ -547,7 +547,7 @@ mod tests {
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
-                    source_ports: PortRanges {
+                    source_ports: PortRangeList {
                         ranges: vec![
                             Range {
                                 start: 1024,
@@ -587,7 +587,7 @@ mod tests {
                     ping_until_stopped: false,
                     warmup_count: 1,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_ports: Some(PortRanges {
+                    source_ports: Some(PortRangeList {
                         ranges: vec![
                             Range {
                                 start: 1024,
@@ -646,7 +646,7 @@ mod tests {
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
-                    source_ports: PortRanges {
+                    source_ports: PortRangeList {
                         ranges: vec![
                             Range {
                                 start: 1024,
@@ -686,7 +686,7 @@ mod tests {
                     ping_until_stopped: true,
                     warmup_count: 3,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_ports: Some(PortRanges {
+                    source_ports: Some(PortRangeList {
                         ranges: vec![
                             Range {
                                 start: 1024,
@@ -765,7 +765,7 @@ mod tests {
             opts.output_options.latency_buckets
         );
 
-        opts.common_options.source_ports = Some(PortRanges {
+        opts.common_options.source_ports = Some(PortRangeList {
             ranges: vec![Range {
                 start: 1024,
                 end: 1047,
@@ -775,7 +775,7 @@ mod tests {
         opts.prepare_to_use();
         assert_eq!(24, opts.common_options.parallel_ping_count);
 
-        opts.common_options.source_ports = Some(PortRanges {
+        opts.common_options.source_ports = Some(PortRangeList {
             ranges: vec![
                 Range {
                     start: 1024,
