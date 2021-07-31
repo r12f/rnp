@@ -18,11 +18,11 @@ function PackAllReleasePackages() {
     PackRustCrate
     
     $fileHashs = [pscustomobject]@{
-        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x86.zip" -Algorithm SHA256).Hash;
-        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x64.zip" -Algorithm SHA256).Hash;
-        "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash;
-        "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash;
-        "SourceTar" = (Get-FileHash ".\Releases\GithubReleases\rnp.source.$BuildTag.tar.gz" -Algorithm SHA256).Hash;
+        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x86.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "SourceTar" = (Get-FileHash ".\Releases\GithubReleases\rnp.source.$BuildTag.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
     }
     Write-Host "File hash: $fileHashs"
     
