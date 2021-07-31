@@ -16,7 +16,18 @@ function PackAllReleasePackages() {
     PackSourcePackagesForGithubRelease
     PackSymbolsPackagesForGithubRelease
     PackRustCrate
-    PackChocolateyPackages
+    
+    $fileHashs = [pscustomobject]@{
+        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x86.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "SourceTar" = (Get-FileHash ".\Releases\GithubReleases\rnp.source.$BuildTag.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
+    }
+    Write-Host "File hash: $fileHashs"
+    
+    PackChocolateyPackages $fileHashs
+    PackHomebrewPackages $fileHashs
 }
 
 function PackPerFlavorReleases() {
@@ -134,18 +145,11 @@ function PackRustCrate() {
 }
 
 # Chocolatey
-function PackChocolateyPackages() {
+function PackChocolateyPackages($fileHashs) {
     New-Item -ItemType Directory -Path ".\Releases\Chocolatey"
     New-Item -ItemType Directory -Path ".\Staging\Chocolatey"
     New-Item -ItemType Directory -Path ".\Staging\Chocolatey\tools"
 
-    $fileHashs = [pscustomobject]@{
-        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x86.zip" -Algorithm SHA256).Hash;
-        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.$BuildTag.windows.x64.zip" -Algorithm SHA256).Hash;
-        "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash;
-        "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash;
-    }
-    Write-Host "File hash: $fileHashs"
     EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\rnp.nuspec" ".\Staging\Chocolatey\rnp.nuspec" $fileHashs "" ""
     EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\tools\chocolateyInstall.ps1" ".\Staging\Chocolatey\tools\chocolateyInstall.ps1" $fileHashs "" ""
     EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\chocolatey\tools\VERIFICATION.txt" ".\Staging\Chocolatey\tools\VERIFICATION.txt" $fileHashs "" ""
@@ -153,11 +157,17 @@ function PackChocolateyPackages() {
     choco pack ".\Staging\Chocolatey\rnp.nuspec" --outputdirectory ".\Releases\Chocolatey\"
 }
 
+function PackHomebrewPackages($fileHashs) {
+    New-Item -ItemType Directory -Path ".\Releases\Homebrew"
+
+    EvaluateTemplateFileWithFileHash ".\Build.Build.windowsx64\templates\homebrew\rnp.rb" ".\Releases\Homebrew\rnp.rb" $fileHashs "" ""
+}
+
 # Utility functions for evaluating templates
 function EvaluateTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs, $targetShortName, $targetFullName) {
     $templateFileContent = Get-Content $templateFile;
     $targetFileContent = EvaluateTemplate $templateFileContent $targetShortName $targetFullName
-    $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64);
+    $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64).Replace("{source_package_tar_hash}", $fileHashs.SourceTar);
 
     $utf8NoBom = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
