@@ -169,9 +169,7 @@ impl RnpCore {
         tracing::debug!("Creating warmup worker.");
         let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
             Some(self.config.worker_scheduler_config.warmup_count),
-            self.config.worker_scheduler_config.source_ports.ranges[0].start,
-            self.config.worker_scheduler_config.source_ports.ranges[0].end,
-            None,
+            self.config.worker_scheduler_config.source_ports.clone(),
             0,
         )));
 
@@ -208,9 +206,7 @@ impl RnpCore {
 
         let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
             adjusted_ping_count,
-            self.config.worker_scheduler_config.source_ports.ranges[0].start,
-            self.config.worker_scheduler_config.source_ports.ranges[0].end,
-            None,
+            self.config.worker_scheduler_config.source_ports.clone(),
             warmup_count,
         )));
 

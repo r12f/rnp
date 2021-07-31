@@ -4,7 +4,6 @@ use rnp::{
     PortRangeList, RnpCoreConfig, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::ops::Range;
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -269,11 +268,9 @@ impl RnpCliCommonOptions {
 
         if self.source_ports.is_none() {
             let range_start = rand::thread_rng().gen_range(10000..30000);
+            let range_end = range_start + 2000;
             self.source_ports = Some(PortRangeList {
-                ranges: vec![Range {
-                    start: range_start,
-                    end: range_start + 2000,
-                }],
+                ranges: vec![(range_start..=range_end)]
             });
         }
 
