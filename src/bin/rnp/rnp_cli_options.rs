@@ -1,39 +1,12 @@
 use rand::Rng;
 use rnp::{
     PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    RnpCoreConfig, RnpSupportedProtocol,
+    PortRangeList, RnpCoreConfig, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::num::ParseIntError;
-use std::ops::Range;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
-
-fn parse_range<Idx: FromStr<Err = ParseIntError> + Ord>(input: &str) -> Result<Range<Idx>, String> {
-    let range_parts: Vec<&str> = input.split("-").collect();
-    if range_parts.len() != 2 {
-        return Err(format!(
-            "{} is not a valid range. The expected format of a range is start-end.",
-            input
-        ));
-    }
-
-    let start = Idx::from_str(range_parts[0])
-        .map_err(|e| format!("Parsing range start failed! Error = {:?}", e))?;
-    let end = Idx::from_str(range_parts[1])
-        .map_err(|e| format!("Parsing range end failed! Error = {:?}", e))?;
-
-    if start > end {
-        return Err(format!(
-            "{} is not a valid range. Range start should be less or equal than range end.",
-            input
-        ));
-    }
-
-    return Ok(Range { start, end });
-}
 
 #[derive(Debug, StructOpt, PartialEq)]
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
@@ -69,20 +42,11 @@ pub struct RnpCliCommonOptions {
     pub source_ip: IpAddr,
 
     #[structopt(
-        long = "src-port-range",
-        alias = "spr",
-        help = "Source port range to use in ping. Format: start-end, e.g. 10000-11000. [alias: --spr]",
-        parse(try_from_str = parse_range::<u16>)
-    )]
-    pub source_port_range: Option<Range<u16>>,
-
-    #[structopt(
         long = "src-ports",
         alias = "sp",
-        use_delimiter = true,
-        help = "Source port list to use in ping. [alias: --sp]"
+        help = "Source port ranges to rotate in ping. Format: port,start-end. Example: 1024,10000-11000. [alias: --sp]"
     )]
-    pub source_port_list: Option<Vec<u16>>,
+    pub source_ports: Option<PortRangeList>,
 
     #[structopt(short = "n", long = "count", default_value = "4", help = "Ping count.")]
     pub ping_count: u32,
@@ -186,7 +150,10 @@ pub struct RnpCliOutputOptions {
 
 #[derive(Debug, StructOpt, PartialEq)]
 struct RnpCliQuicPingOptions {
-    #[structopt(long, help = "Specify the server name in the QUIC pings. Example: localhost.")]
+    #[structopt(
+        long,
+        help = "Specify the server name in the QUIC pings. Example: localhost."
+    )]
     pub server_name: Option<String>,
 
     #[structopt(
@@ -255,17 +222,7 @@ impl RnpCliOptions {
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
-                source_port_min: self
-                    .common_options
-                    .source_port_range
-                    .as_ref()
-                    .unwrap()
-                    .start,
-                source_port_max: self.common_options.source_port_range.as_ref().unwrap().end,
-                source_port_list: match &self.common_options.source_port_list {
-                    Some(port_list) => Some(port_list.clone()),
-                    None => None,
-                },
+                source_ports: self.common_options.source_ports.as_ref().unwrap().clone(),
                 ping_count: None,
                 warmup_count: self.common_options.warmup_count,
                 parallel_ping_count: self.common_options.parallel_ping_count,
@@ -309,11 +266,11 @@ impl RnpCliCommonOptions {
             }
         }
 
-        if self.source_port_range.is_none() {
+        if self.source_ports.is_none() {
             let range_start = rand::thread_rng().gen_range(10000..30000);
-            self.source_port_range = Some(Range {
-                start: range_start,
-                end: range_start + 2000,
+            let range_end = range_start + 2000;
+            self.source_ports = Some(PortRangeList {
+                ranges: vec![(range_start..=range_end)],
             });
         }
 
@@ -322,22 +279,18 @@ impl RnpCliCommonOptions {
             self.ping_count = 1;
         }
 
-        let available_source_port_count = match &self.source_port_list {
-            Some(port_list) => port_list.len() as u32,
-            None => {
-                self.source_port_range.as_ref().unwrap().end as u32
-                    - self.source_port_range.as_ref().unwrap().start as u32
-                    + 1
-            }
-        };
-
-        if self.parallel_ping_count > available_source_port_count {
+        let available_source_port_count = self
+            .source_ports
+            .as_ref()
+            .unwrap()
+            .calculate_total_port_count();
+        if self.parallel_ping_count > available_source_port_count as u32 {
             tracing::warn!(
                 "Parallel ping count ({}) is larger than available source port count ({}), to avoid port conflict reducing parallel ping count down to the same as available source port count.",
                 self.parallel_ping_count,
                 available_source_port_count);
 
-            self.parallel_ping_count = available_source_port_count;
+            self.parallel_ping_count = available_source_port_count as u32;
         }
 
         if self.parallel_ping_count < 1 {
@@ -366,8 +319,7 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "0.0.0.0".parse().unwrap(),
-                    source_port_range: None,
-                    source_port_list: None,
+                    source_ports: None,
                     ping_count: 4,
                     ping_until_stopped: false,
                     warmup_count: 0,
@@ -405,11 +357,9 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::TCP,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_range: Some(Range {
-                        start: 1024,
-                        end: 2048
+                    source_ports: Some(PortRangeList {
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
-                    source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: 10,
                     ping_until_stopped: true,
                     warmup_count: 0,
@@ -442,10 +392,8 @@ mod tests {
                 "tcp",
                 "-s",
                 "10.0.0.2",
-                "--spr",
-                "1024-2048",
                 "--sp",
-                "1024,1025,1026",
+                "1024-2048,3096,3097",
                 "-n",
                 "10",
                 "-t",
@@ -479,11 +427,9 @@ mod tests {
                     target: "10.0.0.1:443".parse().unwrap(),
                     protocol: RnpSupportedProtocol::QUIC,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_range: Some(Range {
-                        start: 1024,
-                        end: 2048
+                    source_ports: Some(PortRangeList {
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
-                    source_port_list: Some(vec![1024, 1025, 1026]),
                     ping_count: 10,
                     ping_until_stopped: false,
                     warmup_count: 3,
@@ -516,10 +462,8 @@ mod tests {
                 "quic",
                 "--src-ip",
                 "10.0.0.2",
-                "--src-port-range",
-                "1024-2048",
                 "--src-ports",
-                "1024,1025,1026",
+                "1024-2048,3096,3097",
                 "--count",
                 "10",
                 "--warmup",
@@ -574,9 +518,9 @@ mod tests {
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
-                    source_port_min: 1024,
-                    source_port_max: 2047,
-                    source_port_list: Some(vec![1024, 1025, 1026]),
+                    source_ports: PortRangeList {
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
+                    },
                     ping_count: Some(4),
                     warmup_count: 1,
                     parallel_ping_count: 1,
@@ -601,11 +545,9 @@ mod tests {
                     ping_until_stopped: false,
                     warmup_count: 1,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_range: Some(Range {
-                        start: 1024,
-                        end: 2047
+                    source_ports: Some(PortRangeList {
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
-                    source_port_list: Some(vec![1024, 1025, 1026]),
                     wait_timeout_in_ms: 1000,
                     ping_interval_in_ms: 1500,
                     time_to_live: Some(128),
@@ -649,9 +591,9 @@ mod tests {
                     },
                 },
                 worker_scheduler_config: PingWorkerSchedulerConfig {
-                    source_port_min: 1024,
-                    source_port_max: 2047,
-                    source_port_list: Some(vec![1024, 1025, 1026]),
+                    source_ports: PortRangeList {
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
+                    },
                     ping_count: None,
                     warmup_count: 3,
                     parallel_ping_count: 1,
@@ -676,11 +618,9 @@ mod tests {
                     ping_until_stopped: true,
                     warmup_count: 3,
                     source_ip: "10.0.0.2".parse().unwrap(),
-                    source_port_range: Some(Range {
-                        start: 1024,
-                        end: 2047
+                    source_ports: Some(PortRangeList {
+                        ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
                     }),
-                    source_port_list: Some(vec![1024, 1025, 1026]),
                     wait_timeout_in_ms: 2000,
                     ping_interval_in_ms: 1500,
                     time_to_live: Some(128),
@@ -712,23 +652,27 @@ mod tests {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
         opts.prepare_to_use();
 
-        assert!(opts.common_options.source_port_range.is_some());
+        assert!(opts.common_options.source_ports.is_some());
+        assert_eq!(
+            1,
+            opts.common_options
+                .source_ports
+                .as_ref()
+                .unwrap()
+                .ranges
+                .len()
+        );
         assert_eq!(
             2000,
-            opts.common_options.source_port_range.as_ref().unwrap().end
-                - opts
-                    .common_options
-                    .source_port_range
-                    .as_ref()
-                    .unwrap()
-                    .start
+            opts.common_options.source_ports.as_ref().unwrap().ranges[0].end()
+                - opts.common_options.source_ports.as_ref().unwrap().ranges[0].start()
         );
     }
 
     #[test]
     fn invalid_options_for_ipv4_should_be_fixed() {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
-        opts.common_options.source_port_range = None;
+        opts.common_options.source_ports = None;
         opts.common_options.ping_count = 0;
         opts.common_options.parallel_ping_count = 0;
         opts.output_options.latency_buckets = Some(vec![0.0]);
@@ -743,16 +687,16 @@ mod tests {
             opts.output_options.latency_buckets
         );
 
-        opts.common_options.source_port_range = Some(Range {
-            start: 1024,
-            end: 1047,
+        opts.common_options.source_ports = Some(PortRangeList {
+            ranges: vec![(1024..=1047)],
         });
         opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
         assert_eq!(24, opts.common_options.parallel_ping_count);
 
-        opts.common_options.source_port_range = None;
-        opts.common_options.source_port_list = Some(vec![1024, 1025, 1026]);
+        opts.common_options.source_ports = Some(PortRangeList {
+            ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)],
+        });
         opts.common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
         assert_eq!(3, opts.common_options.parallel_ping_count);

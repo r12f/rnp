@@ -26,6 +26,7 @@ impl RnpCore {
     ///
     /// ```
     /// use rnp::*;
+    /// use std::ops::Range;
     /// use std::time::Duration;
     /// use std::sync::Arc;
     /// use futures_intrusive::sync::ManualResetEvent;
@@ -48,9 +49,9 @@ impl RnpCore {
     ///         },
     ///     },
     ///     worker_scheduler_config: PingWorkerSchedulerConfig {
-    ///         source_port_min: 1024,
-    ///         source_port_max: 2047,
-    ///         source_port_list: Some(vec![1024, 1025, 1026]),
+    ///         source_ports: PortRangeList {
+    ///             ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
+    ///         },
     ///         ping_count: Some(4),
     ///         warmup_count: 1,
     ///         parallel_ping_count: 1,
@@ -155,9 +156,7 @@ impl RnpCore {
         tracing::debug!("Creating warmup worker.");
         let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
             Some(self.config.worker_scheduler_config.warmup_count),
-            self.config.worker_scheduler_config.source_port_min,
-            self.config.worker_scheduler_config.source_port_max,
-            &self.config.worker_scheduler_config.source_port_list,
+            self.config.worker_scheduler_config.source_ports.clone(),
             0,
         )));
 
@@ -194,9 +193,7 @@ impl RnpCore {
 
         let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
             adjusted_ping_count,
-            self.config.worker_scheduler_config.source_port_min,
-            self.config.worker_scheduler_config.source_port_max,
-            &self.config.worker_scheduler_config.source_port_list,
+            self.config.worker_scheduler_config.source_ports.clone(),
             warmup_count,
         )));
 
