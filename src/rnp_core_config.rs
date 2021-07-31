@@ -2,9 +2,11 @@ use crate::{PingClient, PingResultProcessor};
 use std::fmt;
 use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};
-use std::ops::Range;
+use std::ops::{Range, Add, Sub};
 use std::str::FromStr;
 use std::{path::PathBuf, time::Duration};
+use num::One;
+use std::iter::Sum;
 
 pub const RNP_NAME: &str = "rnp";
 pub const RNP_AUTHOR: &str = "r12f (r12f.com, github.com/r12f)";
@@ -128,30 +130,30 @@ pub struct PingClientConfig {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct PortRanges {
-    pub ranges: Vec<Range<u16>>,
+pub struct RangeList<Idx> {
+    pub ranges: Vec<Range<Idx>>,
 }
 
-impl PortRanges {
-    pub fn calculate_total_port_count(&self) -> u32 {
+impl<Idx: Copy + PartialOrd<Idx> + Add<Output = Idx> + Sub<Output = Idx> + One + Sum> RangeList<Idx> {
+    pub fn calculate_total_port_count(&self) -> Idx {
         return self
             .ranges
             .iter()
-            .map(|r| (r.end - r.start + 1) as u32)
+            .map(|r| r.end - r.start + One::one())
             .sum();
     }
 }
 
-impl FromStr for PortRanges {
+impl<Idx: Copy + FromStr> FromStr for RangeList<Idx> {
     type Err = String;
 
-    fn from_str(input: &str) -> Result<PortRanges, Self::Err> {
+    fn from_str(input: &str) -> Result<RangeList<Idx>, Self::Err> {
         let mut parsed_ranges = Vec::new();
         for input_part in input.split(",") {
             let range_parts = input_part.split("-").collect::<Vec<&str>>();
             if range_parts.len() == 1 {
-                let port = u16::from_str(range_parts[0])
-                    .map_err(|e| format!("Parse port {} failed: Error = {}", range_parts[0], e))?;
+                let port = Idx::from_str(range_parts[0])
+                    .map_err(|_| format!("Parse port {} failed.", range_parts[0]))?;
 
                 parsed_ranges.push(Range {
                     start: port,
@@ -159,11 +161,11 @@ impl FromStr for PortRanges {
                 });
             } else if range_parts.len() == 2 {
                 let port_start =
-                    u16::from_str(range_parts[0])
-                        .map_err(|e| format!("Parse port range start {} failed: Error = {}", range_parts[0], e))?;
+                    Idx::from_str(range_parts[0])
+                        .map_err(|_| format!("Parse port range start {} failed.", range_parts[0]))?;
                 let port_end =
-                    u16::from_str(range_parts[1])
-                        .map_err(|e| format!("Parse port range end {} failed: Error = {}", range_parts[1], e))?;
+                    Idx::from_str(range_parts[1])
+                        .map_err(|_| format!("Parse port range end {} failed.", range_parts[1]))?;
 
                 parsed_ranges.push(Range {
                     start: port_start,
@@ -174,13 +176,13 @@ impl FromStr for PortRanges {
             }
         }
 
-        return Ok(PortRanges {
+        return Ok(RangeList {
             ranges: parsed_ranges,
         });
     }
 }
 
-impl fmt::Display for PortRanges {
+impl<Idx: fmt::Display + PartialEq> fmt::Display for RangeList<Idx> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut is_first_range = true;
         for range in &self.ranges {
@@ -200,6 +202,8 @@ impl fmt::Display for PortRanges {
         Ok(())
     }
 }
+
+pub type PortRanges = RangeList<u16>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PingWorkerSchedulerConfig {

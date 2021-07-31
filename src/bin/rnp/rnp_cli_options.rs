@@ -287,13 +287,13 @@ impl RnpCliCommonOptions {
             .as_ref()
             .unwrap()
             .calculate_total_port_count();
-        if self.parallel_ping_count > available_source_port_count {
+        if self.parallel_ping_count > available_source_port_count as u32 {
             tracing::warn!(
                 "Parallel ping count ({}) is larger than available source port count ({}), to avoid port conflict reducing parallel ping count down to the same as available source port count.",
                 self.parallel_ping_count,
                 available_source_port_count);
 
-            self.parallel_ping_count = available_source_port_count;
+            self.parallel_ping_count = available_source_port_count as u32;
         }
 
         if self.parallel_ping_count < 1 {
