@@ -1,12 +1,12 @@
 use crate::{PingClient, PingResultProcessor};
+use num::One;
 use std::fmt;
 use std::fmt::Debug;
+use std::iter::Sum;
 use std::net::{IpAddr, SocketAddr};
-use std::ops::{Range, Add, Sub};
+use std::ops::{Add, Range, Sub};
 use std::str::FromStr;
 use std::{path::PathBuf, time::Duration};
-use num::One;
-use std::iter::Sum;
 
 pub const RNP_NAME: &str = "rnp";
 pub const RNP_AUTHOR: &str = "r12f (r12f.com, github.com/r12f)";
@@ -134,7 +134,9 @@ pub struct RangeList<Idx> {
     pub ranges: Vec<Range<Idx>>,
 }
 
-impl<Idx: Copy + PartialOrd<Idx> + Add<Output = Idx> + Sub<Output = Idx> + One + Sum> RangeList<Idx> {
+impl<Idx: Copy + PartialOrd<Idx> + Add<Output = Idx> + Sub<Output = Idx> + One + Sum>
+    RangeList<Idx>
+{
     pub fn calculate_total_port_count(&self) -> Idx {
         return self
             .ranges
@@ -160,12 +162,10 @@ impl<Idx: Copy + FromStr> FromStr for RangeList<Idx> {
                     end: port,
                 });
             } else if range_parts.len() == 2 {
-                let port_start =
-                    Idx::from_str(range_parts[0])
-                        .map_err(|_| format!("Parse port range start {} failed.", range_parts[0]))?;
-                let port_end =
-                    Idx::from_str(range_parts[1])
-                        .map_err(|_| format!("Parse port range end {} failed.", range_parts[1]))?;
+                let port_start = Idx::from_str(range_parts[0])
+                    .map_err(|_| format!("Parse port range start {} failed.", range_parts[0]))?;
+                let port_end = Idx::from_str(range_parts[1])
+                    .map_err(|_| format!("Parse port range end {} failed.", range_parts[1]))?;
 
                 parsed_ranges.push(Range {
                     start: port_start,
