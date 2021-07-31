@@ -435,6 +435,17 @@ stages:
           echo "Updated build.tag to $BUILD_TAG"
         displayName: 'Set environment variables'
         
+      - task: ExtractFiles@1
+        displayName: 'Extract packed source code'
+        inputs:
+          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack\Releases\GithubReleases\rnp.source.$(build.tag).zip' 
+          destinationFolder: $(System.DefaultWorkingDirectory)/Source
+          cleanDestinationFolder: true 
+        
+      - bash: |
+          cargo install --path .
+        displayName: 'Install Rnp from source package'
+        workingDirectory: $(System.DefaultWorkingDirectory)/Source
         
       - task: PublishPipelineArtifact@1
         displayName: Publish pipeline artifact
