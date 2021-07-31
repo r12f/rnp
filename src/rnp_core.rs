@@ -50,20 +50,7 @@ impl RnpCore {
     ///     },
     ///     worker_scheduler_config: PingWorkerSchedulerConfig {
     ///         source_ports: PortRangeList {
-    ///             ranges: vec![
-    ///                 Range {
-    ///                     start: 1024,
-    ///                     end: 2048
-    ///                 },
-    ///                 Range {
-    ///                     start: 3096,
-    ///                     end: 3096
-    ///                 },
-    ///                 Range {
-    ///                     start: 3097,
-    ///                     end: 3097
-    ///                 },
-    ///             ]
+    ///             ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)]
     ///         },
     ///         ping_count: Some(4),
     ///         warmup_count: 1,

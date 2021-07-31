@@ -123,7 +123,7 @@ mod tests {
     fn ping_port_picker_should_work_with_port_list() {
         assert_eq!(
             vec![1024, 1025, 1026, 1024, 1025],
-            PingPortPicker::new(Some(5), PortRangeList { ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)] }0)
+            PingPortPicker::new(Some(5), PortRangeList { ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)] },0)
                 .collect::<Vec<u16>>()
         );
     }
