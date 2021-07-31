@@ -309,7 +309,7 @@ stages:
 
     - task: CopyFiles@2
       displayName: Copy pack scripts to output
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
+      # condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/build/pack'
         targetFolder: '$(Build.ArtifactStagingDirectory)/pack'
@@ -326,7 +326,7 @@ stages:
 - stage: Pack
   jobs:
   - job: Pack
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines
