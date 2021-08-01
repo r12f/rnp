@@ -1,5 +1,5 @@
 class Rnp < Formula
-  desc "A simple layer 4 ping tool for cloud."
+  desc "Simple layer 4 ping tool for cloud"
   homepage "https://github.com/r12f/rnp"
   url "https://github.com/r12f/rnp/releases/download/{build_tag}/rnp.source.{build_tag}.tar.gz"
   sha256 "{source_package_tar_hash}"
