@@ -33,6 +33,7 @@ function PackAllReleasePackages() {
 function PackPerFlavorReleases() {
     New-Item -ItemType Directory -Path ".\Releases\GithubReleases"
     New-Item -ItemType Directory -Path ".\Releases\NugetPackages"
+    New-Item -ItemType Directory -Path ".\Releases\DebianPackages"
 
     $flavors = @{
         "windows.x86"   = [PsCustomObject]@{
@@ -40,48 +41,56 @@ function PackPerFlavorReleases() {
             "Target"  = "i686-pc-windows-msvc";
             "PackZip" = $true;
             "PackTar" = $false;
+            "CopyDebian" = $false;
         };
         "windows.x64"   = [PsCustomObject]@{
             "Root"    = "Build.Build.windowsx64";
             "Target"  = "x86_64-pc-windows-msvc";
             "PackZip" = $true;
             "PackTar" = $false;
+            "CopyDebian" = $false;
         };
         "windows.arm64" = [PsCustomObject]@{
             "Root"    = "Build.Build.windowsarm64";
             "Target"  = "aarch64-pc-windows-msvc";
             "PackZip" = $true;
             "PackTar" = $false;
+            "CopyDebian" = $false;
         };
         "linux.x86"     = [PsCustomObject]@{
             "Root"    = "Build.Build.linuxx86";
             "Target"  = "i686-unknown-linux-gnu";
             "PackZip" = $false;
             "PackTar" = $true;
+            "CopyDebian" = $true;
         };
         "linux.x64"     = [PsCustomObject]@{
             "Root"    = "Build.Build.linuxx64";
             "Target"  = "x86_64-unknown-linux-gnu";
             "PackZip" = $false;
             "PackTar" = $true;
+            "CopyDebian" = $true;
         };
         "linux.arm"     = [PsCustomObject]@{
             "Root"    = "Build.Build.linuxarm";
             "Target"  = "arm-unknown-linux-gnueabi";
             "PackZip" = $false;
             "PackTar" = $true;
+            "CopyDebian" = $true;
         };
         "linux.arm64"   = [PsCustomObject]@{
             "Root"    = "Build.Build.linuxarm64";
             "Target"  = "aarch64-unknown-linux-gnu";
             "PackZip" = $false;
             "PackTar" = $true;
+            "CopyDebian" = $true;
         };
         "macos.x64"     = [PsCustomObject]@{
             "Root"    = "Build.Build.macosx64";
             "Target"  = "x86_64-apple-darwin";
             "PackZip" = $false;
             "PackTar" = $true;
+            "CopyDebian" = $false;
         };
     }
 
@@ -90,7 +99,7 @@ function PackPerFlavorReleases() {
         $settings = $_.Value
         $root = $_.Value.Root
         $target = $_.Value.Target
-        Write-Host "Processing build: Flavor = $flavor, Root = $root, Target = $target, PackZip = $($settings.PackZip), PackTar = $($settings.PackTar)"
+        Write-Host "Processing build: Flavor = $flavor, Root = $root, Target = $target, PackZip = $($settings.PackZip), PackTar = $($settings.PackTar), CopyDebian = $($settings.CopyDebian)"
 
         # Create zip for github release
         if ($settings.PackZip) {
@@ -119,6 +128,9 @@ function PackPerFlavorReleases() {
         Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
         EvaluateTemplateFile ".\Build.Build.windowsx64\templates\nuget_packages\rnp_nupkg.csproj" "$nugetProjectRoot\rnp_nupkg.csproj" $flavor $target
         dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
+
+        # Copy debian packages
+        Copy-Item -Path .\$root\debian\* ".\Releases\DebianPackages" -Verbose -Force
     }
 }
 

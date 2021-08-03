@@ -37,36 +37,36 @@ stages:
     #
     strategy:
       matrix:
-        # windows-x86:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   rustup_toolchain: stable
-        #   target: i686-pc-windows-msvc
-        #   target_short: windows.x86
-        #   is_cross_compile: true
-        #   gcc_prefix:
-        #   gcc_suffix:
-        #   deb_arch:
-        # windows-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   rustup_toolchain: stable
-        #   target: x86_64-pc-windows-msvc
-        #   target_short: windows.x64
-        #   is_cross_compile: false
-        #   gcc_prefix:
-        #   gcc_suffix:
-        #   deb_arch:
-        # windows-arm64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   rustup_toolchain: stable
-        #   target: aarch64-pc-windows-msvc
-        #   target_short: windows.arm64
-        #   is_cross_compile: true
-        #   gcc_prefix:
-        #   gcc_suffix:
-        #   deb_arch:
+        windows-x86:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          rustup_toolchain: stable
+          target: i686-pc-windows-msvc
+          target_short: windows.x86
+          is_cross_compile: true
+          gcc_prefix:
+          gcc_suffix:
+          deb_arch:
+        windows-x64:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          rustup_toolchain: stable
+          target: x86_64-pc-windows-msvc
+          target_short: windows.x64
+          is_cross_compile: false
+          gcc_prefix:
+          gcc_suffix:
+          deb_arch:
+        windows-arm64:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          rustup_toolchain: stable
+          target: aarch64-pc-windows-msvc
+          target_short: windows.arm64
+          is_cross_compile: true
+          gcc_prefix:
+          gcc_suffix:
+          deb_arch:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -107,16 +107,16 @@ stages:
           gcc_prefix: aarch64-linux-gnu-
           gcc_suffix: -aarch64-linux-gnu
           deb_arch: arm64
-        # macos-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'macos-latest'
-        #   rustup_toolchain: stable
-        #   target: x86_64-apple-darwin
-        #   target_short: macos.x64
-        #   is_cross_compile: false
-        #   gcc_prefix:
-        #   gcc_suffix:
-        #   deb_arch:
+        macos-x64:
+          poolName: Azure Pipelines
+          imageName: 'macos-latest'
+          rustup_toolchain: stable
+          target: x86_64-apple-darwin
+          target_short: macos.x64
+          is_cross_compile: false
+          gcc_prefix:
+          gcc_suffix:
+          deb_arch:
 
     pool:
       name: $(poolName)
@@ -363,7 +363,7 @@ stages:
 - stage: Pack
   jobs:
   - job: Pack
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines
@@ -423,7 +423,7 @@ stages:
 - stage: Validate
   jobs:
   - job: Validate
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     
     #
     # Flavors to validate
@@ -433,12 +433,15 @@ stages:
         windows-x64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
+          target_short: windows.x64
         linux-x64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
+          target_short: linux.x64
         macos-x64:
           poolName: Azure Pipelines
           imageName: 'macos-latest'
+          target_short: macos.x64
 
     pool:
       name: $(poolName)
@@ -483,7 +486,38 @@ stages:
           cargo install --path .
         displayName: 'Install Rnp from source package'
         workingDirectory: $(System.DefaultWorkingDirectory)/Source
-        
+
+      - bash: |
+          echo "Checking rnp exists before installation"
+          dpkg -l | grep rnp
+          echo ""
+
+          echo "Install rnp from debian package"
+          dpkg -i ./rnp_$(build.version)-1_amd64.deb
+          if [ $? -ne 0 ]; then
+            echo "Failed to install rnp from debian package"
+            exit 1
+          fi
+          echo ""
+
+          echo "Check if rnp is successfully installed"
+          dpkg -l | grep rnp
+          echo ""
+
+          echo "Uninstall rnp"
+          dpkg -r rnp
+          if [ $? -ne 0 ]; then
+            echo "Failed to uninstall rnp"
+            exit 1
+          fi
+          echo ""
+
+          echo "Check if rnp is successfully uninstalled"
+          dpkg -l | grep rnp
+          echo ""
+        displayName: 'Install debian package'
+        workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/DebianPackages
+
       - task: PublishPipelineArtifact@1
         displayName: Publish pipeline artifact
         inputs:
