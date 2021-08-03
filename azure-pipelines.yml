@@ -37,36 +37,36 @@ stages:
     #
     strategy:
       matrix:
-        windows-x86:
-          poolName: Azure Pipelines
-          imageName: 'windows-latest'
-          rustup_toolchain: stable
-          target: i686-pc-windows-msvc
-          target_short: windows.x86
-          is_cross_compile: true
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
-        windows-x64:
-          poolName: Azure Pipelines
-          imageName: 'windows-latest'
-          rustup_toolchain: stable
-          target: x86_64-pc-windows-msvc
-          target_short: windows.x64
-          is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
-        windows-arm64:
-          poolName: Azure Pipelines
-          imageName: 'windows-latest'
-          rustup_toolchain: stable
-          target: aarch64-pc-windows-msvc
-          target_short: windows.arm64
-          is_cross_compile: true
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
+        # windows-x86:
+        #   poolName: Azure Pipelines
+        #   imageName: 'windows-latest'
+        #   rustup_toolchain: stable
+        #   target: i686-pc-windows-msvc
+        #   target_short: windows.x86
+        #   is_cross_compile: true
+        #   gcc_prefix:
+        #   gcc_suffix:
+        #   deb_arch:
+        # windows-x64:
+        #   poolName: Azure Pipelines
+        #   imageName: 'windows-latest'
+        #   rustup_toolchain: stable
+        #   target: x86_64-pc-windows-msvc
+        #   target_short: windows.x64
+        #   is_cross_compile: false
+        #   gcc_prefix:
+        #   gcc_suffix:
+        #   deb_arch:
+        # windows-arm64:
+        #   poolName: Azure Pipelines
+        #   imageName: 'windows-latest'
+        #   rustup_toolchain: stable
+        #   target: aarch64-pc-windows-msvc
+        #   target_short: windows.arm64
+        #   is_cross_compile: true
+        #   gcc_prefix:
+        #   gcc_suffix:
+        #   deb_arch:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -107,16 +107,16 @@ stages:
           gcc_prefix: aarch64-linux-gnu-
           gcc_suffix: -aarch64-linux-gnu
           deb_arch: arm64
-        macos-x64:
-          poolName: Azure Pipelines
-          imageName: 'macos-latest'
-          rustup_toolchain: stable
-          target: x86_64-apple-darwin
-          target_short: macos.x64
-          is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
+        # macos-x64:
+        #   poolName: Azure Pipelines
+        #   imageName: 'macos-latest'
+        #   rustup_toolchain: stable
+        #   target: x86_64-apple-darwin
+        #   target_short: macos.x64
+        #   is_cross_compile: false
+        #   gcc_prefix:
+        #   gcc_suffix:
+        #   deb_arch:
 
     pool:
       name: $(poolName)
