@@ -46,6 +46,7 @@ stages:
           is_cross_compile: true
           gcc_prefix:
           gcc_suffix:
+          deb_arch:
         windows-x64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
@@ -55,6 +56,7 @@ stages:
           is_cross_compile: false
           gcc_prefix:
           gcc_suffix:
+          deb_arch:
         windows-arm64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
@@ -64,6 +66,7 @@ stages:
           is_cross_compile: true
           gcc_prefix:
           gcc_suffix:
+          deb_arch:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -73,6 +76,7 @@ stages:
           is_cross_compile: true
           gcc_prefix: x86_64-linux-gnu-
           gcc_suffix: -x86_64-linux-gnu
+          deb_arch: x86
         linux-x64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -82,6 +86,7 @@ stages:
           is_cross_compile: false
           gcc_prefix:
           gcc_suffix:
+          deb_arch: amd64
         linux-arm:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -91,6 +96,7 @@ stages:
           is_cross_compile: true
           gcc_prefix: arm-linux-gnueabi-
           gcc_suffix: -arm-linux-gnueabi
+          deb_arch: arm
         linux-arm64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
@@ -100,6 +106,7 @@ stages:
           is_cross_compile: true
           gcc_prefix: aarch64-linux-gnu-
           gcc_suffix: -aarch64-linux-gnu
+          deb_arch: arm64
         macos-x64:
           poolName: Azure Pipelines
           imageName: 'macos-latest'
@@ -109,6 +116,7 @@ stages:
           is_cross_compile: false
           gcc_prefix:
           gcc_suffix:
+          deb_arch:
 
     pool:
       name: $(poolName)
@@ -313,6 +321,28 @@ stages:
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/build/pack'
         targetFolder: '$(Build.ArtifactStagingDirectory)/pack'
+
+    - bash: |
+        deb_pkg_name=rnp_$(build.version)-1_$(DEB_ARCH)
+        echo "Creating deb package: $deb_pkg_name"
+
+        echo "Copy binaries to $deb_pkg_name/usr/local/bin"
+        mkdir -p $deb_pkg_name/usr/local/bin
+        cp rnp $deb_pkg_name/usr/local/bin/
+        echo ""
+
+        echo "Generating deb package control file: $deb_pkg_name"
+        mkdir -p $deb_pkg_name/DEBIAN
+        cat $(Build.SourcesDirectory)/build/templates/debian/control | sed -e 's/{build_version}/$(build.version)/g' -e 's/{deb_arch}/$(DEB_ARCH)/g' > $deb_pkg_name/DEBIAN/control
+        echo "Deb package control file generated: $deb_pkg_name/DEBIAN/control"
+        cat $deb_pkg_name/DEBIAN/control
+        echo ""
+
+        echo "Building deb package: $deb_pkg_name"
+        dpkg-deb --build --root-owner-group $deb_pkg_name
+      displayName: Build debian packages
+      condition: and(succeeded(), ne(variables['deb_arch'], ''))
+      workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
 
     #
     # Publish all pipeline artifacts
