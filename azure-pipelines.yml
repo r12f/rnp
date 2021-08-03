@@ -493,7 +493,7 @@ stages:
           echo ""
 
           echo "Install rnp from debian package"
-          dpkg -i ./rnp_$(build.version)-1_amd64.deb
+          sudo dpkg -i ./rnp_$(build.version)-1_amd64.deb
           if [ $? -ne 0 ]; then
             echo "Failed to install rnp from debian package"
             exit 1
@@ -505,7 +505,7 @@ stages:
           echo ""
 
           echo "Uninstall rnp"
-          dpkg -r rnp
+          sudo dpkg -r rnp
           if [ $? -ne 0 ]; then
             echo "Failed to uninstall rnp"
             exit 1
@@ -516,6 +516,7 @@ stages:
           dpkg -l | grep rnp
           echo ""
         displayName: 'Install debian package'
+        condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'))
         workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/DebianPackages
 
       - task: PublishPipelineArtifact@1
