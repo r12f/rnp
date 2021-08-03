@@ -356,14 +356,14 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
 - stage: Pack
   jobs:
   - job: Pack
-    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines
@@ -423,7 +423,7 @@ stages:
 - stage: Validate
   jobs:
   - job: Validate
-    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     
     #
     # Flavors to validate
@@ -515,7 +515,7 @@ stages:
           echo "Check if rnp is successfully uninstalled"
           dpkg -l | grep rnp
           echo ""
-        displayName: 'Install debian package'
+        displayName: 'Install Rnp from debian package'
         condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'))
         workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/DebianPackages
 
