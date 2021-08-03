@@ -340,6 +340,13 @@ stages:
 
         echo "Building deb package: $deb_pkg_name"
         dpkg-deb --build --root-owner-group $deb_pkg_name
+        if [ $? -ne 0 ]; then
+          echo "Build deb package failed!"
+          exit 1
+        fi
+
+        mkdir -p $(Build.ArtifactStagingDirectory)/debian
+        cp $deb_pkg_name.deb $(Build.ArtifactStagingDirectory)/debian/
       displayName: Build debian packages
       condition: and(succeeded(), ne(variables['deb_arch'], ''))
       workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
