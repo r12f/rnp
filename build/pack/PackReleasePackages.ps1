@@ -149,7 +149,7 @@ function PackPerFlavorReleases() {
             New-Item -ItemType Directory -Path "$msixProjectRoot" | Out-Null
 
             Copy-Item -Path .\$root\bin\* $msixProjectRoot -Verbose -Force
-            EvaluateTemplateFile ".\Build.Build.windowsx64\templates\msix\appxmanifext.xml" "$msixProjectRoot\appxmanifest.xml" $flavor $target
+            EvaluateTemplateFile ".\Build.Build.windowsx64\templates\msix\appxmanifest.xml" "$msixProjectRoot\appxmanifest.xml" $flavor $target
             EvaluateTemplateFile ".\Build.Build.windowsx64\templates\msix\appxmappings.xml" "$msixProjectRoot\appxmappings.xml" $flavor $target
 
             New-Item -ItemType Directory -Path "$msixProjectRoot\images" | Out-Null
