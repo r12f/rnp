@@ -1,0 +1,7 @@
+[Files]
+"rnp.exe" "rnp.exe"
+"README.md" "README.md"
+"LICENSE.txt" "LICENSE.txt"
+"images\logo.png" "images\logo.png"
+"images\logo-150.png" "images\logo-150.png"
+"images\logo-44.png" "images\logo-44.png"

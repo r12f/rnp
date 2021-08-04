@@ -300,6 +300,14 @@ stages:
         targetFolder: '$(Build.ArtifactStagingDirectory)/bin'
 
     - task: CopyFiles@2
+      displayName: Copy assets to output
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)/assets'
+        contents: |
+          *.png
+        targetFolder: '$(Build.ArtifactStagingDirectory)/assets'
+
+    - task: CopyFiles@2
       displayName: Copy symbols to output
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
@@ -356,14 +364,14 @@ stages:
     #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
 - stage: Pack
   jobs:
   - job: Pack
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
     pool:
       name: Azure Pipelines

@@ -41,6 +41,7 @@ function PackPerFlavorReleases() {
             "Target"  = "i686-pc-windows-msvc";
             "PackZip" = $true;
             "PackTar" = $false;
+            "PackMsix" = $true;
             "CopyDebian" = $false;
         };
         "windows.x64"   = [PsCustomObject]@{
@@ -48,6 +49,7 @@ function PackPerFlavorReleases() {
             "Target"  = "x86_64-pc-windows-msvc";
             "PackZip" = $true;
             "PackTar" = $false;
+            "PackMsix" = $true;
             "CopyDebian" = $false;
         };
         "windows.arm64" = [PsCustomObject]@{
@@ -55,6 +57,7 @@ function PackPerFlavorReleases() {
             "Target"  = "aarch64-pc-windows-msvc";
             "PackZip" = $true;
             "PackTar" = $false;
+            "PackMsix" = $true;
             "CopyDebian" = $false;
         };
         "linux.x86"     = [PsCustomObject]@{
@@ -62,6 +65,7 @@ function PackPerFlavorReleases() {
             "Target"  = "i686-unknown-linux-gnu";
             "PackZip" = $false;
             "PackTar" = $true;
+            "PackMsix" = $false;
             "CopyDebian" = $true;
         };
         "linux.x64"     = [PsCustomObject]@{
@@ -69,6 +73,7 @@ function PackPerFlavorReleases() {
             "Target"  = "x86_64-unknown-linux-gnu";
             "PackZip" = $false;
             "PackTar" = $true;
+            "PackMsix" = $false;
             "CopyDebian" = $true;
         };
         "linux.arm"     = [PsCustomObject]@{
@@ -76,6 +81,7 @@ function PackPerFlavorReleases() {
             "Target"  = "arm-unknown-linux-gnueabi";
             "PackZip" = $false;
             "PackTar" = $true;
+            "PackMsix" = $false;
             "CopyDebian" = $true;
         };
         "linux.arm64"   = [PsCustomObject]@{
@@ -83,6 +89,7 @@ function PackPerFlavorReleases() {
             "Target"  = "aarch64-unknown-linux-gnu";
             "PackZip" = $false;
             "PackTar" = $true;
+            "PackMsix" = $false;
             "CopyDebian" = $true;
         };
         "macos.x64"     = [PsCustomObject]@{
@@ -90,6 +97,7 @@ function PackPerFlavorReleases() {
             "Target"  = "x86_64-apple-darwin";
             "PackZip" = $false;
             "PackTar" = $true;
+            "PackMsix" = $false;
             "CopyDebian" = $false;
         };
     }
@@ -130,7 +138,25 @@ function PackPerFlavorReleases() {
         dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
 
         # Copy debian packages
-        Copy-Item -Path .\$root\debian\* ".\Releases\DebianPackages" -Verbose -Force
+        if ($settings.CopyDebian) {
+            Copy-Item -Path .\$root\debian\* ".\Releases\DebianPackages" -Verbose -Force
+        }
+
+        # Generate MSIX package
+        if ($settings.PackMsix) {
+            $msixProjectRoot = ".\Staging\MsixPackages\$flavor"
+            Write-Host "Creating msix package under $msixProjectRoot"
+            New-Item -ItemType Directory -Path "$msixProjectRoot" | Out-Null
+
+            Copy-Item -Path .\$root\bin\* $msixProjectRoot -Verbose -Force
+            EvaluateTemplateFile ".\Build.Build.windowsx64\templates\msix\appxmanifext.xml" "$msixProjectRoot\appxmanifest.xml" $flavor $target
+            EvaluateTemplateFile ".\Build.Build.windowsx64\templates\msix\appxmappings.xml" "$msixProjectRoot\appxmappings.xml" $flavor $target
+
+            New-Item -ItemType Directory -Path "$msixProjectRoot\images" | Out-Null
+            Copy-Item -Path .\$root\assets\*.png "$msixProjectRoot\images" -Verbose -Force
+
+            & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe" pack /m "$msixProjectRoot\appxmanifest.xml" /f "$msixProjectRoot\appxmappings.txt" /p ".\Releases\GithubReleases\rnp.$BuildTag.$flavor.msix"
+        }
     }
 }
 
@@ -194,7 +220,8 @@ function EvaluateTemplateFile($templateFile, $targetFile, $targetShortName, $tar
 }
 
 function EvaluateTemplate($template, $targetShortName, $targetFullName) {
-    return $template.Replace("{build_branch_name}", $BuildBranchName).Replace("{build_tag}", $BuildTag).Replace("{version}", $BuildNumber).Replace("{target_short}", $targetShortName).Replace("{target}", $targetFullName)
+    $targetArch = ($targetShortName -split "\.")[1]
+    return $template.Replace("{build_branch_name}", $BuildBranchName).Replace("{build_tag}", $BuildTag).Replace("{version}", $BuildNumber).Replace("{target_short}", $targetShortName).Replace("{target}", $targetFullName).Replace("{build_arch}", $targetArch)
 }
 
 PackAllReleasePackages
