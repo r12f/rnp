@@ -8,8 +8,8 @@
 | Release | Status |
 |:---:|---|
 | Crates.io | [![Crates.io](https://img.shields.io/crates/v/rnp?color=blue&style=flat-square&label=cargo%20install%20rnp)](https://crates.io/crates/rnp) |
-| Downloads | [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?color=blue&label=github%20release&style=flat-square)](https://github.com/r12f/rnp/releases) [![Chocolatey Version](https://img.shields.io/chocolatey/v/rnp-cli?color=blue&label=choco%20install%20rnp-cli&style=flat-square)](https://community.chocolatey.org/packages/rnp-cli) |
-| Nuget packages | [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x86?style=flat-square&color=green&label=windows.x86)](https://www.nuget.org/packages/rnp.main.windows.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x64?style=flat-square&color=green&label=windows.x64)](https://www.nuget.org/packages/rnp.main.windows.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.arm64?style=flat-square&color=green&label=windows.arm64)](https://www.nuget.org/packages/rnp.main.windows.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x86?style=flat-square&color=green&label=linux.x86)](https://www.nuget.org/packages/rnp.main.linux.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x64?style=flat-square&color=green&label=linux.x64)](https://www.nuget.org/packages/rnp.main.linux.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm?style=flat-square&color=green&label=linux.arm)](https://www.nuget.org/packages/rnp.main.linux.arm/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=flat-square&color=green&label=linux.arm64)](https://www.nuget.org/packages/rnp.main.linux.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=flat-square&color=green&label=macos.x64)](https://www.nuget.org/packages/rnp.main.macos.x64/)|
+| Install | [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?color=blue&label=github%20release&style=flat-square)](https://github.com/r12f/rnp/releases) [![Chocolatey Version](https://img.shields.io/chocolatey/v/rnp-cli?color=blue&label=choco%20install%20rnp-cli&style=flat-square)](https://community.chocolatey.org/packages/rnp-cli) [![winget](https://img.shields.io/badge/winget%20install%20rnp-winget-blue)](https://github.com/r12f/rnp/wiki/Install-Rnp#install-on-windows-via-winget) [![apt/deb](https://img.shields.io/badge/apt%20install%20rnp-repo.r12f.com%2Fapt-blue)](https://github.com/r12f/rnp/wiki/Install-Rnp#install-on-ubuntu-via-apt) |
+| Nuget<br/>packages | [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x86?style=flat-square&color=green&label=windows.x86)](https://www.nuget.org/packages/rnp.main.windows.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x64?style=flat-square&color=green&label=windows.x64)](https://www.nuget.org/packages/rnp.main.windows.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.arm64?style=flat-square&color=green&label=windows.arm64)](https://www.nuget.org/packages/rnp.main.windows.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x86?style=flat-square&color=green&label=linux.x86)](https://www.nuget.org/packages/rnp.main.linux.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x64?style=flat-square&color=green&label=linux.x64)](https://www.nuget.org/packages/rnp.main.linux.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm?style=flat-square&color=green&label=linux.arm)](https://www.nuget.org/packages/rnp.main.linux.arm/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=flat-square&color=green&label=linux.arm64)](https://www.nuget.org/packages/rnp.main.linux.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=flat-square&color=green&label=macos.x64)](https://www.nuget.org/packages/rnp.main.macos.x64/)|
 
 ```bash
 $ rnp 8.8.8.8:443 -r -l
@@ -39,11 +39,14 @@ Reaching TCP 8.8.8.8:443 from 192.168.50.153:8943 succeeded: RTT=12.43ms
       8940 |  12.95  11.24  10.96  12.43    -      -      -      -      -      -
 ```
 
+## Installation
+We are currently supporting multiple ways to install Rnp. Please check the detailed doc here: [Install Rnp](https://github.com/r12f/rnp/wiki/Install-Rnp).
+
 ## Why Rnp?
 
 Ping is one of the most frequently used tool for testing network reachability. And yet, we have another one here... So why?
 
-Despite there are numerous ping tools in the market, I wrote RNP for some specific reasons:
+Despite there are numerous ping tools in the market, I wrote Rnp for some specific reasons:
 * **Wide platform support**, so we can run it everywhere.
   * Wide platform support: Windows/Linux, x86/amd64/arm64.
   * Wide machine environment support: Minimum dependencies, such as runtimes like JRE/CLR.
@@ -182,12 +185,12 @@ And rnp will start to rotate the ping within all the specified source ports for 
 To see more on this tool, we can try `--help` option.
 ```bash
 $ rnp.exe --help
-rnp 0.1.0
+rnp 0.1.114
 r12f (r12f.com, github.com/r12f)
 A simple layer 4 ping tool for cloud.
 
 USAGE:
-    rnp.exe [FLAGS] [OPTIONS] <target>
+    rnp [FLAGS] [OPTIONS] <target>
 
 FLAGS:
     -d, --check-disconnect        Check if connection can be correctly disconnected. Only available in TCP mode now.
@@ -195,8 +198,8 @@ FLAGS:
                                   disconnect.
     -h, --help                    Prints help information
         --log-tls-key             Enable key logger in TLS for helping packet capture.
-                                  Please note that it might cause RTT to be larger than the real one, because logging
-                                  key will also take time.
+                                  Please note that it might cause RTT to be slightly larger than the real one, because
+                                  logging key will also take time.
     -q, --no-console-log          Don't log each ping result to console. Summary and other things will still be written
                                   to console.
     -t                            Ping until stopped.
@@ -214,8 +217,8 @@ OPTIONS:
             For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-
             extensiontype-values.xhtml#alpn-protocol-ids
             [default: h3-29]
-        --log-csv <csv-log-path>                  Log ping results a csv file.
-        --log-json <json-log-path>                Log ping results to a json file.
+        --log-csv <csv-log-path>                  Log ping results a csv file. [alias: --oc]
+        --log-json <json-log-path>                Log ping results to a json file. [alias: --oj]
     -b, --latency-buckets <latency-buckets>...
             If set, bucket ping latency (round trip time) after ping is done. Set to 0.0 to use the default one:
             [0.1,0.5,1.0,10.0,50.0,100.0,300.0,500.0]
@@ -223,11 +226,12 @@ OPTIONS:
     -n, --count <ping-count>                      Ping count. [default: 4]
     -i, --interval <ping-interval-in-ms>          Sleep between each ping in milliseconds. [default: 1000]
     -m, --mode <protocol>                         Specify protocol to use. [default: TCP]
-        --server-name <server-name>               Specify the server name in the pings, such as QUIC.
+        --server-name <server-name>               Specify the server name in the QUIC pings. Example: localhost.
     -s, --src-ip <source-ip>                      Source IP address. [default: 0.0.0.0]
-        --src-port <source-port-list>...          Source port list to use in ping.
-        --src-port-range <source-port-range>      Source port range to use in ping. Format = start-end, e.g. 10000-11000
-        --log-text <text-log-path>                Log ping results to a text file.
+        --src-ports <source-ports>
+            Source port ranges to rotate in ping. Format: port,start-end. Example: 1024,10000-11000. [alias: --sp]
+
+    -o, --log-text <text-log-path>                Log ping results to a text file.
         --ttl <time-to-live>                      Time to live.
     -w, --timeout <wait-timeout-in-ms>            Wait time for each ping in milliseconds. [default: 2000]
         --warmup <warmup-count>                   Warm up ping count. [default: 0]
