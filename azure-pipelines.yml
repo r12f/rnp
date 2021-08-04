@@ -407,7 +407,6 @@ stages:
 
       - task: DotNetCoreCLI@2
         displayName: Install AzureSignTool
-        condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
         inputs:
           command: 'custom'
           custom: 'tool'
