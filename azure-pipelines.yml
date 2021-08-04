@@ -405,6 +405,14 @@ stages:
           echo "Updated build.tag to $BUILD_TAG"
         displayName: 'Set environment variables'
 
+      - task: DotNetCoreCLI@2
+        displayName: Install AzureSignTool
+        condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
+        inputs:
+          command: 'custom'
+          custom: 'tool'
+          arguments: 'install --global azuresigntool'
+
       - task: PowerShell@2
         displayName: 'Generate all packages'
         inputs:
@@ -414,6 +422,16 @@ stages:
             -BuildBranchName $(build.branch_name)
             -BuildTag $(build.tag)
             -BuildNumber $(build.version)
+          workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
+
+      - task: PowerShell@2
+        displayName: 'Sign packages with AzureSignTool'
+        inputs:
+          targetType: inline
+          script: |
+            Get-ChildItem ".\Releases\GithubReleases\*.msix" | ForEach-Object {
+              AzureSignTool sign -du "$(RnpSigningURL)" -kvu "$(RnpSigningVaultURL)" -kvi "$(RnpSigningClientId)" -kvs "$(RnpSigningClientSecret)" -kvc "$(RnpSigningCertName)" -v $_
+            }
           workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
       - task: CopyFiles@2
