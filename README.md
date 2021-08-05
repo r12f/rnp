@@ -240,26 +240,10 @@ ARGS:
     <target>
 ```
 
-## Contributes
+## Contribute
 Thanks a lot in being interested in this project and all contributions are welcomed!
 
-To contribute to the project, please feel free to open issues and discuss. Then submit a pull request for review and merge into main branch.
-
-### How to build
-Just like the rest of Rust project, simply use `cargo` to build it.
-```bash
-$ cargo build
-```
-
-To build release version:
-```bash
-$ cargo build --release
-```
-
-To build other targets, such as ARM64 on windows, we can use `--target` to specify the target (of course, in this specific case, we need to install the msvc ARM64 toolchain from visual studio).
-```bash
-$ cargo build --target=aarch64-pc-windows-msvc --release
-```
+To contribute, please follow our [how to contribute](https://github.com/r12f/rnp/wiki/Contribution) doc.
 
 ## Resources
 * [Equal-cost multi-path routing][ECMP]
