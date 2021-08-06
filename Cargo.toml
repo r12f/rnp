@@ -48,11 +48,16 @@ pretty_assertions = "0.7.2"
 serde_json = "1.0"
 csv = "1.1"
 
+[profile.dev]
+panic = "abort"             # Abort on panic to make it more friendly for debugger
+split-debuginfo = "packed"  # Store debug info in separate files
+
 [profile.release]
-opt-level = 'z'     # Optimize for size.
-lto = true          # Enable link time optimization
-codegen-units = 1   # Using 1 codegen units to help getting more optimization on binary size.
-panic = 'abort'     # Avoid generating stack unwind code.
+opt-level = 'z'             # Optimize for size.
+lto = true                  # Enable link time optimization
+codegen-units = 1           # Using 1 codegen units to help getting more optimization on binary size.
+panic = 'abort'             # Avoid generating stack unwind code.
+split-debuginfo = "packed"  # Store debug info in separate files
 
 [[bin]]
 name = "rnp"
