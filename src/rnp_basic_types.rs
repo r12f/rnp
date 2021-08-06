@@ -105,4 +105,15 @@ mod tests {
         assert!("1,2,5-".parse::<RangeListInclusive<i32>>().is_err());
         assert!("-2".parse::<RangeListInclusive<i32>>().is_err());
     }
+
+    #[test]
+    fn range_list_to_string_should_work() {
+        assert_eq!("", RangeListInclusive { ranges: Vec::<RangeInclusive<i32>>::new() }.to_string());
+        assert_eq!("1", RangeListInclusive { ranges: vec![(1..=1)] }.to_string());
+        assert_eq!("1,2", RangeListInclusive { ranges: vec![(1..=1),(2..=2)] }.to_string());
+        assert_eq!("1-2", RangeListInclusive { ranges: vec![(1..=2)] }.to_string());
+        assert_eq!("1-2,5-6", RangeListInclusive { ranges: vec![(1..=2),(5..=6)] }.to_string());
+        assert_eq!("1,2,5-6", RangeListInclusive { ranges: vec![(1..=1),(2..=2),(5..=6)] }.to_string());
+        assert_eq!("1,2,5-6,100-200", RangeListInclusive { ranges: vec![(1..=1),(2..=2),(5..=6),(100..=200)] }.to_string());
+    }
 }
