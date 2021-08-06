@@ -243,7 +243,7 @@ ARGS:
 ## Contribute
 Thanks a lot in being interested in this project and all contributions are welcomed!
 
-To contribute, please follow our [how to contribute](https://github.com/r12f/rnp/wiki/Contribution) doc.
+To contribute, please follow our [how to contribute](https://github.com/r12f/rnp/wiki/How-to-contribute) doc.
 
 ## Resources
 * [Equal-cost multi-path routing][ECMP]
