@@ -8,7 +8,7 @@
 | Release | Status |
 |:---:|---|
 | Crates.io | [![Crates.io](https://img.shields.io/crates/v/rnp?color=blue&style=flat-square&label=cargo%20install%20rnp)](https://crates.io/crates/rnp) |
-| Install | [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?color=blue&label=github%20release&style=flat-square)](https://github.com/r12f/rnp/releases) [![Chocolatey Version](https://img.shields.io/chocolatey/v/rnp-cli?color=blue&label=choco%20install%20rnp-cli&style=flat-square)](https://community.chocolatey.org/packages/rnp-cli) [![winget](https://img.shields.io/static/v1?style=flat-square&label=winget%20install%20rnp&message=winget&color=blue)](https://github.com/r12f/rnp/wiki/Install-Rnp#22-via-winget-on-windows) [![apt/deb](https://img.shields.io/static/v1?style=flat-square&label=apt%20install%20rnp&message=https%3A%2F%2Frepo.r12f.com%2Fapt&color=blue)](https://github.com/r12f/rnp/wiki/Install-Rnp#23-via-apt-on-linux) |
+| Install | [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/r12f/rnp?color=blue&label=github%20release&style=flat-square)](https://github.com/r12f/rnp/releases) [![Chocolatey Version](https://img.shields.io/chocolatey/v/rnp-cli?color=blue&label=choco%20install%20rnp-cli&style=flat-square)](https://community.chocolatey.org/packages/rnp-cli) [![winget](https://img.shields.io/static/v1?style=flat-square&label=winget%20install%20rnp&message=winget&color=blue)](https://github.com/r12f/rnp/wiki/How-to-install#22-via-winget-on-windows) [![apt/deb](https://img.shields.io/static/v1?style=flat-square&label=apt%20install%20rnp&message=https%3A%2F%2Frepo.r12f.com%2Fapt&color=blue)](https://github.com/r12f/rnp/wiki/How-to-install#23-via-apt-on-linux) |
 | Nuget<br/>packages | [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x86?style=flat-square&color=green&label=windows.x86)](https://www.nuget.org/packages/rnp.main.windows.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.x64?style=flat-square&color=green&label=windows.x64)](https://www.nuget.org/packages/rnp.main.windows.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.windows.arm64?style=flat-square&color=green&label=windows.arm64)](https://www.nuget.org/packages/rnp.main.windows.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x86?style=flat-square&color=green&label=linux.x86)](https://www.nuget.org/packages/rnp.main.linux.x86/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.x64?style=flat-square&color=green&label=linux.x64)](https://www.nuget.org/packages/rnp.main.linux.x64/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm?style=flat-square&color=green&label=linux.arm)](https://www.nuget.org/packages/rnp.main.linux.arm/) [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=flat-square&color=green&label=linux.arm64)](https://www.nuget.org/packages/rnp.main.linux.arm64/) <br/> [![Nuget](https://img.shields.io/nuget/v/rnp.main.linux.arm64?style=flat-square&color=green&label=macos.x64)](https://www.nuget.org/packages/rnp.main.macos.x64/)|
 
 ```bash
@@ -40,7 +40,7 @@ Reaching TCP 8.8.8.8:443 from 192.168.50.153:8943 succeeded: RTT=12.43ms
 ```
 
 ## Installation
-We are currently supporting multiple ways to install Rnp. Please check the detailed doc here: [Install Rnp](https://github.com/r12f/rnp/wiki/Install-Rnp).
+We are currently supporting multiple ways to install Rnp. Please check the detailed doc here: [How to install](https://github.com/r12f/rnp/wiki/How-to-install).
 
 ## Why Rnp?
 
