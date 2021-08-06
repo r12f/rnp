@@ -5,8 +5,9 @@ pub use ping_result::PingResult;
 use ping_result_processing_worker::PingResultProcessingWorker;
 pub use ping_result_processors::ping_result_processor::*;
 use ping_worker::PingWorker;
-pub use rnp_core::RnpCore;
+pub use rnp_basic_types::*;
 pub use rnp_core_config::*;
+pub use rnp_core::RnpCore;
 pub use rnp_dto::*;
 
 mod ping_clients;
@@ -15,6 +16,7 @@ mod ping_result;
 mod ping_result_processing_worker;
 mod ping_result_processors;
 mod ping_worker;
+mod rnp_basic_types;
 mod rnp_core;
 mod rnp_core_config;
 mod rnp_dto;
