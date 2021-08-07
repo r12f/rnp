@@ -187,7 +187,7 @@ mod tests {
                 alpn_protocol: Some("hq-29".to_string()),
                 use_timer_rtt: false,
             };
-            let mut ping_client = ping_client_factory::new(&RnpSupportedProtocol::QUIC, &config, None);
+            let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::QUIC, &config, None);
 
             // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
             let expected_results = ExpectedPingClientTestResults {

@@ -1,13 +1,14 @@
 pub use ping_clients::ping_client::*;
 use ping_clients::ping_client_factory;
+pub use ping_clients::ping_client_factory::PingClientFactory;
 use ping_port_picker::PingPortPicker;
 pub use ping_result::PingResult;
 use ping_result_processing_worker::PingResultProcessingWorker;
 pub use ping_result_processors::ping_result_processor::*;
 use ping_worker::PingWorker;
 pub use rnp_basic_types::*;
-pub use rnp_core_config::*;
 pub use rnp_core::RnpCore;
+pub use rnp_core_config::*;
 pub use rnp_dto::*;
 
 mod ping_clients;

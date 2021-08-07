@@ -4,10 +4,15 @@ use crate::*;
 #[cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))]
 use crate::ping_clients::ping_client_quic::PingClientQuic;
 
-pub fn new(
+pub type PingClientFactory = fn(
     protocol: &RnpSupportedProtocol,
     config: &PingClientConfig,
-    external_ping_client_factory: Option<ExternalPingClientFactory>,
+) -> Option<Box<dyn PingClient + Send + Sync>>;
+
+pub fn new_ping_client(
+    protocol: &RnpSupportedProtocol,
+    config: &PingClientConfig,
+    external_ping_client_factory: Option<PingClientFactory>,
 ) -> Box<dyn PingClient + Send + Sync> {
     if let Some(factory) = external_ping_client_factory {
         if let Some(ping_client) = factory(protocol, config) {
@@ -46,7 +51,7 @@ fn new_inbox_ping_client(
 
 #[cfg(test)]
 mod tests {
-    use crate::ping_clients::ping_client_factory::new;
+    use crate::ping_clients::ping_client_factory::new_ping_client;
     use crate::{PingClientConfig, RnpSupportedProtocol};
     use std::time::Duration;
 
@@ -62,7 +67,7 @@ mod tests {
             use_timer_rtt: false,
         };
 
-        let ping_client = new(&RnpSupportedProtocol::TCP, &config, None);
+        let ping_client = new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
         assert_eq!("TCP", ping_client.protocol());
     }
 }
