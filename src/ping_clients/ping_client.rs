@@ -20,7 +20,7 @@ pub enum PingClientError {
     PingFailed(Box<dyn std::error::Error + Send>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PingClientPingResultDetails {
     pub actual_local_addr: Option<SocketAddr>,
     pub round_trip_time: Duration,
@@ -49,6 +49,9 @@ pub type PingClientResult<T, E = PingClientError> = std::result::Result<T, E>;
 #[async_trait]
 pub trait PingClient {
     fn protocol(&self) -> &'static str;
+
+    async fn prepare_ping(&mut self, source: &SocketAddr) -> Result<(), PingClientError>;
+
     async fn ping(
         &self,
         source: &SocketAddr,

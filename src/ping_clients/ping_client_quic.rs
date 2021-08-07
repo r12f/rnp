@@ -141,6 +141,8 @@ impl PingClient for PingClientQuic {
         "QUIC"
     }
 
+    async fn prepare_ping(&mut self, _: &SocketAddr) -> Result<(), PingClientError> { Ok(()) }
+
     async fn ping(
         &self,
         source: &SocketAddr,
