@@ -11,8 +11,49 @@ use pretty_assertions::assert_eq;
 #[test]
 fn ping_with_rnp_core_should_work() {
     let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
+    let config = create_mock_rnp_config(actual_ping_results.clone(), 6, 3, 1);
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        let stop_event = Arc::new(ManualResetEvent::new(false));
+        let mut rp = RnpCore::new(config, stop_event);
+        rp.run_warmup_pings().await;
+        rp.start_running_normal_pings();
+        rp.join().await;
+    });
 
-    let config = RnpCoreConfig {
+    let results = actual_ping_results.lock().unwrap();
+    assert_eq!(vec![
+        MockPingClientResult::Success(Duration::from_millis(10)),
+        MockPingClientResult::Timeout,
+        MockPingClientResult::PreparationFailed,
+        MockPingClientResult::Success(Duration::from_millis(10)),
+        MockPingClientResult::Timeout,
+        MockPingClientResult::PreparationFailed,
+        MockPingClientResult::PingFailed,
+        MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
+        MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
+    ], *results);
+}
+
+#[test]
+fn ping_with_rnp_core_stress_should_work() {
+    let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
+    let config = create_mock_rnp_config(actual_ping_results.clone(), 1000, 0, 10);
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        let stop_event = Arc::new(ManualResetEvent::new(false));
+        let mut rp = RnpCore::new(config, stop_event);
+        rp.run_warmup_pings().await;
+        rp.start_running_normal_pings();
+        rp.join().await;
+    });
+
+    let results = actual_ping_results.lock().unwrap();
+    assert_eq!(1000, results.len());
+}
+
+fn create_mock_rnp_config(actual_ping_results: Arc<Mutex<Vec<MockPingClientResult>>>, ping_count: u32, warmup_count: u32, parallel_ping_count: u32) -> RnpCoreConfig {
+    RnpCoreConfig {
         worker_config: PingWorkerConfig {
             protocol: RnpSupportedProtocol::TCP,
             target: "10.0.0.1:443".parse().unwrap(),
@@ -32,9 +73,9 @@ fn ping_with_rnp_core_should_work() {
             source_ports: PortRangeList {
                 ranges: vec![(1024..=2048)],
             },
-            ping_count: Some(6),
-            warmup_count: 1,
-            parallel_ping_count: 1,
+            ping_count: Some(ping_count),
+            warmup_count,
+            parallel_ping_count,
         },
         result_processor_config: PingResultProcessorConfig {
             no_console_log: false,
@@ -56,27 +97,7 @@ fn ping_with_rnp_core_should_work() {
             ])))
         }),
         extra_ping_result_processors: vec![
-            Box::new(MockPingResultProcessor::new(actual_ping_results.clone())),
+            Box::new(MockPingResultProcessor::new(actual_ping_results)),
         ],
-    };
-
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async {
-        let stop_event = Arc::new(ManualResetEvent::new(false));
-        let mut rp = RnpCore::new(config, stop_event);
-        rp.run_warmup_pings().await;
-        rp.start_running_normal_pings();
-        rp.join().await;
-    });
-
-    let results = actual_ping_results.lock().unwrap();
-    assert_eq!(vec![
-        MockPingClientResult::Success(Duration::from_millis(10)),
-        MockPingClientResult::Success(Duration::from_millis(10)),
-        MockPingClientResult::Timeout,
-        MockPingClientResult::PreparationFailed,
-        MockPingClientResult::PingFailed,
-        MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
-        MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
-    ], *results);
+    }
 }
