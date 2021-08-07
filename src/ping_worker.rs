@@ -90,7 +90,16 @@ impl PingWorker {
     async fn run_single_ping(&mut self, source_port: u16) {
         let source = SocketAddr::new(self.config.source_ip, source_port);
         let target = self.config.target;
+
         let ping_time = Utc::now();
+        match self.ping_client.prepare_ping(&source).await {
+            Err(PingClientError::PreparationFailed(e)) => {
+                self.process_ping_client_error(&ping_time, source_port, PingClientError::PreparationFailed(e))
+                    .await
+            }
+            Err(_) => panic!("Unexpected failure from prepare_ping! The error type should always be PingClientError::PreparationFailed."),
+            Ok(()) => (),
+        }
 
         match self.ping_client.ping(&source, &target).await {
             Ok(result) => {

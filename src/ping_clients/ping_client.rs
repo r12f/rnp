@@ -49,6 +49,9 @@ pub type PingClientResult<T, E = PingClientError> = std::result::Result<T, E>;
 #[async_trait]
 pub trait PingClient {
     fn protocol(&self) -> &'static str;
+
+    async fn prepare_ping(&mut self, source: &SocketAddr) -> Result<(), PingClientError>;
+
     async fn ping(
         &self,
         source: &SocketAddr,
