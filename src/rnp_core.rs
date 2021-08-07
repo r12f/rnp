@@ -8,6 +8,7 @@ pub struct RnpCore {
 
     stop_event: Arc<ManualResetEvent>,
     worker_join_handles: Vec<JoinHandle<()>>,
+    ping_result_processor_stop_event: Arc<ManualResetEvent>,
     ping_result_processor_join_handle: Option<JoinHandle<()>>,
     result_sender: mpsc::Sender<PingResult>,
 }
@@ -83,18 +84,21 @@ impl RnpCore {
         let mut extra_ping_result_processors = Vec::new();
         extra_ping_result_processors.append(&mut config.extra_ping_result_processors);
 
+        let ping_result_processor_stop_event = Arc::new(ManualResetEvent::new(false));
+
         let (result_sender, ping_result_processor_join_handle) =
             RnpCore::create_ping_result_processing_worker(
                 config.result_processor_config.clone(),
                 extra_ping_result_processors,
                 config.worker_scheduler_config.parallel_ping_count,
-                stop_event.clone(),
+                ping_result_processor_stop_event.clone(),
             );
 
         let rnp_core = RnpCore {
             config,
             stop_event,
             worker_join_handles: Vec::new(),
+            ping_result_processor_stop_event,
             ping_result_processor_join_handle: Some(ping_result_processor_join_handle),
             result_sender,
         };
@@ -241,12 +245,14 @@ impl RnpCore {
         self.worker_join_handles.clear();
         tracing::debug!("All workers are stopped.");
 
+        // If all the ping jobs are finished, the workers will stop automatically.
+        // In this case, the stop events won't be set, and we set it here to be safe.
         if !self.stop_event.is_set() {
-            tracing::debug!(
-                "All ping jobs are completed and all workers are stopped. Signal result processor to exit."
-            );
             self.stop_event.set();
         }
+
+        tracing::debug!("All ping jobs are completed and all workers are stopped. Signal result processor to exit.");
+        self.ping_result_processor_stop_event.set();
 
         tracing::debug!("Waiting for result processor to be stopped.");
         self.ping_result_processor_join_handle
