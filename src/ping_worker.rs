@@ -1,6 +1,6 @@
 use crate::ping_clients::ping_client::{PingClientError, PingClientPingResultDetails};
 use crate::{
-    ping_client_factory, ExternalPingClientFactory, PingClient, PingPortPicker, PingResult,
+    ping_client_factory, PingClientFactory, PingClient, PingPortPicker, PingResult,
     PingWorkerConfig,
 };
 use chrono::{offset::Utc, DateTime};
@@ -34,14 +34,14 @@ impl PingWorker {
     pub fn run(
         worker_id: u32,
         config: Arc<PingWorkerConfig>,
-        external_ping_client_factory: Option<ExternalPingClientFactory>,
+        external_ping_client_factory: Option<PingClientFactory>,
         port_picker: Arc<Mutex<PingPortPicker>>,
         stop_event: Arc<ManualResetEvent>,
         result_sender: mpsc::Sender<PingResult>,
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let ping_client = ping_client_factory::new(
+            let ping_client = ping_client_factory::new_ping_client(
                 &config.protocol,
                 &config.ping_client_config,
                 external_ping_client_factory,

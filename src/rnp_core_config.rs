@@ -1,4 +1,4 @@
-use crate::{PingClient, PingResultProcessor, PortRangeList};
+use crate::{PingResultProcessor, PortRangeList, PingClientFactory};
 use std::fmt;
 use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};
@@ -40,16 +40,11 @@ impl fmt::Display for RnpSupportedProtocol {
     }
 }
 
-pub type ExternalPingClientFactory = fn(
-    protocol: &RnpSupportedProtocol,
-    config: &PingClientConfig,
-) -> Option<Box<dyn PingClient + Send + Sync>>;
-
 pub struct RnpCoreConfig {
     pub worker_config: PingWorkerConfig,
     pub worker_scheduler_config: PingWorkerSchedulerConfig,
     pub result_processor_config: PingResultProcessorConfig,
-    pub external_ping_client_factory: Option<ExternalPingClientFactory>,
+    pub external_ping_client_factory: Option<PingClientFactory>,
     pub extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
 }
 
