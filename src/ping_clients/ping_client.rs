@@ -20,7 +20,7 @@ pub enum PingClientError {
     PingFailed(Box<dyn std::error::Error + Send>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PingClientPingResultDetails {
     pub actual_local_addr: Option<SocketAddr>,
     pub round_trip_time: Duration,
