@@ -52,6 +52,25 @@ fn ping_with_rnp_core_stress_should_work() {
     assert_eq!(1000, results.len());
 }
 
+#[test]
+fn ping_with_rnp_core_stop_event_should_work() {
+    let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
+    let config = create_mock_rnp_config(actual_ping_results.clone(), 1000, 0, 10);
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        let stop_event = Arc::new(ManualResetEvent::new(false));
+        let stop_event_clone = stop_event.clone();
+
+        let mut rp = RnpCore::new(config, stop_event);
+        rp.run_warmup_pings().await;
+
+        rp.start_running_normal_pings();
+        tokio::spawn(async move { stop_event_clone.set() });
+
+        rp.join().await;
+    });
+}
+
 fn create_mock_rnp_config(actual_ping_results: Arc<Mutex<Vec<MockPingClientResult>>>, ping_count: u32, warmup_count: u32, parallel_ping_count: u32) -> RnpCoreConfig {
     RnpCoreConfig {
         worker_config: PingWorkerConfig {
