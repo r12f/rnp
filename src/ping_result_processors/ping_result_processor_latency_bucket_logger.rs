@@ -88,10 +88,18 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
     fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+            return;
+        }
+
         self.update_statistics(ping_result);
     }
 
     fn rundown(&mut self) {
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+            return;
+        }
+
         println!("\n=== Latency buckets (in milliseconds) ===\n");
         println!("{:>15} | {}", "Latency Range", "Count");
         println!("{:->17}------------ ", "+");

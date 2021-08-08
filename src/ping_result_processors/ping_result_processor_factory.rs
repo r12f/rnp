@@ -90,7 +90,7 @@ mod tests {
     fn create_ping_result_processor_should_work_with_valid_config() {
         let config = PingResultProcessorConfig {
             common_config: PingResultProcessorCommonConfig {
-                quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+                quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT,
             },
             csv_log_path: Some(PathBuf::from("log.csv")),
             json_log_path: Some(PathBuf::from("log.json")),

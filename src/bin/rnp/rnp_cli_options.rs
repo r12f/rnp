@@ -396,7 +396,7 @@ impl RnpCliCommonOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT, RNP_QUIET_LEVEL_NO_OUTPUT, PingResultProcessorCommonConfig};
+    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_NO_PING_RESULT, RNP_QUIET_LEVEL_NO_OUTPUT, PingResultProcessorCommonConfig};
     use std::path::PathBuf;
     use std::time::Duration;
     use structopt::StructOpt;
@@ -502,7 +502,7 @@ mod tests {
                     use_timer_rtt: false,
                 },
                 output_options: RnpCliOutputOptions {
-                    quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+                    quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT,
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
@@ -728,7 +728,7 @@ mod tests {
                 },
                 result_processor_config: PingResultProcessorConfig {
                     common_config: PingResultProcessorCommonConfig {
-                        quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+                        quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT,
                     },
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
@@ -764,7 +764,7 @@ mod tests {
                     use_timer_rtt: true,
                 },
                 output_options: RnpCliOutputOptions {
-                    quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+                    quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT,
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
