@@ -205,18 +205,20 @@ fn parse_ping_target(input: &str) -> Result<SocketAddr, String> {
 
                 ip_str = &input[..last_colon_index];
             }
-        } else  {
+        } else {
             // No port is specified.
             ip_str = input;
         }
 
         if ip_str.len() < 2 || &ip_str[0..1] != "[" || &ip_str[ip_str.len() - 1..] != "]" {
-            return Err(format!("Invalid IP \"{}\" found in ping target \"{}\"", ip_str, input));
+            return Err(format!(
+                "Invalid IP \"{}\" found in ping target \"{}\"",
+                ip_str, input
+            ));
         }
 
         ip_str = &ip_str[1..ip_str.len() - 1];
     }
-
     // IPv4
     else {
         if let Some(last_colon_index) = last_colon_index {
@@ -230,15 +232,38 @@ fn parse_ping_target(input: &str) -> Result<SocketAddr, String> {
             // No port is specified.
             ip_str = input;
         }
+
+        // If domain is specified, it will be recognized as a IPv4 IP.
+        for c in ip_str.chars() {
+            if !c.is_numeric() && c != '.' {
+                return Err(
+                    format!(
+                        "Invalid IP \"{}\" found in ping target \"{}\"\n\n\
+                        NOTICE: \"{}\" looks like a domain name and pinging a domain name is explicitly banned. \
+                        This is because DNS could return different IP address for the same domain name, \
+                        which misleads people when collaborating on network issues. If it is a domain, \
+                        please run the following command and and choose a IP to ping, otherwise please \
+                        fix the ip and try again:\
+                        \n\n    nslookup {}\n",
+                        ip_str, input, ip_str, ip_str)
+                );
+            }
+        }
     }
 
     ip = IpAddr::from_str(ip_str).map_err(|_| {
-        format!("Invalid IP \"{}\" found in ping target \"{}\"", ip_str, input)
+        format!(
+            "Invalid IP \"{}\" found in ping target \"{}\"",
+            ip_str, input
+        )
     })?;
 
     if let Some(port_str) = port_str {
         port = u16::from_str(port_str).map_err(|_| {
-            format!("Invalid port \"{}\" found in ping target \"{}\"", port_str, input)
+            format!(
+                "Invalid port \"{}\" found in ping target \"{}\"",
+                port_str, input
+            )
         })?;
     }
 
@@ -382,12 +407,24 @@ mod tests {
 
     #[test]
     fn parsing_ping_target_should_work() {
-        assert_eq!(Ok("10.0.0.1:80".parse().unwrap()), parse_ping_target("10.0.0.1"));
-        assert_eq!(Ok("10.0.0.1:80".parse().unwrap()), parse_ping_target("10.0.0.1:"));
-        assert_eq!(Ok("10.0.0.1:443".parse().unwrap()), parse_ping_target("10.0.0.1:443"));
+        assert_eq!(
+            Ok("10.0.0.1:80".parse().unwrap()),
+            parse_ping_target("10.0.0.1")
+        );
+        assert_eq!(
+            Ok("10.0.0.1:80".parse().unwrap()),
+            parse_ping_target("10.0.0.1:")
+        );
+        assert_eq!(
+            Ok("10.0.0.1:443".parse().unwrap()),
+            parse_ping_target("10.0.0.1:443")
+        );
         assert_eq!(Ok("[::1]:80".parse().unwrap()), parse_ping_target("[::1]"));
         assert_eq!(Ok("[::1]:80".parse().unwrap()), parse_ping_target("[::1]:"));
-        assert_eq!(Ok("[::1]:443".parse().unwrap()), parse_ping_target("[::1]:443"));
+        assert_eq!(
+            Ok("[::1]:443".parse().unwrap()),
+            parse_ping_target("[::1]:443")
+        );
 
         assert!(parse_ping_target(":").is_err());
         assert!(parse_ping_target(":443").is_err());
@@ -398,6 +435,9 @@ mod tests {
         assert!(parse_ping_target("]:").is_err());
         assert!(parse_ping_target("]:443").is_err());
         assert!(parse_ping_target("[]").is_err());
+
+        assert!(parse_ping_target("www.google.com").is_err());
+        assert!(parse_ping_target("www.google.com:443").is_err());
     }
 
     #[test]
