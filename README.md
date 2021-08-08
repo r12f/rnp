@@ -54,9 +54,9 @@ Despite there are numerous ping tools in the market, I wrote Rnp for some specif
   * Support scanning all network paths.
     * Nowadays, services and network data paths are mostly redundant. Technologies like load balancer and [ECMP] are widely used in cloud and modern data center.
     * Because of this, if a service, or a network link is having trouble, we will see intermediate packet drop/latency, instead of seeing full connectivity drop. Hence, we need a tool to help us scan all possible network paths and find out the bad links.
-  * Minimize port usage (Friendly to SNAT).
-    * High port usage can cause SNAT port allocation failures, which result in false negatives. And it can be easily triggered by scanning.
-    * This is a very common error in all clouds, such as [AWS][AWSErrorPortAllocation] and [Azure][AzureLBSnatPortExhaustion].
+  * Minimize impact to existing data path, such as high port usage and load on networking stack.
+    * High port usage can cause your machine running out of source port to use, then cause your service failing creating new connections. And it can be easily triggered with network testing / scanning.
+    * This is even worse when you are checking network connectivity to Internet, because the outbound port will also need to be allocated on your load balancer, which is shared across all your machines. This is a very common error in all clouds, such as [AWS][AWSErrorPortAllocation] and [Azure][AzureLBSnatPortExhaustion].
 * **Avoid unstable measurements** when possible.
 * **Easy to use.**
 * ...
@@ -74,9 +74,12 @@ To help us achieve the things above, we are implementing our ping in a very spec
 * **Parallel pings** for spray all possible network paths:
   * We rotate the source port to make each ping having different tuples to allow them going through different network path.
   * Parallel pings with configurable ping intervals can dramatically increase the scanning speed.
-* **RST instead of FIN** by default. Minimize port usage.
+* **Use RST instead of FIN** by default to minimize port usage.
   * Most of the tcp connect tools follows the regular way to disconnect the TCP connection - the 4-way handshake with FIN packet. This is great for servers, but not for testing.
   * The regular disconnect leaves the ports in TIME_WAIT state, and the cloud load balancers have to keep tracking these SNAT ports as well. It can easily cause SNAT port allocation error, which will make the network for your service even worse. You definitely don't want to see this.
+* **No raw socket usage**
+  * Many ping tools uses raw socket to implement their pings, allowing you to manipulate your packets or support mixed protocol pings, such as UDP ping. These features are helpful in certain cases, but it is not really needed for most of the people.
+  * Raw socket will cause the kernel to deliver all packets that matches the IP you bind to your sockets. It is a huge burden to network stack when the load is high, so we are avoiding using it.
 * **Use [Rust]** as the programming language:
   * Rust is a system language with very light-weighted and GC-free runtime, which means no more random lags during our measurements, such as stop-the-world stages in GC.
   * Rust has [wide range of platform support][RustPlatform] and produces almost self-contained native binaries, so we can simply copy and run.
