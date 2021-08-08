@@ -5,6 +5,7 @@ use rnp::{
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -23,6 +24,10 @@ pub struct RnpCliOptions {
 
 #[derive(Debug, StructOpt, PartialEq)]
 pub struct RnpCliCommonOptions {
+    #[structopt(
+        parse(try_from_str = parse_ping_target),
+        help = "Target endpoint. For IPv6, please use [] to wrap the address, such as [::1]:80."
+    )]
     pub target: SocketAddr,
 
     #[structopt(
@@ -176,6 +181,70 @@ struct RnpCliQuicPingOptions {
     pub use_timer_rtt: bool,
 }
 
+fn parse_ping_target(input: &str) -> Result<SocketAddr, String> {
+    let ip: IpAddr;
+    let mut port: u16 = 80;
+
+    let last_bracket_index = input.rfind("]");
+    let last_colon_index = input.rfind(":");
+
+    let mut ip_str: &str;
+    let mut port_str: Option<&str> = None;
+
+    // IPv6
+    if let Some(last_bracket_index) = last_bracket_index {
+        if let Some(last_colon_index) = last_colon_index {
+            if last_colon_index < last_bracket_index {
+                // If last colon is before last bracket, then port is not specified. E.g. [::1]
+                ip_str = input;
+            } else {
+                // If port colon is specified, but port is not. E.g. [::1]:. In this case, we default to 80, otherwise we parse it.
+                if last_colon_index + 1 < input.len() {
+                    port_str = Some(&input[(last_colon_index + 1)..]);
+                }
+
+                ip_str = &input[..last_colon_index];
+            }
+        } else  {
+            // No port is specified.
+            ip_str = input;
+        }
+
+        if ip_str.len() < 2 || &ip_str[0..1] != "[" || &ip_str[ip_str.len() - 1..] != "]" {
+            return Err(format!("Invalid IP \"{}\" found in ping target \"{}\"", ip_str, input));
+        }
+
+        ip_str = &ip_str[1..ip_str.len() - 1];
+    }
+
+    // IPv4
+    else {
+        if let Some(last_colon_index) = last_colon_index {
+            // If port colon is specified, but port is not. E.g. 127.0.0.1:. In this case, we default to 80, otherwise we parse it.
+            if last_colon_index + 1 < input.len() {
+                port_str = Some(&input[(last_colon_index + 1)..]);
+            }
+
+            ip_str = &input[..last_colon_index];
+        } else {
+            // No port is specified.
+            ip_str = input;
+        }
+    }
+
+    ip = IpAddr::from_str(ip_str).map_err(|_| {
+        format!("Invalid IP \"{}\" found in ping target \"{}\"", ip_str, input)
+    })?;
+
+    if let Some(port_str) = port_str {
+        port = u16::from_str(port_str).map_err(|_| {
+            format!("Invalid port \"{}\" found in ping target \"{}\"", port_str, input)
+        })?;
+    }
+
+    return Ok(SocketAddr::new(ip, port));
+}
+
 impl RnpCliOptions {
     pub fn prepare_to_use(&mut self) {
         self.common_options.prepare_to_use();
@@ -310,6 +379,26 @@ mod tests {
     use std::path::PathBuf;
     use std::time::Duration;
     use structopt::StructOpt;
+
+    #[test]
+    fn parsing_ping_target_should_work() {
+        assert_eq!(Ok("10.0.0.1:80".parse().unwrap()), parse_ping_target("10.0.0.1"));
+        assert_eq!(Ok("10.0.0.1:80".parse().unwrap()), parse_ping_target("10.0.0.1:"));
+        assert_eq!(Ok("10.0.0.1:443".parse().unwrap()), parse_ping_target("10.0.0.1:443"));
+        assert_eq!(Ok("[::1]:80".parse().unwrap()), parse_ping_target("[::1]"));
+        assert_eq!(Ok("[::1]:80".parse().unwrap()), parse_ping_target("[::1]:"));
+        assert_eq!(Ok("[::1]:443".parse().unwrap()), parse_ping_target("[::1]:443"));
+
+        assert!(parse_ping_target(":").is_err());
+        assert!(parse_ping_target(":443").is_err());
+        assert!(parse_ping_target("[").is_err());
+        assert!(parse_ping_target("[:").is_err());
+        assert!(parse_ping_target("[:443").is_err());
+        assert!(parse_ping_target("]").is_err());
+        assert!(parse_ping_target("]:").is_err());
+        assert!(parse_ping_target("]:443").is_err());
+        assert!(parse_ping_target("[]").is_err());
+    }
 
     #[test]
     fn parsing_default_options_should_work() {
