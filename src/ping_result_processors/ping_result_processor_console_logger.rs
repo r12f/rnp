@@ -5,7 +5,7 @@ use std::time::Instant;
 use tracing;
 
 pub struct PingResultProcessorConsoleLogger {
-    no_console_log: bool,
+    quiet_level: i32,
     last_console_flush_time: Instant,
 
     protocol: Option<String>,
@@ -22,9 +22,9 @@ pub struct PingResultProcessorConsoleLogger {
 
 impl PingResultProcessorConsoleLogger {
     #[tracing::instrument(name = "Creating ping result console logger", level = "debug")]
-    pub fn new(no_console_log: bool) -> PingResultProcessorConsoleLogger {
+    pub fn new(quiet_level: i32) -> PingResultProcessorConsoleLogger {
         return PingResultProcessorConsoleLogger {
-            no_console_log,
+            quiet_level,
             last_console_flush_time: Instant::now(),
             protocol: None,
             target: None,
@@ -84,7 +84,7 @@ impl PingResultProcessorConsoleLogger {
     }
 
     fn output_result_to_console(&mut self, ping_result: &PingResult) {
-        if self.no_console_log {
+        if self.quiet_level == RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT {
             self.output_ping_count_update_to_console(false);
             return;
         }
@@ -124,7 +124,7 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     }
 
     fn rundown(&mut self) {
-        if self.no_console_log {
+        if self.quiet_level == RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT {
             self.output_ping_count_update_to_console(true);
             println!();
         }

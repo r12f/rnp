@@ -131,7 +131,7 @@ pub struct PingWorkerSchedulerConfig {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PingResultProcessorConfig {
-    pub no_console_log: bool,
+    pub quiet_level: i32,
     pub csv_log_path: Option<PathBuf>,
     pub json_log_path: Option<PathBuf>,
     pub text_log_path: Option<PathBuf>,
@@ -139,3 +139,7 @@ pub struct PingResultProcessorConfig {
     pub show_latency_scatter: bool,
     pub latency_buckets: Option<Vec<f64>>,
 }
+
+pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
+pub const RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT: i32 = 1;
+pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 2;
