@@ -15,7 +15,7 @@ pub fn new(
 
     // We always create the console logger for keeping our user informed.
     let console_logger: Box<dyn PingResultProcessor + Send + Sync> =
-        Box::new(PingResultProcessorConsoleLogger::new(config.quiet_level));
+        Box::new(PingResultProcessorConsoleLogger::new(config.common_config.quiet_level));
     processors.push(console_logger);
 
     if let Some(csv_log_path) = &config.csv_log_path {
@@ -62,14 +62,16 @@ pub fn new(
 
 #[cfg(test)]
 mod tests {
+    use crate::*;
     use crate::ping_result_processors::ping_result_processor_factory::new;
-    use crate::{PingResultProcessorConfig, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT};
     use std::path::PathBuf;
 
     #[test]
     fn create_ping_result_processor_should_work_with_empty_config() {
         let config = PingResultProcessorConfig {
-            quiet_level: RNP_QUIET_LEVEL_NONE,
+            common_config: PingResultProcessorCommonConfig {
+                quiet_level: RNP_QUIET_LEVEL_NONE,
+            },
             csv_log_path: None,
             json_log_path: None,
             text_log_path: None,
@@ -85,7 +87,9 @@ mod tests {
     #[test]
     fn create_ping_result_processor_should_work_with_valid_config() {
         let config = PingResultProcessorConfig {
-            quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+            common_config: PingResultProcessorCommonConfig {
+                quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+            },
             csv_log_path: Some(PathBuf::from("log.csv")),
             json_log_path: Some(PathBuf::from("log.json")),
             text_log_path: Some(PathBuf::from("log.txt")),

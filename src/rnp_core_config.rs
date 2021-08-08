@@ -130,8 +130,13 @@ pub struct PingWorkerSchedulerConfig {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct PingResultProcessorConfig {
+pub struct PingResultProcessorCommonConfig {
     pub quiet_level: i32,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PingResultProcessorConfig {
+    pub common_config: PingResultProcessorCommonConfig,
     pub csv_log_path: Option<PathBuf>,
     pub json_log_path: Option<PathBuf>,
     pub text_log_path: Option<PathBuf>,

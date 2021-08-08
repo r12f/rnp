@@ -1,8 +1,5 @@
 use rand::Rng;
-use rnp::{
-    PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    PortRangeList, RnpCoreConfig, RnpSupportedProtocol,
-};
+use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, PortRangeList, RnpCoreConfig, RnpSupportedProtocol, PingResultProcessorCommonConfig};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -322,7 +319,9 @@ impl RnpCliOptions {
                 parallel_ping_count: self.common_options.parallel_ping_count,
             },
             result_processor_config: PingResultProcessorConfig {
-                quiet_level: self.output_options.quiet_level,
+                common_config: PingResultProcessorCommonConfig {
+                    quiet_level: self.output_options.quiet_level,
+                },
                 csv_log_path: self.output_options.csv_log_path.clone(),
                 json_log_path: self.output_options.json_log_path.clone(),
                 text_log_path: self.output_options.text_log_path.clone(),
@@ -397,7 +396,7 @@ impl RnpCliCommonOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT, RNP_QUIET_LEVEL_NO_OUTPUT};
+    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT, RNP_QUIET_LEVEL_NO_OUTPUT, PingResultProcessorCommonConfig};
     use std::path::PathBuf;
     use std::time::Duration;
     use structopt::StructOpt;
@@ -653,7 +652,9 @@ mod tests {
                     parallel_ping_count: 1,
                 },
                 result_processor_config: PingResultProcessorConfig {
-                    quiet_level: RNP_QUIET_LEVEL_NONE,
+                    common_config: PingResultProcessorCommonConfig {
+                        quiet_level: RNP_QUIET_LEVEL_NONE,
+                    },
                     csv_log_path: None,
                     json_log_path: None,
                     text_log_path: None,
@@ -726,7 +727,9 @@ mod tests {
                     parallel_ping_count: 1,
                 },
                 result_processor_config: PingResultProcessorConfig {
-                    quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+                    common_config: PingResultProcessorCommonConfig {
+                        quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
+                    },
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
