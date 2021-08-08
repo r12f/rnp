@@ -77,7 +77,7 @@ To help us achieve the things above, we are implementing our ping in a very spec
 * **Use RST instead of FIN** by default to minimize port usage.
   * Most of the tcp connect tools follows the regular way to disconnect the TCP connection - the 4-way handshake with FIN packet. This is great for servers, but not for testing.
   * The regular disconnect leaves the ports in TIME_WAIT state, and the cloud load balancers have to keep tracking these SNAT ports as well. It can easily cause SNAT port allocation error, which will make the network for your service even worse. You definitely don't want to see this.
-* **No raw socket usage**
+* **No [raw socket](https://man7.org/linux/man-pages/man7/raw.7.html) usage**
   * Many ping tools uses raw socket to implement their pings, allowing you to manipulate your packets or support mixed protocol pings, such as UDP ping. These features are helpful in certain cases, but it is not really needed for most of the people.
   * Raw socket will cause the kernel to deliver all packets that matches the IP you bind to your sockets. It is a huge burden to network stack when the load is high, so we are avoiding using it.
 * **Use [Rust]** as the programming language:
