@@ -2,8 +2,10 @@ use crate::*;
 use contracts::requires;
 use std::time::Duration;
 use tracing;
+use std::sync::Arc;
 
 pub struct PingResultProcessorLatencyBucketLogger {
+    common_config: Arc<PingResultProcessorCommonConfig>,
     buckets_in_us: Vec<u128>,
 
     total_hit_count: u32,
@@ -16,7 +18,7 @@ impl PingResultProcessorLatencyBucketLogger {
     #[tracing::instrument(name = "Creating ping result latency bucket logger", level = "debug")]
     #[allow(unreachable_code)]
     #[requires(buckets.len() >= 1)]
-    pub fn new(buckets: &Vec<f64>) -> PingResultProcessorLatencyBucketLogger {
+    pub fn new(common_config: Arc<PingResultProcessorCommonConfig>, buckets: &Vec<f64>) -> PingResultProcessorLatencyBucketLogger {
         // The buckets from settings are treated as separators, so the real buckets are:
         // - 0->The first bucket defined in settings
         // - whatever defined in settings
@@ -34,6 +36,7 @@ impl PingResultProcessorLatencyBucketLogger {
 
         let normalized_bucket_count = normalized_buckets.len();
         return PingResultProcessorLatencyBucketLogger {
+            common_config,
             buckets_in_us: normalized_buckets,
             total_hit_count: 0,
             bucket_hit_counts: vec![0; normalized_bucket_count],
@@ -82,6 +85,8 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
         "LatencyBucketLogger"
     }
 
+    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
     }
@@ -124,7 +129,7 @@ mod tests {
         let ping_results = rnp_test_common::generate_ping_result_test_samples();
 
         let mut logger =
-            PingResultProcessorLatencyBucketLogger::new(&vec![0.1, 0.5, 1.0, 10.0, 50.0, 100.0]);
+            PingResultProcessorLatencyBucketLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: 0 }), &vec![0.1, 0.5, 1.0, 10.0, 50.0, 100.0]);
         ping_results
             .iter()
             .for_each(|x| logger.update_statistics(x));

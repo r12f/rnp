@@ -58,7 +58,9 @@ impl RnpCore {
     ///         parallel_ping_count: 1,
     ///     },
     ///     result_processor_config: PingResultProcessorConfig {
-    ///         quiet_level: RNP_QUIET_LEVEL_NONE,
+    ///         common_config: PingResultProcessorCommonConfig {
+    ///             quiet_level: RNP_QUIET_LEVEL_NONE,
+    ///         },
     ///         csv_log_path: None,
     ///         json_log_path: None,
     ///         text_log_path: None,

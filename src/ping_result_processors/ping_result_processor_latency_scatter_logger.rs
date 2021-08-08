@@ -1,6 +1,7 @@
 use crate::*;
 use std::collections::BTreeMap;
 use tracing;
+use std::sync::Arc;
 
 const COUNT_PER_ROW: usize = 10;
 const SCATTER_SYMBOL_NOT_TESTED: &str = "    -    ";
@@ -12,13 +13,15 @@ struct LatencyHits {
 }
 
 pub struct PingResultProcessorLatencyScatterLogger {
+    common_config: Arc<PingResultProcessorCommonConfig>,
     ping_history: Vec<BTreeMap<usize, LatencyHits>>,
 }
 
 impl PingResultProcessorLatencyScatterLogger {
     #[tracing::instrument(name = "Creating ping result latency scatter logger", level = "debug")]
-    pub fn new() -> PingResultProcessorLatencyScatterLogger {
+    pub fn new(common_config: Arc<PingResultProcessorCommonConfig>) -> PingResultProcessorLatencyScatterLogger {
         return PingResultProcessorLatencyScatterLogger {
+            common_config,
             ping_history: vec![BTreeMap::new()],
         };
     }
@@ -57,6 +60,8 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
     fn name(&self) -> &'static str {
         "LatencyScatterLogger"
     }
+
+    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         // Skip warmup pings in analysis.

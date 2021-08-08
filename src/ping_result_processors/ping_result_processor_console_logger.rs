@@ -3,9 +3,10 @@ use std::io::{stdout, Write};
 use std::net::SocketAddr;
 use std::time::Instant;
 use tracing;
+use std::sync::Arc;
 
 pub struct PingResultProcessorConsoleLogger {
-    quiet_level: i32,
+    common_config: Arc<PingResultProcessorCommonConfig>,
     last_console_flush_time: Instant,
 
     protocol: Option<String>,
@@ -22,9 +23,9 @@ pub struct PingResultProcessorConsoleLogger {
 
 impl PingResultProcessorConsoleLogger {
     #[tracing::instrument(name = "Creating ping result console logger", level = "debug")]
-    pub fn new(quiet_level: i32) -> PingResultProcessorConsoleLogger {
+    pub fn new(common_config: Arc<PingResultProcessorCommonConfig>) -> PingResultProcessorConsoleLogger {
         return PingResultProcessorConsoleLogger {
-            quiet_level,
+            common_config,
             last_console_flush_time: Instant::now(),
             protocol: None,
             target: None,
@@ -84,7 +85,7 @@ impl PingResultProcessorConsoleLogger {
     }
 
     fn output_result_to_console(&mut self, ping_result: &PingResult) {
-        if self.quiet_level == RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT {
+        if self.config().quiet_level == RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT {
             self.output_ping_count_update_to_console(false);
             return;
         }
@@ -118,13 +119,15 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
         "ConsoleLogger"
     }
 
+    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         self.update_statistics(ping_result);
         self.output_result_to_console(ping_result);
     }
 
     fn rundown(&mut self) {
-        if self.quiet_level == RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT {
+        if self.config().quiet_level == RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT {
             self.output_ping_count_update_to_console(true);
             println!();
         }
