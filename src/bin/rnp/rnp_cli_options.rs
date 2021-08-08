@@ -101,10 +101,10 @@ pub struct RnpCliCommonOptions {
 pub struct RnpCliOutputOptions {
     #[structopt(
         short = "q",
-        long,
+        parse(from_occurrences),
         help = "Don't log each ping result to console. Summary and other things will still be written to console."
     )]
-    pub no_console_log: bool,
+    pub quiet_level: i32,
 
     #[structopt(
         long = "log-csv",
@@ -322,7 +322,7 @@ impl RnpCliOptions {
                 parallel_ping_count: self.common_options.parallel_ping_count,
             },
             result_processor_config: PingResultProcessorConfig {
-                no_console_log: self.output_options.no_console_log,
+                quiet_level: self.output_options.quiet_level,
                 csv_log_path: self.output_options.csv_log_path.clone(),
                 json_log_path: self.output_options.json_log_path.clone(),
                 text_log_path: self.output_options.text_log_path.clone(),
@@ -397,13 +397,11 @@ impl RnpCliCommonOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rnp::{
-        PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-        RnpCoreConfig, RnpSupportedProtocol,
-    };
+    use rnp::{PingClientConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpCoreConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT, RNP_QUIET_LEVEL_NO_OUTPUT};
     use std::path::PathBuf;
     use std::time::Duration;
     use structopt::StructOpt;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn parsing_ping_target_should_work() {
@@ -465,7 +463,7 @@ mod tests {
                     use_timer_rtt: false,
                 },
                 output_options: RnpCliOutputOptions {
-                    no_console_log: false,
+                    quiet_level: RNP_QUIET_LEVEL_NONE,
                     csv_log_path: None,
                     json_log_path: None,
                     text_log_path: None,
@@ -505,7 +503,7 @@ mod tests {
                     use_timer_rtt: false,
                 },
                 output_options: RnpCliOutputOptions {
-                    no_console_log: true,
+                    quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
@@ -575,7 +573,7 @@ mod tests {
                     use_timer_rtt: true,
                 },
                 output_options: RnpCliOutputOptions {
-                    no_console_log: true,
+                    quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT,
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
@@ -612,7 +610,7 @@ mod tests {
                 "--alpn",
                 "hq-29",
                 "--use-timer-rtt",
-                "--no-console-log",
+                "-qq",
                 "--log-csv",
                 "log.csv",
                 "--log-json",
@@ -655,7 +653,7 @@ mod tests {
                     parallel_ping_count: 1,
                 },
                 result_processor_config: PingResultProcessorConfig {
-                    no_console_log: false,
+                    quiet_level: RNP_QUIET_LEVEL_NONE,
                     csv_log_path: None,
                     json_log_path: None,
                     text_log_path: None,
@@ -690,7 +688,7 @@ mod tests {
                     use_timer_rtt: false,
                 },
                 output_options: RnpCliOutputOptions {
-                    no_console_log: false,
+                    quiet_level: RNP_QUIET_LEVEL_NONE,
                     csv_log_path: None,
                     json_log_path: None,
                     text_log_path: None,
@@ -728,7 +726,7 @@ mod tests {
                     parallel_ping_count: 1,
                 },
                 result_processor_config: PingResultProcessorConfig {
-                    no_console_log: true,
+                    quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
@@ -763,7 +761,7 @@ mod tests {
                     use_timer_rtt: true,
                 },
                 output_options: RnpCliOutputOptions {
-                    no_console_log: true,
+                    quiet_level: RNP_QUIET_LEVEL_REDUCE_PING_RESULT_OUTPUT,
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),

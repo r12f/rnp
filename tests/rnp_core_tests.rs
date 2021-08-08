@@ -97,7 +97,7 @@ fn create_mock_rnp_config(actual_ping_results: Arc<Mutex<Vec<MockPingClientResul
             parallel_ping_count,
         },
         result_processor_config: PingResultProcessorConfig {
-            no_console_log: false,
+            quiet_level: RNP_QUIET_LEVEL_NONE,
             csv_log_path: None,
             json_log_path: None,
             text_log_path: None,
