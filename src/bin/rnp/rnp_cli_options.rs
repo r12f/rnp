@@ -397,6 +397,7 @@ mod tests {
         assert!(parse_ping_target("]").is_err());
         assert!(parse_ping_target("]:").is_err());
         assert!(parse_ping_target("]:443").is_err());
+        assert!(parse_ping_target("[]").is_err());
     }
 
     #[test]
