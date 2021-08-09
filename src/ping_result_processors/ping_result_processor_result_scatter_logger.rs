@@ -47,7 +47,6 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
     fn name(&self) -> &'static str {
         "ResultScatterLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }

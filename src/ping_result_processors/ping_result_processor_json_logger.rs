@@ -40,7 +40,6 @@ impl PingResultProcessor for PingResultProcessorJsonLogger {
     fn name(&self) -> &'static str {
         "JsonLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }

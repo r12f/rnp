@@ -27,7 +27,6 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     fn name(&self) -> &'static str {
         "CsvLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }

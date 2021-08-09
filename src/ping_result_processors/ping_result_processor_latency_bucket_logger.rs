@@ -82,7 +82,6 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
     fn name(&self) -> &'static str {
         "LatencyBucketLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }

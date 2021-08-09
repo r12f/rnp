@@ -71,9 +71,10 @@ impl PingResultProcessorConsoleLogger {
         }
 
         self.ping_count += 1;
-        match ping_result.error() {
-            Some(_) => self.failure_count += 1,
-            None => self.success_count += 1,
+        if ping_result.is_succeeded() {
+            self.success_count += 1;
+        } else {
+            self.failure_count += 1;
         }
 
         if let Some(warning) = ping_result.warning() {
@@ -134,7 +135,6 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     fn name(&self) -> &'static str {
         "ConsoleLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }
