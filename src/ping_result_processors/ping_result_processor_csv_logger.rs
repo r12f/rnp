@@ -1,7 +1,7 @@
 use crate::*;
+use std::sync::Arc;
 use std::{fs::File, io, io::prelude::*, path::PathBuf};
 use tracing;
-use std::sync::Arc;
 
 pub struct PingResultProcessorCsvLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,
@@ -12,11 +12,7 @@ pub struct PingResultProcessorCsvLogger {
 impl PingResultProcessorCsvLogger {
     #[tracing::instrument(name = "Creating ping result csv logger", level = "debug")]
     pub fn new(common_config: Arc<PingResultProcessorCommonConfig>, log_path_buf: &PathBuf) -> PingResultProcessorCsvLogger {
-        return PingResultProcessorCsvLogger {
-            common_config,
-            log_path: log_path_buf.clone(),
-            log_file: rnp_utils::create_log_file(log_path_buf),
-        };
+        return PingResultProcessorCsvLogger { common_config, log_path: log_path_buf.clone(), log_file: rnp_utils::create_log_file(log_path_buf) };
     }
 
     fn log_result_as_csv(&mut self, ping_result: &PingResult) -> io::Result<()> {
@@ -32,7 +28,9 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
         "CsvLogger"
     }
 
-    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+    fn config(&self) -> &PingResultProcessorCommonConfig {
+        self.common_config.as_ref()
+    }
 
     fn initialize(&mut self) {
         // Writer CSV header
@@ -45,10 +43,7 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
-        self.log_result_as_csv(ping_result).expect(&format!(
-            "Failed to write logs to csv file! Path = {}",
-            self.log_path.display()
-        ));
+        self.log_result_as_csv(ping_result).expect(&format!("Failed to write logs to csv file! Path = {}", self.log_path.display()));
     }
 }
 
@@ -63,12 +58,11 @@ mod tests {
     #[test]
     fn ping_result_process_csv_logger_should_work() {
         let test_log_file_path = "tests_data\\test_log.csv";
-        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(
-            PingResultProcessorCsvLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }), &PathBuf::from(test_log_file_path)),
-        );
-        ping_result_processor_test_common::run_ping_result_processor_with_test_samples(
-            &mut processor,
-        );
+        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorCsvLogger::new(
+            Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }),
+            &PathBuf::from(test_log_file_path),
+        ));
+        ping_result_processor_test_common::run_ping_result_processor_with_test_samples(&mut processor);
 
         let mut actual_logged_records = Vec::new();
         {

@@ -1,7 +1,7 @@
 use crate::*;
+use std::sync::Arc;
 use std::{fs::File, io, io::prelude::*, path::PathBuf};
 use tracing;
-use std::sync::Arc;
 
 pub struct PingResultProcessorJsonLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,
@@ -41,29 +41,22 @@ impl PingResultProcessor for PingResultProcessorJsonLogger {
         "JsonLogger"
     }
 
-    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+    fn config(&self) -> &PingResultProcessorCommonConfig {
+        self.common_config.as_ref()
+    }
 
     fn initialize(&mut self) {
         // Writer json start
-        self.log_file.write("[".as_bytes()).expect(&format!(
-            "Failed to write logs to json file! Path = {}",
-            self.log_path.display()
-        ));
+        self.log_file.write("[".as_bytes()).expect(&format!("Failed to write logs to json file! Path = {}", self.log_path.display()));
     }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
-        self.log_result_as_json(ping_result).expect(&format!(
-            "Failed to write logs to json file! Path = {}",
-            self.log_path.display()
-        ));
+        self.log_result_as_json(ping_result).expect(&format!("Failed to write logs to json file! Path = {}", self.log_path.display()));
     }
 
     fn rundown(&mut self) {
         // Writer json end
-        self.log_file.write("\n]\n".as_bytes()).expect(&format!(
-            "Failed to write logs to json file! Path = {}",
-            self.log_path.display()
-        ));
+        self.log_file.write("\n]\n".as_bytes()).expect(&format!("Failed to write logs to json file! Path = {}", self.log_path.display()));
     }
 }
 
@@ -79,12 +72,11 @@ mod tests {
     #[test]
     fn ping_result_process_json_logger_should_work() {
         let test_log_file_path = "tests_data\\test_log.json";
-        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(
-            PingResultProcessorJsonLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }), &PathBuf::from(test_log_file_path)),
-        );
-        ping_result_processor_test_common::run_ping_result_processor_with_test_samples(
-            &mut processor,
-        );
+        let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorJsonLogger::new(
+            Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }),
+            &PathBuf::from(test_log_file_path),
+        ));
+        ping_result_processor_test_common::run_ping_result_processor_with_test_samples(&mut processor);
 
         let actual_logged_records: Vec<PingResultJsonDto>;
         {

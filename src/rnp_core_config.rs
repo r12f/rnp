@@ -1,4 +1,4 @@
-use crate::{PingResultProcessor, PortRangeList, PingClientFactory};
+use crate::{PingClientFactory, PingResultProcessor, PortRangeList};
 use std::fmt;
 use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};
@@ -56,20 +56,9 @@ impl Debug for RnpCoreConfig {
             .field("result_processor_config", &self.result_processor_config)
             .field(
                 "external_ping_client_factory",
-                &if self.external_ping_client_factory.is_some() {
-                    "Some(PingClientFactory)".to_string()
-                } else {
-                    "None".to_string()
-                },
+                &if self.external_ping_client_factory.is_some() { "Some(PingClientFactory)".to_string() } else { "None".to_string() },
             )
-            .field(
-                "extra_ping_result_processors",
-                &self
-                    .extra_ping_result_processors
-                    .iter()
-                    .map(|p| p.name())
-                    .collect::<Vec<&'static str>>(),
-            )
+            .field("extra_ping_result_processors", &self.extra_ping_result_processors.iter().map(|p| p.name()).collect::<Vec<&'static str>>())
             .finish()
     }
 }
@@ -85,17 +74,11 @@ impl PartialEq for RnpCoreConfig {
         if self.result_processor_config != other.result_processor_config {
             return false;
         }
-        if self.external_ping_client_factory.is_some()
-            != other.external_ping_client_factory.is_some()
-        {
+        if self.external_ping_client_factory.is_some() != other.external_ping_client_factory.is_some() {
             return false;
         }
-        let matching_processor_count = self
-            .extra_ping_result_processors
-            .iter()
-            .zip(other.extra_ping_result_processors.iter())
-            .filter(|&(a, b)| a.name() == b.name())
-            .count();
+        let matching_processor_count =
+            self.extra_ping_result_processors.iter().zip(other.extra_ping_result_processors.iter()).filter(|&(a, b)| a.name() == b.name()).count();
         return matching_processor_count == self.extra_ping_result_processors.len()
             && matching_processor_count == other.extra_ping_result_processors.len();
     }

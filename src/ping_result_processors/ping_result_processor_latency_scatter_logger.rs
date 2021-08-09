@@ -1,7 +1,7 @@
 use crate::*;
 use std::collections::BTreeMap;
-use tracing;
 use std::sync::Arc;
+use tracing;
 
 const COUNT_PER_ROW: usize = 10;
 const SCATTER_SYMBOL_NOT_TESTED: &str = "    -    ";
@@ -20,10 +20,7 @@ pub struct PingResultProcessorLatencyScatterLogger {
 impl PingResultProcessorLatencyScatterLogger {
     #[tracing::instrument(name = "Creating ping result latency scatter logger", level = "debug")]
     pub fn new(common_config: Arc<PingResultProcessorCommonConfig>) -> PingResultProcessorLatencyScatterLogger {
-        return PingResultProcessorLatencyScatterLogger {
-            common_config,
-            ping_history: vec![BTreeMap::new()],
-        };
+        return PingResultProcessorLatencyScatterLogger { common_config, ping_history: vec![BTreeMap::new()] };
     }
 
     fn get_ping_history_item_pos(&self, port: u32) -> (usize, usize) {
@@ -61,7 +58,9 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
         "LatencyScatterLogger"
     }
 
-    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+    fn config(&self) -> &PingResultProcessorCommonConfig {
+        self.common_config.as_ref()
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
@@ -83,15 +82,9 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
 
         // Find the last iteration and update the result.
         loop {
-            let last_iteration = self
-                .ping_history
-                .last_mut()
-                .expect("Ping history should always be non-empty.");
+            let last_iteration = self.ping_history.last_mut().expect("Ping history should always be non-empty.");
 
-            let last_iteration_results = last_iteration.entry(row).or_insert(LatencyHits {
-                bitmask: 0,
-                results: vec![f64::NAN; COUNT_PER_ROW],
-            });
+            let last_iteration_results = last_iteration.entry(row).or_insert(LatencyHits { bitmask: 0, results: vec![f64::NAN; COUNT_PER_ROW] });
 
             // If the source port is already tested in the last iteration, it means a new iteration is started,
             // hence create a new iteration and update there.
@@ -103,8 +96,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
             last_iteration_results.bitmask |= bit_mask_bit;
 
             if let None = ping_result.error() {
-                last_iteration_results.results[col] =
-                    ping_result.round_trip_time().as_micros() as f64 / 1000.0;
+                last_iteration_results.results[col] = ping_result.round_trip_time().as_micros() as f64 / 1000.0;
             }
 
             break;
@@ -135,10 +127,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
             for (port_bucket, latency_hits) in iteration {
                 print!("{:>7} | {:>8} | ", iteration_index, port_bucket);
 
-                let result =
-                    PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(
-                        latency_hits,
-                    );
+                let result = PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(latency_hits);
                 println!("{}", result);
             }
         }
@@ -153,35 +142,13 @@ mod tests {
     #[test]
     fn convert_result_info_to_string_should_work() {
         let results = vec![
-            LatencyHits {
-                bitmask: 0,
-                results: vec![f64::NAN; COUNT_PER_ROW],
-            },
-            LatencyHits {
-                bitmask: 0b1,
-                results: vec![12.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            },
-            LatencyHits {
-                bitmask: 0b11110,
-                results: vec![
-                    0.0,
-                    f64::NAN,
-                    12.34,
-                    345.67,
-                    234.56,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-            },
+            LatencyHits { bitmask: 0, results: vec![f64::NAN; COUNT_PER_ROW] },
+            LatencyHits { bitmask: 0b1, results: vec![12.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] },
+            LatencyHits { bitmask: 0b11110, results: vec![0.0, f64::NAN, 12.34, 345.67, 234.56, 0.0, 0.0, 0.0, 0.0, 0.0] },
         ];
 
-        let formatted_results: Vec<String> = results
-            .into_iter()
-            .map(|x| PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(&x))
-            .collect();
+        let formatted_results: Vec<String> =
+            results.into_iter().map(|x| PingResultProcessorLatencyScatterLogger::convert_latency_hits_to_string(&x)).collect();
 
         assert_eq!(
             vec![

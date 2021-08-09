@@ -1,5 +1,5 @@
-use contracts::requires;
 use crate::PortRangeList;
+use contracts::requires;
 
 pub struct PingPortPicker {
     remaining_ping_count: Option<u32>,
@@ -13,21 +13,12 @@ impl PingPortPicker {
     #[allow(unreachable_code)]
     #[requires(port_ranges.ranges.len() > 0)]
     #[requires(port_ranges.ranges.iter().filter(|r| r.start() == &0 || r.end() == &0 || r.start() > r.end()).count() == 0)]
-    pub fn new(
-        ping_count: Option<u32>,
-        mut port_ranges: PortRangeList,
-        skip_port_count: u32,
-    ) -> PingPortPicker {
+    pub fn new(ping_count: Option<u32>, mut port_ranges: PortRangeList, skip_port_count: u32) -> PingPortPicker {
         port_ranges.ranges.sort_by(|a, b| a.start().cmp(b.start()));
 
         let next_port = *port_ranges.ranges[0].start();
 
-        let mut port_picker = PingPortPicker {
-            remaining_ping_count: ping_count,
-            port_ranges,
-            next_port,
-            next_port_range_index: 0,
-        };
+        let mut port_picker = PingPortPicker { remaining_ping_count: ping_count, port_ranges, next_port, next_port_range_index: 0 };
 
         for _ in 0..skip_port_count {
             port_picker.next();
@@ -39,9 +30,7 @@ impl PingPortPicker {
     fn fetch_next_available_port(&mut self) -> Option<u16> {
         match self.remaining_ping_count {
             Some(remaining_ping_count) if remaining_ping_count == 0 => return None,
-            Some(remaining_ping_count) => {
-                self.remaining_ping_count = Some(remaining_ping_count - 1)
-            }
+            Some(remaining_ping_count) => self.remaining_ping_count = Some(remaining_ping_count - 1),
             None => (),
         }
 
@@ -79,18 +68,12 @@ mod tests {
 
     #[test]
     fn ping_port_picker_should_work_with_port_range_1() {
-        assert_eq!(
-            vec![1024, 1024, 1024],
-            PingPortPicker::new(Some(3), PortRangeList { ranges: vec![(1024..=1024)] }, 0).collect::<Vec<u16>>()
-        );
+        assert_eq!(vec![1024, 1024, 1024], PingPortPicker::new(Some(3), PortRangeList { ranges: vec![(1024..=1024)] }, 0).collect::<Vec<u16>>());
     }
 
     #[test]
     fn ping_port_picker_should_work_with_limited_ping_count() {
-        assert_eq!(
-            vec![1024, 1025],
-            PingPortPicker::new(Some(2), PortRangeList { ranges: vec![(1024..=1027)] }, 0).collect::<Vec<u16>>()
-        );
+        assert_eq!(vec![1024, 1025], PingPortPicker::new(Some(2), PortRangeList { ranges: vec![(1024..=1027)] }, 0).collect::<Vec<u16>>());
     }
 
     #[test]
@@ -123,8 +106,7 @@ mod tests {
     fn ping_port_picker_should_work_with_port_list() {
         assert_eq!(
             vec![1024, 1025, 1026, 1024, 1025],
-            PingPortPicker::new(Some(5), PortRangeList { ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)] },0)
-                .collect::<Vec<u16>>()
+            PingPortPicker::new(Some(5), PortRangeList { ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)] }, 0).collect::<Vec<u16>>()
         );
     }
 

@@ -1,12 +1,12 @@
 mod rnp_core_test_mocks;
 
 use futures_intrusive::sync::ManualResetEvent;
+use pretty_assertions::assert_eq;
 use rnp::*;
 use rnp_core_test_mocks::*;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::runtime::Runtime;
-use pretty_assertions::assert_eq;
 
 #[test]
 fn ping_with_rnp_core_should_work() {
@@ -22,17 +22,20 @@ fn ping_with_rnp_core_should_work() {
     });
 
     let results = actual_ping_results.lock().unwrap();
-    assert_eq!(vec![
-        MockPingClientResult::Success(Duration::from_millis(10)),
-        MockPingClientResult::Timeout,
-        MockPingClientResult::PreparationFailed,
-        MockPingClientResult::Success(Duration::from_millis(10)),
-        MockPingClientResult::Timeout,
-        MockPingClientResult::PreparationFailed,
-        MockPingClientResult::PingFailed,
-        MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
-        MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
-    ], *results);
+    assert_eq!(
+        vec![
+            MockPingClientResult::Success(Duration::from_millis(10)),
+            MockPingClientResult::Timeout,
+            MockPingClientResult::PreparationFailed,
+            MockPingClientResult::Success(Duration::from_millis(10)),
+            MockPingClientResult::Timeout,
+            MockPingClientResult::PreparationFailed,
+            MockPingClientResult::PingFailed,
+            MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
+            MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
+        ],
+        *results
+    );
 }
 
 #[test]
@@ -71,7 +74,12 @@ fn ping_with_rnp_core_stop_event_should_work() {
     });
 }
 
-fn create_mock_rnp_config(actual_ping_results: Arc<Mutex<Vec<MockPingClientResult>>>, ping_count: u32, warmup_count: u32, parallel_ping_count: u32) -> RnpCoreConfig {
+fn create_mock_rnp_config(
+    actual_ping_results: Arc<Mutex<Vec<MockPingClientResult>>>,
+    ping_count: u32,
+    warmup_count: u32,
+    parallel_ping_count: u32,
+) -> RnpCoreConfig {
     RnpCoreConfig {
         worker_config: PingWorkerConfig {
             protocol: RnpSupportedProtocol::TCP,
@@ -89,17 +97,13 @@ fn create_mock_rnp_config(actual_ping_results: Arc<Mutex<Vec<MockPingClientResul
             },
         },
         worker_scheduler_config: PingWorkerSchedulerConfig {
-            source_ports: PortRangeList {
-                ranges: vec![(1024..=2048)],
-            },
+            source_ports: PortRangeList { ranges: vec![(1024..=2048)] },
             ping_count: Some(ping_count),
             warmup_count,
             parallel_ping_count,
         },
         result_processor_config: PingResultProcessorConfig {
-            common_config: PingResultProcessorCommonConfig {
-                quiet_level: RNP_QUIET_LEVEL_NONE,
-            },
+            common_config: PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NONE },
             csv_log_path: None,
             json_log_path: None,
             text_log_path: None,
@@ -108,17 +112,18 @@ fn create_mock_rnp_config(actual_ping_results: Arc<Mutex<Vec<MockPingClientResul
             latency_buckets: None,
         },
         external_ping_client_factory: Some(|_, config| {
-            Some(Box::new(MockPingClient::new(config, vec![
-                MockPingClientResult::Success(Duration::from_millis(10)),
-                MockPingClientResult::Timeout,
-                MockPingClientResult::PreparationFailed,
-                MockPingClientResult::PingFailed,
-                MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
-                MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
-            ])))
+            Some(Box::new(MockPingClient::new(
+                config,
+                vec![
+                    MockPingClientResult::Success(Duration::from_millis(10)),
+                    MockPingClientResult::Timeout,
+                    MockPingClientResult::PreparationFailed,
+                    MockPingClientResult::PingFailed,
+                    MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
+                    MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
+                ],
+            )))
         }),
-        extra_ping_result_processors: vec![
-            Box::new(MockPingResultProcessor::new(actual_ping_results)),
-        ],
+        extra_ping_result_processors: vec![Box::new(MockPingResultProcessor::new(actual_ping_results))],
     }
 }

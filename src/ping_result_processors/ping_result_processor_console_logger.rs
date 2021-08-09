@@ -1,9 +1,9 @@
 use crate::*;
 use std::io::{stdout, Write};
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Instant;
 use tracing;
-use std::sync::Arc;
 
 pub struct PingResultProcessorConsoleLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,
@@ -80,8 +80,7 @@ impl PingResultProcessorConsoleLogger {
         self.max_latency_in_us = std::cmp::max(latency_in_us, self.max_latency_in_us);
 
         // Calculate moving average. Ping count already added 1 above.
-        self.average_latency_in_us +=
-            (latency_in_us as f64 - self.average_latency_in_us) / (self.ping_count as f64);
+        self.average_latency_in_us += (latency_in_us as f64 - self.average_latency_in_us) / (self.ping_count as f64);
     }
 
     fn output_result_to_console(&mut self, ping_result: &PingResult) {
@@ -123,7 +122,9 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
         "ConsoleLogger"
     }
 
-    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+    fn config(&self) -> &PingResultProcessorCommonConfig {
+        self.common_config.as_ref()
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         // We use RNP_QUIET_LEVEL_NO_OUTPUT instead of RNP_QUIET_LEVEL_NO_PING_SUMMARY here,
@@ -151,26 +152,16 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
             return;
         }
 
-        println!(
-            "\n=== Connect statistics for {} {:?} ===",
-            self.protocol.as_ref().unwrap(),
-            self.target.as_ref().unwrap(),
-        );
+        println!("\n=== Connect statistics for {} {:?} ===", self.protocol.as_ref().unwrap(), self.target.as_ref().unwrap(),);
 
         let mut warning: String = String::from("");
         if self.handshake_failed_count > 0 || self.disconnect_failed_count > 0 {
             let mut warning_messages = Vec::new();
             if self.handshake_failed_count > 0 {
-                warning_messages.push(format!(
-                    "App Handshake Failed = {}",
-                    self.handshake_failed_count
-                ));
+                warning_messages.push(format!("App Handshake Failed = {}", self.handshake_failed_count));
             }
             if self.disconnect_failed_count > 0 {
-                warning_messages.push(format!(
-                    "Disconnect Failed = {}",
-                    self.disconnect_failed_count
-                ));
+                warning_messages.push(format!("Disconnect Failed = {}", self.disconnect_failed_count));
             }
             warning = format!(" ({})", warning_messages.join(","));
         }

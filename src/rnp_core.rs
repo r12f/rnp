@@ -88,13 +88,12 @@ impl RnpCore {
 
         let ping_result_processor_stop_event = Arc::new(ManualResetEvent::new(false));
 
-        let (result_sender, ping_result_processor_join_handle) =
-            RnpCore::create_ping_result_processing_worker(
-                config.result_processor_config.clone(),
-                extra_ping_result_processors,
-                config.worker_scheduler_config.parallel_ping_count,
-                ping_result_processor_stop_event.clone(),
-            );
+        let (result_sender, ping_result_processor_join_handle) = RnpCore::create_ping_result_processing_worker(
+            config.result_processor_config.clone(),
+            extra_ping_result_processors,
+            config.worker_scheduler_config.parallel_ping_count,
+            ping_result_processor_stop_event.clone(),
+        );
 
         let rnp_core = RnpCore {
             config,
@@ -110,11 +109,7 @@ impl RnpCore {
         return rnp_core;
     }
 
-    #[tracing::instrument(
-        name = "Creating ping result processing worker",
-        level = "debug",
-        skip(extra_ping_result_processors)
-    )]
+    #[tracing::instrument(name = "Creating ping result processing worker", level = "debug", skip(extra_ping_result_processors))]
     fn create_ping_result_processing_worker(
         result_processor_config: PingResultProcessorConfig,
         extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
@@ -126,14 +121,9 @@ impl RnpCore {
             ping_result_channel_size = 128;
         }
 
-        let (ping_result_sender, ping_result_receiver) =
-            mpsc::channel(ping_result_channel_size as usize);
-        let ping_result_processor_join_handle = PingResultProcessingWorker::run(
-            Arc::new(result_processor_config),
-            extra_ping_result_processors,
-            stop_event,
-            ping_result_receiver,
-        );
+        let (ping_result_sender, ping_result_receiver) = mpsc::channel(ping_result_channel_size as usize);
+        let ping_result_processor_join_handle =
+            PingResultProcessingWorker::run(Arc::new(result_processor_config), extra_ping_result_processors, stop_event, ping_result_receiver);
 
         return (ping_result_sender, ping_result_processor_join_handle);
     }
@@ -148,10 +138,7 @@ impl RnpCore {
             None => "".to_string(),
         };
 
-        println!(
-            "Start testing {} {:?}{}:",
-            self.config.worker_config.protocol, self.config.worker_config.target, ttl_message,
-        );
+        println!("Start testing {} {:?}{}:", self.config.worker_config.protocol, self.config.worker_config.target, ttl_message,);
     }
 
     /// Run all warm up pings one by one and wait until they are all completed.
@@ -201,15 +188,11 @@ impl RnpCore {
             Some(ping_count) => Some(ping_count + warmup_count),
         };
 
-        let source_port_picker = Arc::new(Mutex::new(PingPortPicker::new(
-            adjusted_ping_count,
-            self.config.worker_scheduler_config.source_ports.clone(),
-            warmup_count,
-        )));
+        let source_port_picker =
+            Arc::new(Mutex::new(PingPortPicker::new(adjusted_ping_count, self.config.worker_scheduler_config.source_ports.clone(), warmup_count)));
 
         let worker_count = self.config.worker_scheduler_config.parallel_ping_count;
-        self.worker_join_handles =
-            self.create_ping_workers_with_options(worker_count, source_port_picker, false);
+        self.worker_join_handles = self.create_ping_workers_with_options(worker_count, source_port_picker, false);
     }
 
     fn create_ping_workers_with_options(
@@ -238,11 +221,7 @@ impl RnpCore {
     }
 
     /// Wait for all pings to complete.
-    #[tracing::instrument(
-        name = "Waiting for RNP core to be stopped.",
-        level = "debug",
-        skip(self)
-    )]
+    #[tracing::instrument(name = "Waiting for RNP core to be stopped.", level = "debug", skip(self))]
     pub async fn join(&mut self) {
         tracing::debug!("Waiting for all workers to be stopped.");
         for join_handle in &mut self.worker_join_handles {
@@ -261,11 +240,7 @@ impl RnpCore {
         self.ping_result_processor_stop_event.set();
 
         tracing::debug!("Waiting for result processor to be stopped.");
-        self.ping_result_processor_join_handle
-            .take()
-            .unwrap()
-            .await
-            .unwrap();
+        self.ping_result_processor_join_handle.take().unwrap().await.unwrap();
         tracing::debug!("Result processor stopped.");
     }
 }

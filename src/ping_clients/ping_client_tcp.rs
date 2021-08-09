@@ -12,30 +12,19 @@ pub struct PingClientTcp {
 
 impl PingClientTcp {
     pub fn new(config: &PingClientConfig) -> PingClientTcp {
-        return PingClientTcp {
-            config: config.clone(),
-        };
+        return PingClientTcp { config: config.clone() };
     }
 
     #[tracing::instrument(name = "Running TCP ping in ping client", level = "debug", skip(self))]
-    fn ping_target(
-        &self,
-        source: &SocketAddr,
-        target: &SocketAddr,
-    ) -> PingClientResult<PingClientPingResultDetails> {
-        let socket = self
-            .prepare_socket_for_ping(source)
-            .map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
+    fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+        let socket = self.prepare_socket_for_ping(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
 
         let start_time = Instant::now();
-        let connect_result =
-            socket.connect_timeout(&SockAddr::from(target.clone()), self.config.wait_timeout);
+        let connect_result = socket.connect_timeout(&SockAddr::from(target.clone()), self.config.wait_timeout);
         let rtt = Instant::now().duration_since(start_time);
         match connect_result {
             // Timeout is an expected value instead of an actual failure, so here we should return Ok.
-            Err(e) if e.kind() == io::ErrorKind::TimedOut => {
-                return Ok(PingClientPingResultDetails::new(None, rtt, true, None))
-            }
+            Err(e) if e.kind() == io::ErrorKind::TimedOut => return Ok(PingClientPingResultDetails::new(None, rtt, true, None)),
             Err(e) => return Err(PingClientError::PingFailed(Box::new(e))),
             Ok(()) => (),
         }
@@ -53,22 +42,13 @@ impl PingClientTcp {
         // If getting local address failed, we ignore it.
         // The worse case we can get is to output a 0.0.0.0 as source IP, which is not critical to what we are trying to do.
         return match local_addr {
-            Ok(addr) => Ok(PingClientPingResultDetails::new(
-                Some(addr.as_socket().unwrap()),
-                rtt,
-                false,
-                warning,
-            )),
+            Ok(addr) => Ok(PingClientPingResultDetails::new(Some(addr.as_socket().unwrap()), rtt, false, warning)),
             Err(_) => Ok(PingClientPingResultDetails::new(None, rtt, false, warning)),
         };
     }
 
     fn prepare_socket_for_ping(&self, source: &SocketAddr) -> io::Result<Socket> {
-        let socket_domain = if source.is_ipv4() {
-            Domain::IPV4
-        } else {
-            Domain::IPV6
-        };
+        let socket_domain = if source.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
         socket.bind(&SockAddr::from(source.clone()))?;
         socket.set_read_timeout(Some(self.config.wait_timeout))?;
@@ -101,13 +81,11 @@ impl PingClient for PingClientTcp {
         "TCP"
     }
 
-    async fn prepare_ping(&mut self, _: &SocketAddr) -> Result<(), PingClientError> { Ok(()) }
+    async fn prepare_ping(&mut self, _: &SocketAddr) -> Result<(), PingClientError> {
+        Ok(())
+    }
 
-    async fn ping(
-        &self,
-        source: &SocketAddr,
-        target: &SocketAddr,
-    ) -> PingClientResult<PingClientPingResultDetails> {
+    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         return self.ping_target(source, target);
     }
 }
@@ -159,8 +137,12 @@ mod tests {
                 } else {
                     ExpectedTestCaseResult::Failed("connection refused")
                 },
-                binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)"),
-                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
+                binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed(
+                    "The requested address is not valid in its context. (os error 10049)",
+                ),
+                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed(
+                    "Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)",
+                ),
             };
 
             run_ping_client_tests(&mut ping_client, &"127.0.0.1:11337".parse().unwrap(), &expected_results).await;

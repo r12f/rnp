@@ -35,12 +35,7 @@ impl PingClientPingResultDetails {
         is_timeout: bool,
         warning: Option<PingClientWarning>,
     ) -> PingClientPingResultDetails {
-        PingClientPingResultDetails {
-            actual_local_addr,
-            round_trip_time,
-            is_timeout,
-            warning,
-        }
+        PingClientPingResultDetails { actual_local_addr, round_trip_time, is_timeout, warning }
     }
 }
 
@@ -52,9 +47,5 @@ pub trait PingClient {
 
     async fn prepare_ping(&mut self, source: &SocketAddr) -> Result<(), PingClientError>;
 
-    async fn ping(
-        &self,
-        source: &SocketAddr,
-        target: &SocketAddr,
-    ) -> PingClientResult<PingClientPingResultDetails>;
+    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails>;
 }

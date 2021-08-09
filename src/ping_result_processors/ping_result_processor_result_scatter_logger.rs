@@ -1,7 +1,7 @@
 use crate::*;
 use std::collections::BTreeMap;
-use tracing;
 use std::sync::Arc;
+use tracing;
 
 const COUNT_PER_ROW: u32 = 20;
 const SCATTER_SYMBOL_NOT_TESTED_YET: char = '.';
@@ -19,10 +19,7 @@ pub struct PingResultProcessorResultScatterLogger {
 impl PingResultProcessorResultScatterLogger {
     #[tracing::instrument(name = "Creating ping result result scatter logger", level = "debug")]
     pub fn new(common_config: Arc<PingResultProcessorCommonConfig>) -> PingResultProcessorResultScatterLogger {
-        return PingResultProcessorResultScatterLogger {
-            common_config,
-            ping_history: vec![BTreeMap::new()],
-        };
+        return PingResultProcessorResultScatterLogger { common_config, ping_history: vec![BTreeMap::new()] };
     }
 
     fn get_ping_history_position(&self, port: u32) -> (u32, usize) {
@@ -51,7 +48,9 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
         "ResultScatterLogger"
     }
 
-    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+    fn config(&self) -> &PingResultProcessorCommonConfig {
+        self.common_config.as_ref()
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
@@ -80,14 +79,9 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
 
         // Find the last iteration and update the result.
         loop {
-            let last_iteration = self
-                .ping_history
-                .last_mut()
-                .expect("Ping history should always be non-empty.");
+            let last_iteration = self.ping_history.last_mut().expect("Ping history should always be non-empty.");
 
-            let last_iteration_results = last_iteration
-                .entry(row)
-                .or_insert(vec![SCATTER_SYMBOL_NOT_TESTED_YET; COUNT_PER_ROW as usize]);
+            let last_iteration_results = last_iteration.entry(row).or_insert(vec![SCATTER_SYMBOL_NOT_TESTED_YET; COUNT_PER_ROW as usize]);
 
             // If the source port is already tested in the last iteration, it means a new iteration is started,
             // hence create a new iteration and update there.
@@ -121,9 +115,7 @@ impl PingResultProcessor for PingResultProcessorResultScatterLogger {
             for (port_bucket, result_hits) in iteration {
                 print!("{:>5} | {:>5} | ", iteration_index, port_bucket);
 
-                let result = PingResultProcessorResultScatterLogger::convert_result_hits_to_string(
-                    result_hits,
-                );
+                let result = PingResultProcessorResultScatterLogger::convert_result_hits_to_string(result_hits);
                 println!("{}", result);
             }
         }
@@ -136,11 +128,8 @@ mod tests {
 
     #[test]
     fn convert_result_info_to_string_should_work() {
-        let mut results = vec![
-            vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20],
-            vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20],
-            vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20],
-        ];
+        let mut results =
+            vec![vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20], vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20], vec![SCATTER_SYMBOL_NOT_TESTED_YET; 20]];
 
         results[1][0] = SCATTER_SYMBOL_PASSED;
         results[2][1] = SCATTER_SYMBOL_FAILED;
@@ -148,18 +137,9 @@ mod tests {
         results[2][3] = SCATTER_SYMBOL_HANDSHAKE_FAILED;
         results[2][4] = SCATTER_SYMBOL_DISCONNECT_FAILED;
 
-        let formatted_results: Vec<String> = results
-            .into_iter()
-            .map(|x| PingResultProcessorResultScatterLogger::convert_result_hits_to_string(&x))
-            .collect();
+        let formatted_results: Vec<String> =
+            results.into_iter().map(|x| PingResultProcessorResultScatterLogger::convert_result_hits_to_string(&x)).collect();
 
-        assert_eq!(
-            vec![
-                "..... ..... ..... .....",
-                "O.... ..... ..... .....",
-                ".X-HD ..... ..... .....",
-            ],
-            formatted_results
-        );
+        assert_eq!(vec!["..... ..... ..... .....", "O.... ..... ..... .....", ".X-HD ..... ..... .....",], formatted_results);
     }
 }

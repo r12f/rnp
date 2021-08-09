@@ -4,10 +4,7 @@ use std::path::PathBuf;
 pub fn create_log_file(log_path_buf: &PathBuf) -> File {
     let log_path = log_path_buf.as_path();
     match log_path.parent() {
-        Some(log_folder) => fs::create_dir_all(log_folder).expect(&format!(
-            "Failed to create log folder: {}",
-            log_folder.display()
-        )),
+        Some(log_folder) => fs::create_dir_all(log_folder).expect(&format!("Failed to create log folder: {}", log_folder.display())),
         None => (), // current folder.
     }
 

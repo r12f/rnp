@@ -110,23 +110,17 @@ impl PingResult {
             return match error {
                 PingClientError::PreparationFailed(e) => {
                     format!(
-                            "Unable to perform ping to {} {} from {}{}, because failed preparing to ping: Error = {}",
-                            self.protocol(),
-                            self.target(),
-                            self.source(),
-                            warmup_sign,
-                            e)
-                }
-
-                PingClientError::PingFailed(e) => {
-                    format!(
-                        "Reaching {} {} from {}{} failed: {}",
+                        "Unable to perform ping to {} {} from {}{}, because failed preparing to ping: Error = {}",
                         self.protocol(),
                         self.target(),
                         self.source(),
                         warmup_sign,
-                        e,
+                        e
                     )
+                }
+
+                PingClientError::PingFailed(e) => {
+                    format!("Reaching {} {} from {}{} failed: {}", self.protocol(), self.target(), self.source(), warmup_sign, e,)
                 }
             };
         }
@@ -178,13 +172,17 @@ impl PingResult {
             }
         });
 
-        let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PingFailed(pe) = e {
-                pe.to_string()
-            } else {
-                String::from("")
-            }
-        });
+        let ping_error =
+            self.error().as_ref().map_or(
+                String::from(""),
+                |e| {
+                    if let PingClientError::PingFailed(pe) = e {
+                        pe.to_string()
+                    } else {
+                        String::from("")
+                    }
+                },
+            );
 
         let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
             if let PingClientWarning::AppHandshakeFailed(hw) = w {
@@ -233,13 +231,17 @@ impl PingResult {
             }
         });
 
-        let ping_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PingFailed(pe) = e {
-                pe.to_string()
-            } else {
-                String::from("")
-            }
-        });
+        let ping_error =
+            self.error().as_ref().map_or(
+                String::from(""),
+                |e| {
+                    if let PingClientError::PingFailed(pe) = e {
+                        pe.to_string()
+                    } else {
+                        String::from("")
+                    }
+                },
+            );
 
         let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
             if let PingClientWarning::AppHandshakeFailed(hw) = w {
@@ -328,10 +330,7 @@ mod tests {
                 "Reaching TCP 1.2.3.4:443 from 5.6.7.8:8080 failed: connect failed",
                 "Unable to perform ping to TCP 1.2.3.4:443 from 5.6.7.8:8080, because failed preparing to ping: Error = address in use",
             ],
-            results
-                .into_iter()
-                .map(|x| x.format_as_console_log())
-                .collect::<Vec<String>>()
+            results.into_iter().map(|x| x.format_as_console_log()).collect::<Vec<String>>()
         );
     }
 
@@ -363,10 +362,7 @@ mod tests {
                 "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,false,0.00,false,\"\",\"connect failed\",\"\",\"\"",
                 "2021-07-06T09:10:11.012Z,1,TCP,1.2.3.4,443,5.6.7.8,8080,false,false,0.00,false,\"address in use\",\"\",\"\",\"\"",
             ],
-            results
-                .into_iter()
-                .map(|x| x.format_as_csv_string())
-                .collect::<Vec<String>>()
+            results.into_iter().map(|x| x.format_as_csv_string()).collect::<Vec<String>>()
         );
     }
 }
