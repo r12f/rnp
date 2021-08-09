@@ -57,7 +57,6 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
     fn name(&self) -> &'static str {
         "LatencyScatterLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }

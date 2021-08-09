@@ -22,7 +22,6 @@ impl PingResultProcessor for PingResultProcessorTextLogger {
     fn name(&self) -> &'static str {
         "TextLogger"
     }
-
     fn config(&self) -> &PingResultProcessorCommonConfig {
         self.common_config.as_ref()
     }
