@@ -1,8 +1,5 @@
 use async_trait::async_trait;
-use rnp::{
-    PingClient, PingClientConfig, PingClientError, PingClientPingResultDetails, PingClientResult,
-    PingClientWarning, PingResult, PingResultProcessor,
-};
+use rnp::{PingClient, PingClientConfig, PingClientError, PingClientPingResultDetails, PingClientResult, PingClientWarning, PingResult, PingResultProcessor, PingResultProcessorCommonConfig};
 use std::io;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -113,12 +110,14 @@ impl PingClient for MockPingClient {
 }
 
 pub struct MockPingResultProcessor {
+    common_config: Arc<PingResultProcessorCommonConfig>,
     results: Arc<Mutex<Vec<MockPingClientResult>>>,
 }
 
 impl MockPingResultProcessor {
     pub fn new(results: Arc<Mutex<Vec<MockPingClientResult>>>) -> MockPingResultProcessor {
         return MockPingResultProcessor {
+            common_config: Arc::new(PingResultProcessorCommonConfig { quiet_level: 0 }),
             results,
         };
     }
@@ -128,6 +127,8 @@ impl PingResultProcessor for MockPingResultProcessor {
     fn name(&self) -> &'static str {
         return "MockPingResultProcessor";
     }
+
+    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         let mut results = self.results.lock().unwrap();

@@ -1,5 +1,5 @@
 use futures_intrusive::sync::ManualResetEvent;
-use rnp::{RnpCore, RNP_ABOUT, RNP_AUTHOR, RNP_NAME};
+use rnp::{RnpCore, RNP_ABOUT, RNP_AUTHOR, RNP_NAME, RNP_QUIET_LEVEL_NO_OUTPUT};
 use rnp_cli_options::RnpCliOptions;
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -11,7 +11,9 @@ fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
     let mut opts = RnpCliOptions::from_args();
-    println!("{} - {} - {}\n", RNP_NAME, RNP_AUTHOR, RNP_ABOUT);
+    if opts.output_options.quiet_level < RNP_QUIET_LEVEL_NO_OUTPUT {
+        println!("{} - {} - {}\n", RNP_NAME, RNP_AUTHOR, RNP_ABOUT);
+    }
 
     opts.prepare_to_use();
     let rnp_core_config = opts.to_rnp_core_config();

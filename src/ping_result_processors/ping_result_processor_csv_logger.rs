@@ -1,16 +1,19 @@
 use crate::*;
 use std::{fs::File, io, io::prelude::*, path::PathBuf};
 use tracing;
+use std::sync::Arc;
 
 pub struct PingResultProcessorCsvLogger {
+    common_config: Arc<PingResultProcessorCommonConfig>,
     log_path: PathBuf,
     log_file: File,
 }
 
 impl PingResultProcessorCsvLogger {
     #[tracing::instrument(name = "Creating ping result csv logger", level = "debug")]
-    pub fn new(log_path_buf: &PathBuf) -> PingResultProcessorCsvLogger {
+    pub fn new(common_config: Arc<PingResultProcessorCommonConfig>, log_path_buf: &PathBuf) -> PingResultProcessorCsvLogger {
         return PingResultProcessorCsvLogger {
+            common_config,
             log_path: log_path_buf.clone(),
             log_file: rnp_utils::create_log_file(log_path_buf),
         };
@@ -28,6 +31,8 @@ impl PingResultProcessor for PingResultProcessorCsvLogger {
     fn name(&self) -> &'static str {
         "CsvLogger"
     }
+
+    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn initialize(&mut self) {
         // Writer CSV header
@@ -59,7 +64,7 @@ mod tests {
     fn ping_result_process_csv_logger_should_work() {
         let test_log_file_path = "tests_data\\test_log.csv";
         let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(
-            PingResultProcessorCsvLogger::new(&PathBuf::from(test_log_file_path)),
+            PingResultProcessorCsvLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }), &PathBuf::from(test_log_file_path)),
         );
         ping_result_processor_test_common::run_ping_result_processor_with_test_samples(
             &mut processor,
