@@ -61,6 +61,8 @@ impl RnpCore {
     ///         common_config: PingResultProcessorCommonConfig {
     ///             quiet_level: RNP_QUIET_LEVEL_NONE,
     ///         },
+    ///         exit_on_fail: false,
+    ///         exit_failure_reason: None,
     ///         csv_log_path: None,
     ///         json_log_path: None,
     ///         text_log_path: None,
