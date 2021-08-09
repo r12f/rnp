@@ -61,6 +61,8 @@ impl RnpCore {
     ///         common_config: PingResultProcessorCommonConfig {
     ///             quiet_level: RNP_QUIET_LEVEL_NONE,
     ///         },
+    ///         exit_on_fail: false,
+    ///         exit_failure_reason: None,
     ///         csv_log_path: None,
     ///         json_log_path: None,
     ///         text_log_path: None,
@@ -93,6 +95,7 @@ impl RnpCore {
             extra_ping_result_processors,
             config.worker_scheduler_config.parallel_ping_count,
             ping_result_processor_stop_event.clone(),
+            stop_event.clone(),
         );
 
         let rnp_core = RnpCore {
@@ -115,6 +118,7 @@ impl RnpCore {
         extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
         parallel_ping_count: u32,
         stop_event: Arc<ManualResetEvent>,
+        ping_stop_event: Arc<ManualResetEvent>,
     ) -> (mpsc::Sender<PingResult>, JoinHandle<()>) {
         let mut ping_result_channel_size = parallel_ping_count * 2;
         if ping_result_channel_size < 128 {
@@ -122,8 +126,13 @@ impl RnpCore {
         }
 
         let (ping_result_sender, ping_result_receiver) = mpsc::channel(ping_result_channel_size as usize);
-        let ping_result_processor_join_handle =
-            PingResultProcessingWorker::run(Arc::new(result_processor_config), extra_ping_result_processors, stop_event, ping_result_receiver);
+        let ping_result_processor_join_handle = PingResultProcessingWorker::run(
+            Arc::new(result_processor_config),
+            extra_ping_result_processors,
+            stop_event,
+            ping_stop_event,
+            ping_result_receiver,
+        );
 
         return (ping_result_sender, ping_result_processor_join_handle);
     }

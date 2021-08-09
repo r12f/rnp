@@ -74,6 +74,31 @@ fn ping_with_rnp_core_stop_event_should_work() {
     });
 }
 
+#[test]
+fn ping_with_rnp_core_exit_on_fail_should_work() {
+    let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
+    let exit_reason = Arc::new(Mutex::new(None));
+
+    let mut config = create_mock_rnp_config(actual_ping_results.clone(), 10, 0, 1);
+    config.result_processor_config.exit_on_fail = true;
+    config.result_processor_config.exit_failure_reason = Some(exit_reason.clone());
+
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        let stop_event = Arc::new(ManualResetEvent::new(false));
+        let mut rp = RnpCore::new(config, stop_event);
+        rp.run_warmup_pings().await;
+        rp.start_running_normal_pings();
+        rp.join().await;
+    });
+
+    assert!(exit_reason.lock().unwrap().is_some());
+
+    let failed_ping_result = exit_reason.lock().unwrap();
+    assert!(!failed_ping_result.as_ref().unwrap().is_succeeded);
+    assert!(failed_ping_result.as_ref().unwrap().is_timed_out || !failed_ping_result.as_ref().unwrap().ping_error.is_empty());
+}
+
 fn create_mock_rnp_config(
     actual_ping_results: Arc<Mutex<Vec<MockPingClientResult>>>,
     ping_count: u32,
@@ -104,6 +129,8 @@ fn create_mock_rnp_config(
         },
         result_processor_config: PingResultProcessorConfig {
             common_config: PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NONE },
+            exit_on_fail: false,
+            exit_failure_reason: None,
             csv_log_path: None,
             json_log_path: None,
             text_log_path: None,

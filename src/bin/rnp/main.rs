@@ -19,8 +19,9 @@ fn main() {
     let rnp_core_config = opts.to_rnp_core_config();
 
     let rt = Runtime::new().unwrap();
-    rt.block_on(async {
+    let result = rt.block_on(async {
         let stop_event = Arc::new(ManualResetEvent::new(false));
+        let rnp_exit_failure_reason = rnp_core_config.result_processor_config.exit_failure_reason.clone();
         let mut rp = RnpCore::new(rnp_core_config, stop_event.clone());
 
         ctrlc::set_handler(move || {
@@ -33,5 +34,17 @@ fn main() {
 
         rp.start_running_normal_pings();
         rp.join().await;
+
+        if let Some(rnp_exit_failure_reason) = rnp_exit_failure_reason {
+            if rnp_exit_failure_reason.lock().unwrap().is_some() {
+                return Err("Ping failed!".to_string());
+            }
+        }
+        return Ok(());
     });
+
+    // In order to have better control over the console output, we don't return the result from main function directly.
+    if let Err(_) = result {
+        std::process::exit(1);
+    }
 }

@@ -6,6 +6,7 @@ use rnp::{
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -70,6 +71,9 @@ pub struct RnpCliCommonOptions {
 
     #[structopt(short = "p", long = "parallel", default_value = "1", help = "Count of pings running in parallel.")]
     pub parallel_ping_count: u32,
+
+    #[structopt(long, help = "Exit as soon as a ping failed and return a non-zero error code.")]
+    pub exit_on_fail: bool,
 }
 
 #[derive(Debug, StructOpt, PartialEq)]
@@ -246,6 +250,8 @@ impl RnpCliOptions {
             },
             result_processor_config: PingResultProcessorConfig {
                 common_config: PingResultProcessorCommonConfig { quiet_level: self.output_options.quiet_level },
+                exit_on_fail: self.common_options.exit_on_fail,
+                exit_failure_reason: if self.common_options.exit_on_fail { Some(Arc::new(Mutex::new(None))) } else { None },
                 csv_log_path: self.output_options.csv_log_path.clone(),
                 json_log_path: self.output_options.json_log_path.clone(),
                 text_log_path: self.output_options.text_log_path.clone(),
@@ -355,6 +361,7 @@ mod tests {
                     time_to_live: None,
                     check_disconnect: false,
                     parallel_ping_count: 1,
+                    exit_on_fail: false,
                 },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
@@ -393,6 +400,7 @@ mod tests {
                     time_to_live: None,
                     check_disconnect: true,
                     parallel_ping_count: 10,
+                    exit_on_fail: false,
                 },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
@@ -461,6 +469,7 @@ mod tests {
                     time_to_live: Some(128),
                     check_disconnect: true,
                     parallel_ping_count: 10,
+                    exit_on_fail: true,
                 },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: Some(String::from("localhost")),
@@ -500,6 +509,7 @@ mod tests {
                 "--check-disconnect",
                 "--parallel",
                 "10",
+                "--exit-on-fail",
                 "--server-name",
                 "localhost",
                 "--log-tls-key",
@@ -548,6 +558,8 @@ mod tests {
                 },
                 result_processor_config: PingResultProcessorConfig {
                     common_config: PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NONE },
+                    exit_on_fail: false,
+                    exit_failure_reason: None,
                     csv_log_path: None,
                     json_log_path: None,
                     text_log_path: None,
@@ -572,6 +584,7 @@ mod tests {
                     time_to_live: Some(128),
                     check_disconnect: false,
                     parallel_ping_count: 1,
+                    exit_on_fail: false,
                 },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
@@ -617,6 +630,8 @@ mod tests {
                 },
                 result_processor_config: PingResultProcessorConfig {
                     common_config: PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT },
+                    exit_on_fail: true,
+                    exit_failure_reason: Some(Arc::new(Mutex::new(None))),
                     csv_log_path: Some(PathBuf::from("log.csv")),
                     json_log_path: Some(PathBuf::from("log.json")),
                     text_log_path: Some(PathBuf::from("log.txt")),
@@ -641,6 +656,7 @@ mod tests {
                     time_to_live: Some(128),
                     check_disconnect: true,
                     parallel_ping_count: 1,
+                    exit_on_fail: true,
                 },
                 quic_options: RnpCliQuicPingOptions {
                     server_name: Some(String::from("localhost")),
