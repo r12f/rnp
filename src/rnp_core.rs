@@ -93,6 +93,7 @@ impl RnpCore {
             extra_ping_result_processors,
             config.worker_scheduler_config.parallel_ping_count,
             ping_result_processor_stop_event.clone(),
+            stop_event.clone(),
         );
 
         let rnp_core = RnpCore {

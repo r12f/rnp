@@ -1,4 +1,4 @@
-use crate::{PingClientFactory, PingResult, PingResultProcessor, PortRangeList};
+use crate::{PingClientFactory, PingResultProcessor, PortRangeList, PingResultDto};
 use std::fmt;
 use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};
@@ -122,7 +122,7 @@ pub struct PingResultProcessorCommonConfig {
 pub struct PingResultProcessorConfig {
     pub common_config: PingResultProcessorCommonConfig,
     pub exit_on_fail: bool,
-    pub exit_failure_reason: Option<Arc<Mutex<Option<PingResult>>>>,
+    pub exit_failure_reason: Option<Arc<Mutex<Option<PingResultDto>>>>,
     pub csv_log_path: Option<PathBuf>,
     pub json_log_path: Option<PathBuf>,
     pub text_log_path: Option<PathBuf>,

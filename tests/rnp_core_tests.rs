@@ -95,8 +95,8 @@ fn ping_with_rnp_core_exit_on_fail_should_work() {
     assert!(exit_reason.lock().unwrap().is_some());
 
     let failed_ping_result = exit_reason.lock().unwrap();
-    assert!(!failed_ping_result.as_ref().unwrap().is_succeeded());
-    assert!(failed_ping_result.as_ref().unwrap().error().is_some());
+    assert!(!failed_ping_result.as_ref().unwrap().is_succeeded);
+    assert!(!failed_ping_result.as_ref().unwrap().ping_error.is_empty());
 }
 
 fn create_mock_rnp_config(

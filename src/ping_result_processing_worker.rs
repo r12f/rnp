@@ -1,7 +1,8 @@
-use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig};
+use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig, PingResultDto, PingClientError};
 use futures_intrusive::sync::ManualResetEvent;
 use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
+use contracts::requires;
 
 pub struct PingResultProcessingWorker {
     stop_event: Arc<ManualResetEvent>,
@@ -11,7 +12,7 @@ pub struct PingResultProcessingWorker {
 
     ping_stop_event: Arc<ManualResetEvent>,
     exit_on_fail: bool,
-    exit_failure_reason: Option<Arc<Mutex<Option<PingResult>>>>,
+    exit_failure_reason: Option<Arc<Mutex<Option<PingResultDto>>>>,
 }
 
 impl PingResultProcessingWorker {
@@ -80,8 +81,12 @@ impl PingResultProcessingWorker {
             processor.process_ping_result(ping_result);
         }
 
-        if self.exit_on_fail && !ping_result.is_succeeded() {
-            self.exit_failure_reason.unwrap();
+        if self.exit_on_fail {
+            if let Some(PingClientError::PingFailed(_)) = ping_result.error() {
+                tracing::debug!("Ping failure received! Save result as exit reason and signal all ping workers to exit: Result = {:?}", ping_result);
+                *self.exit_failure_reason.as_ref().unwrap().lock().unwrap() = Some(ping_result.create_dto());
+                self.ping_stop_event.set();
+            }
         }
     }
 
