@@ -4,10 +4,7 @@ use crate::*;
 #[cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))]
 use crate::ping_clients::ping_client_quic::PingClientQuic;
 
-pub type PingClientFactory = fn(
-    protocol: &RnpSupportedProtocol,
-    config: &PingClientConfig,
-) -> Option<Box<dyn PingClient + Send + Sync>>;
+pub type PingClientFactory = fn(protocol: &RnpSupportedProtocol, config: &PingClientConfig) -> Option<Box<dyn PingClient + Send + Sync>>;
 
 pub fn new_ping_client(
     protocol: &RnpSupportedProtocol,
@@ -24,10 +21,7 @@ pub fn new_ping_client(
 }
 
 #[cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))]
-fn new_inbox_ping_client(
-    protocol: &RnpSupportedProtocol,
-    config: &PingClientConfig,
-) -> Box<dyn PingClient + Send + Sync> {
+fn new_inbox_ping_client(protocol: &RnpSupportedProtocol, config: &PingClientConfig) -> Box<dyn PingClient + Send + Sync> {
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
         RnpSupportedProtocol::QUIC => return Box::new(PingClientQuic::new(config)),
@@ -36,10 +30,7 @@ fn new_inbox_ping_client(
 }
 
 #[cfg(all(target_os = "windows", target_arch = "aarch64"))]
-fn new_inbox_ping_client(
-    protocol: &RnpSupportedProtocol,
-    config: &PingClientConfig,
-) -> Box<dyn PingClient + Send + Sync> {
+fn new_inbox_ping_client(protocol: &RnpSupportedProtocol, config: &PingClientConfig) -> Box<dyn PingClient + Send + Sync> {
     match protocol {
         RnpSupportedProtocol::TCP => return Box::new(PingClientTcp::new(config)),
         RnpSupportedProtocol::QUIC => {

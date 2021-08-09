@@ -46,14 +46,7 @@ async fn ping_client_should_work_when_pinging_good_host(
     }
 
     let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
-    ping_client_result_should_be_expected(
-        ping_client,
-        &source,
-        &target,
-        expected_results.timeout_min_time,
-        &ExpectedTestCaseResult::Ok,
-    )
-    .await;
+    ping_client_result_should_be_expected(ping_client, &source, &target, expected_results.timeout_min_time, &ExpectedTestCaseResult::Ok).await;
 }
 
 async fn ping_client_should_fail_when_pinging_non_existing_host(

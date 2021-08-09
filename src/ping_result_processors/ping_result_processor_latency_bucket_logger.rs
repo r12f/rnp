@@ -1,8 +1,8 @@
 use crate::*;
 use contracts::requires;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing;
-use std::sync::Arc;
 
 pub struct PingResultProcessorLatencyBucketLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,
@@ -29,9 +29,7 @@ impl PingResultProcessorLatencyBucketLogger {
         // - Timed out
         // - Failed
         let mut normalized_buckets = vec![];
-        buckets
-            .into_iter()
-            .for_each(|x| normalized_buckets.push((x * 1000.0) as u128));
+        buckets.into_iter().for_each(|x| normalized_buckets.push((x * 1000.0) as u128));
         normalized_buckets.push(u128::MAX);
 
         let normalized_bucket_count = normalized_buckets.len();
@@ -85,7 +83,9 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
         "LatencyBucketLogger"
     }
 
-    fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
+    fn config(&self) -> &PingResultProcessorCommonConfig {
+        self.common_config.as_ref()
+    }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
@@ -108,16 +108,10 @@ impl PingResultProcessor for PingResultProcessorLatencyBucketLogger {
             let bucket_range = if bucket_index < self.buckets_in_us.len() - 1 {
                 format!("< {:.2}ms", *bucket_time_upper_bound_in_us as f64 / 1000.0)
             } else {
-                format!(
-                    ">= {:.2}ms",
-                    self.buckets_in_us[bucket_index - 1] as f64 / 1000.0
-                )
+                format!(">= {:.2}ms", self.buckets_in_us[bucket_index - 1] as f64 / 1000.0)
             };
 
-            println!(
-                "{:>15} | {}",
-                bucket_range, self.bucket_hit_counts[bucket_index]
-            );
+            println!("{:>15} | {}", bucket_range, self.bucket_hit_counts[bucket_index]);
         }
 
         println!("{:>15} | {}", "Timed Out", self.timed_out_hit_count);
@@ -136,11 +130,11 @@ mod tests {
     fn latency_bucket_logger_should_work() {
         let ping_results = rnp_test_common::generate_ping_result_test_samples();
 
-        let mut logger =
-            PingResultProcessorLatencyBucketLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: 0 }), &vec![0.1, 0.5, 1.0, 10.0, 50.0, 100.0]);
-        ping_results
-            .iter()
-            .for_each(|x| logger.update_statistics(x));
+        let mut logger = PingResultProcessorLatencyBucketLogger::new(
+            Arc::new(PingResultProcessorCommonConfig { quiet_level: 0 }),
+            &vec![0.1, 0.5, 1.0, 10.0, 50.0, 100.0],
+        );
+        ping_results.iter().for_each(|x| logger.update_statistics(x));
 
         assert_eq!(4, logger.total_hit_count);
         assert_eq!(1, logger.timed_out_hit_count);

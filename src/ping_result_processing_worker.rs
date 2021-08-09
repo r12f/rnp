@@ -17,14 +17,9 @@ impl PingResultProcessingWorker {
         receiver: mpsc::Receiver<PingResult>,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let processors =
-                ping_result_processor_factory::new(&config, extra_ping_result_processors);
+            let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors);
 
-            let mut worker = PingResultProcessingWorker {
-                stop_event,
-                receiver,
-                processors,
-            };
+            let mut worker = PingResultProcessingWorker { stop_event, receiver, processors };
 
             worker.run_worker().await;
         });

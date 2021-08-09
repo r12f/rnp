@@ -1,9 +1,7 @@
-use crate::PingResultProcessor;
 use crate::rnp_test_common;
+use crate::PingResultProcessor;
 
-pub fn run_ping_result_processor_with_test_samples(
-    processor: &mut Box<dyn PingResultProcessor + Send + Sync>,
-) {
+pub fn run_ping_result_processor_with_test_samples(processor: &mut Box<dyn PingResultProcessor + Send + Sync>) {
     let ping_results = rnp_test_common::generate_ping_result_test_samples();
 
     processor.initialize();

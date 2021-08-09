@@ -1,8 +1,8 @@
 use crate::*;
 use chrono::{TimeZone, Utc};
 use std::io;
-use std::time::Duration;
 use std::sync::Once;
+use std::time::Duration;
 
 static INIT: Once = Once::new();
 
@@ -54,9 +54,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             true,
             Duration::from_millis(20),
             false,
-            Some(PingClientWarning::AppHandshakeFailed(Box::new(
-                io::Error::new(io::ErrorKind::ConnectionAborted, "connect aborted"),
-            ))),
+            Some(PingClientWarning::AppHandshakeFailed(Box::new(io::Error::new(io::ErrorKind::ConnectionAborted, "connect aborted")))),
             None,
         ),
         // Reachable but disconnect connection timed out
@@ -70,9 +68,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             true,
             Duration::from_millis(20),
             false,
-            Some(PingClientWarning::DisconnectFailed(Box::new(
-                io::Error::new(io::ErrorKind::TimedOut, "disconnect timeout"),
-            ))),
+            Some(PingClientWarning::DisconnectFailed(Box::new(io::Error::new(io::ErrorKind::TimedOut, "disconnect timeout")))),
             None,
         ),
         // Failed to reach remote
@@ -87,10 +83,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             Duration::from_millis(0),
             false,
             None,
-            Some(PingClientError::PingFailed(Box::new(io::Error::new(
-                io::ErrorKind::ConnectionRefused,
-                "connect failed",
-            )))),
+            Some(PingClientError::PingFailed(Box::new(io::Error::new(io::ErrorKind::ConnectionRefused, "connect failed")))),
         ),
         // Failed to create local resources for ping, such as cannot bind address
         PingResult::new(
@@ -104,10 +97,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
             Duration::from_millis(0),
             false,
             None,
-            Some(PingClientError::PreparationFailed(Box::new(io::Error::new(
-                io::ErrorKind::AddrInUse,
-                "address in use",
-            )))),
+            Some(PingClientError::PreparationFailed(Box::new(io::Error::new(io::ErrorKind::AddrInUse, "address in use")))),
         ),
     ]
 }

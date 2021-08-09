@@ -16,13 +16,11 @@ pub fn new(
     let mut processors = Vec::new();
 
     // We always create the console logger for keeping our user informed.
-    let console_logger: Box<dyn PingResultProcessor + Send + Sync> =
-        Box::new(PingResultProcessorConsoleLogger::new(common_config.clone()));
+    let console_logger: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorConsoleLogger::new(common_config.clone()));
     processors.push(console_logger);
 
     if let Some(csv_log_path) = &config.csv_log_path {
-        let csv_logger: Box<dyn PingResultProcessor + Send + Sync> =
-            Box::new(PingResultProcessorCsvLogger::new(common_config.clone(), csv_log_path));
+        let csv_logger: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorCsvLogger::new(common_config.clone(), csv_log_path));
         processors.push(csv_logger);
     }
 
@@ -64,16 +62,14 @@ pub fn new(
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
     use crate::ping_result_processors::ping_result_processor_factory::new;
+    use crate::*;
     use std::path::PathBuf;
 
     #[test]
     fn create_ping_result_processor_should_work_with_empty_config() {
         let config = PingResultProcessorConfig {
-            common_config: PingResultProcessorCommonConfig {
-                quiet_level: RNP_QUIET_LEVEL_NONE,
-            },
+            common_config: PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NONE },
             csv_log_path: None,
             json_log_path: None,
             text_log_path: None,
@@ -89,9 +85,7 @@ mod tests {
     #[test]
     fn create_ping_result_processor_should_work_with_valid_config() {
         let config = PingResultProcessorConfig {
-            common_config: PingResultProcessorCommonConfig {
-                quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT,
-            },
+            common_config: PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_PING_RESULT },
             csv_log_path: Some(PathBuf::from("log.csv")),
             json_log_path: Some(PathBuf::from("log.json")),
             text_log_path: Some(PathBuf::from("log.txt")),

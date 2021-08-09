@@ -12,30 +12,15 @@ pub struct PingClientQuic {
 
 impl PingClientQuic {
     pub fn new(config: &PingClientConfig) -> PingClientQuic {
-        return PingClientQuic {
-            config: config.clone(),
-        };
+        return PingClientQuic { config: config.clone() };
     }
 
     #[tracing::instrument(name = "Running QUIC ping in ping client", level = "debug", skip(self))]
-    async fn ping_target(
-        &self,
-        source: &SocketAddr,
-        target: &SocketAddr,
-    ) -> PingClientResult<PingClientPingResultDetails> {
-        let endpoint = self
-            .create_local_endpoint(source)
-            .map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
+    async fn ping_target(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
+        let endpoint = self.create_local_endpoint(source).map_err(|e| PingClientError::PreparationFailed(Box::new(e)))?;
         let server_name = self.config.server_name.as_ref().map_or("", |s| &s);
         let use_timer_rtt = self.config.use_timer_rtt;
-        let ping_result = PingClientQuic::connect_to_target(
-            &endpoint,
-            source,
-            target,
-            server_name,
-            use_timer_rtt,
-        )
-        .await;
+        let ping_result = PingClientQuic::connect_to_target(&endpoint, source, target, server_name, use_timer_rtt).await;
         endpoint.wait_idle().await;
         return ping_result;
     }
@@ -70,15 +55,13 @@ impl PingClientQuic {
 
         let mut client_config = client_config_builder.build();
         {
-            let tls_cfg: &mut rustls::ClientConfig = Arc::get_mut(&mut client_config.crypto)
-                .expect("Failed to get QUIC client crypto config, which should never happen.");
+            let tls_cfg: &mut rustls::ClientConfig =
+                Arc::get_mut(&mut client_config.crypto).expect("Failed to get QUIC client crypto config, which should never happen.");
 
-            tls_cfg
-                .dangerous()
-                .set_certificate_verifier(Arc::new(SkipCertificationVerification));
+            tls_cfg.dangerous().set_certificate_verifier(Arc::new(SkipCertificationVerification));
 
-            let transport_config = Arc::get_mut(&mut client_config.transport)
-                .expect("Failed to get QUIC client transport config, which should never happen.");
+            let transport_config =
+                Arc::get_mut(&mut client_config.transport).expect("Failed to get QUIC client transport config, which should never happen.");
 
             transport_config
                 .max_idle_timeout(Some(self.config.wait_timeout))
@@ -97,9 +80,7 @@ impl PingClientQuic {
     ) -> PingClientResult<PingClientPingResultDetails> {
         let start_time = Instant::now();
 
-        let connecting = endpoint
-            .connect(target, &server_name)
-            .map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
+        let connecting = endpoint.connect(target, &server_name).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
         let connecting_result = connecting.await;
         let mut rtt = Instant::now().duration_since(start_time);
 
@@ -111,23 +92,15 @@ impl PingClientQuic {
             Err(e) => match e {
                 ConnectionError::TimedOut => {
                     return Ok(PingClientPingResultDetails::new(None, rtt, true, None));
-                },
+                }
                 ConnectionError::LocallyClosed => Err(PingClientError::PingFailed(Box::new(e))),
                 _ => {
-                    return Ok(PingClientPingResultDetails::new(
-                        None,
-                        rtt,
-                        false,
-                        Some(PingClientWarning::AppHandshakeFailed(Box::new(e))),
-                    ));
+                    return Ok(PingClientPingResultDetails::new(None, rtt, false, Some(PingClientWarning::AppHandshakeFailed(Box::new(e)))));
                 }
             },
         }?;
 
-        let local_ip = connection
-            .connection
-            .local_ip()
-            .map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
+        let local_ip = connection.connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
         if !use_timer_rtt {
             rtt = connection.connection.rtt();
         }
@@ -141,13 +114,11 @@ impl PingClient for PingClientQuic {
         "QUIC"
     }
 
-    async fn prepare_ping(&mut self, _: &SocketAddr) -> Result<(), PingClientError> { Ok(()) }
+    async fn prepare_ping(&mut self, _: &SocketAddr) -> Result<(), PingClientError> {
+        Ok(())
+    }
 
-    async fn ping(
-        &self,
-        source: &SocketAddr,
-        target: &SocketAddr,
-    ) -> PingClientResult<PingClientPingResultDetails> {
+    async fn ping(&self, source: &SocketAddr, target: &SocketAddr) -> PingClientResult<PingClientPingResultDetails> {
         return self.ping_target(source, target).await;
     }
 }
@@ -169,7 +140,7 @@ impl rustls::ServerCertVerifier for SkipCertificationVerification {
 #[cfg(test)]
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol, rnp_test_common};
+    use crate::{ping_clients::ping_client_factory, rnp_test_common, PingClientConfig, RnpSupportedProtocol};
     use std::time::Duration;
     use tokio::runtime::Runtime;
 

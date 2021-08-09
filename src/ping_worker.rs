@@ -1,8 +1,5 @@
 use crate::ping_clients::ping_client::{PingClientError, PingClientPingResultDetails};
-use crate::{
-    ping_client_factory, PingClientFactory, PingClient, PingPortPicker, PingResult,
-    PingWorkerConfig,
-};
+use crate::{ping_client_factory, PingClient, PingClientFactory, PingPortPicker, PingResult, PingWorkerConfig};
 use chrono::{offset::Utc, DateTime};
 use futures_intrusive::sync::ManualResetEvent;
 use std::time::Duration;
@@ -23,13 +20,7 @@ impl PingWorker {
     #[tracing::instrument(
         name = "Starting worker",
         level = "debug",
-        skip(
-            config,
-            external_ping_client_factory,
-            port_picker,
-            stop_event,
-            result_sender
-        )
+        skip(config, external_ping_client_factory, port_picker, stop_event, result_sender)
     )]
     pub fn run(
         worker_id: u32,
@@ -41,21 +32,9 @@ impl PingWorker {
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let ping_client = ping_client_factory::new_ping_client(
-                &config.protocol,
-                &config.ping_client_config,
-                external_ping_client_factory,
-            );
+            let ping_client = ping_client_factory::new_ping_client(&config.protocol, &config.ping_client_config, external_ping_client_factory);
 
-            let mut worker = PingWorker {
-                id: worker_id,
-                config,
-                stop_event,
-                port_picker,
-                ping_client,
-                result_sender,
-                is_warmup_worker,
-            };
+            let mut worker = PingWorker { id: worker_id, config, stop_event, port_picker, ping_client, result_sender, is_warmup_worker };
             worker.run_worker_loop().await;
 
             tracing::debug!("Ping worker loop exited; worker_id={}", worker.id);
@@ -67,11 +46,7 @@ impl PingWorker {
     #[tracing::instrument(name = "Running worker loop", level = "debug", skip(self), fields(worker_id = %self.id))]
     async fn run_worker_loop(&mut self) {
         loop {
-            let source_port = self
-                .port_picker
-                .lock()
-                .expect("Failed getting port picker lock")
-                .next();
+            let source_port = self.port_picker.lock().expect("Failed getting port picker lock").next();
             match source_port {
                 Some(source_port) => self.run_single_ping(source_port).await,
                 None => {
@@ -94,32 +69,20 @@ impl PingWorker {
         let ping_time = Utc::now();
         match self.ping_client.prepare_ping(&source).await {
             Err(PingClientError::PreparationFailed(e)) => {
-                self.process_ping_client_error(&ping_time, source_port, PingClientError::PreparationFailed(e))
-                    .await
+                self.process_ping_client_error(&ping_time, source_port, PingClientError::PreparationFailed(e)).await
             }
             Err(_) => panic!("Unexpected failure from prepare_ping! The error type should always be PingClientError::PreparationFailed."),
             Ok(()) => (),
         }
 
         match self.ping_client.ping(&source, &target).await {
-            Ok(result) => {
-                self.process_ping_client_result(&ping_time, source_port, result)
-                    .await
-            }
-            Err(error) => {
-                self.process_ping_client_error(&ping_time, source_port, error)
-                    .await
-            }
+            Ok(result) => self.process_ping_client_result(&ping_time, source_port, result).await,
+            Err(error) => self.process_ping_client_error(&ping_time, source_port, error).await,
         }
     }
 
     #[tracing::instrument(name = "Processing ping client single ping result", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn process_ping_client_result(
-        &self,
-        ping_time: &DateTime<Utc>,
-        src_port: u16,
-        ping_result: PingClientPingResultDetails,
-    ) {
+    async fn process_ping_client_result(&self, ping_time: &DateTime<Utc>, src_port: u16, ping_result: PingClientPingResultDetails) {
         let mut source: Option<SocketAddr> = ping_result.actual_local_addr;
 
         if source.is_none() {
@@ -144,12 +107,7 @@ impl PingWorker {
     }
 
     #[tracing::instrument(name = "Processing ping client single ping error", level = "debug", skip(self), fields(worker_id = %self.id))]
-    async fn process_ping_client_error(
-        &self,
-        ping_time: &DateTime<Utc>,
-        src_port: u16,
-        error: PingClientError,
-    ) {
+    async fn process_ping_client_error(&self, ping_time: &DateTime<Utc>, src_port: u16, error: PingClientError) {
         let source = SocketAddr::new(self.config.source_ip, src_port);
 
         let result = PingResult::new(
@@ -176,10 +134,7 @@ impl PingWorker {
 
         // Wait succedded, which means we are signaled to exit.
         if let Ok(_) = result {
-            tracing::debug!(
-                "Stop event received, stopping worker; worker_id={}",
-                self.id
-            );
+            tracing::debug!("Stop event received, stopping worker; worker_id={}", self.id);
             return false;
         }
 
