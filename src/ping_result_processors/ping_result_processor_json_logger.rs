@@ -64,7 +64,7 @@ impl PingResultProcessor for PingResultProcessorJsonLogger {
 mod tests {
     use super::*;
     use crate::ping_result_processors::ping_result_processor_test_common;
-    use crate::rnp_dto::PingResultJsonDto;
+    use crate::PingResultDto;
     use chrono::{TimeZone, Utc};
     use pretty_assertions::assert_eq;
     use std::io::BufReader;
@@ -78,7 +78,7 @@ mod tests {
         ));
         ping_result_processor_test_common::run_ping_result_processor_with_test_samples(&mut processor);
 
-        let actual_logged_records: Vec<PingResultJsonDto>;
+        let actual_logged_records: Vec<PingResultDto>;
         {
             let test_log_file = File::open(test_log_file_path).unwrap();
             let test_log_reader = BufReader::new(test_log_file);
@@ -87,7 +87,7 @@ mod tests {
 
         assert_eq!(
             vec![
-                PingResultJsonDto {
+                PingResultDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
@@ -104,7 +104,7 @@ mod tests {
                     handshake_error: "".to_string(),
                     disconnect_error: "".to_string(),
                 },
-                PingResultJsonDto {
+                PingResultDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
@@ -121,7 +121,7 @@ mod tests {
                     handshake_error: "".to_string(),
                     disconnect_error: "".to_string(),
                 },
-                PingResultJsonDto {
+                PingResultDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
@@ -138,7 +138,7 @@ mod tests {
                     handshake_error: "connect aborted".to_string(),
                     disconnect_error: "".to_string(),
                 },
-                PingResultJsonDto {
+                PingResultDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
@@ -155,7 +155,7 @@ mod tests {
                     handshake_error: "".to_string(),
                     disconnect_error: "disconnect timeout".to_string(),
                 },
-                PingResultJsonDto {
+                PingResultDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
@@ -172,7 +172,7 @@ mod tests {
                     handshake_error: "".to_string(),
                     disconnect_error: "".to_string(),
                 },
-                PingResultJsonDto {
+                PingResultDto {
                     utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
