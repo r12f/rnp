@@ -1,19 +1,14 @@
-use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig, PingResultDto, PingResultProcessorCommonConfig, RNP_QUIET_LEVEL_NO_OUTPUT};
+use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig};
 use futures_intrusive::sync::ManualResetEvent;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::{sync::mpsc, task, task::JoinHandle};
 use contracts::requires;
 
 pub struct PingResultProcessingWorker {
-    common_config: Arc<PingResultProcessorCommonConfig>,
     stop_event: Arc<ManualResetEvent>,
 
     receiver: mpsc::Receiver<PingResult>,
     processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
-
-    ping_stop_event: Arc<ManualResetEvent>,
-    exit_on_fail: bool,
-    exit_failure_reason: Option<Arc<Mutex<Option<PingResultDto>>>>,
 }
 
 impl PingResultProcessingWorker {
@@ -26,15 +21,11 @@ impl PingResultProcessingWorker {
         receiver: mpsc::Receiver<PingResult>,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
-            let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors);
+            let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors, ping_stop_event);
             let mut worker = PingResultProcessingWorker {
-                common_config: Arc::new(config.common_config.clone()),
                 stop_event,
                 receiver,
                 processors,
-                ping_stop_event,
-                exit_on_fail: config.exit_on_fail,
-                exit_failure_reason: config.exit_failure_reason.clone(),
             };
             worker.run_worker().await;
         });
@@ -81,19 +72,6 @@ impl PingResultProcessingWorker {
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         for processor in &mut self.processors {
             processor.process_ping_result(ping_result);
-        }
-
-        if self.exit_on_fail {
-            if !ping_result.is_succeeded() && !ping_result.is_preparation_error() {
-                tracing::debug!("Ping failure received! Save result as exit reason and signal all ping workers to exit: Result = {:?}", ping_result);
-
-                if self.common_config.quiet_level < RNP_QUIET_LEVEL_NO_OUTPUT {
-                    println!("Ping failure received! Exiting.");
-                }
-
-                *self.exit_failure_reason.as_ref().unwrap().lock().unwrap() = Some(ping_result.create_dto());
-                self.ping_stop_event.set();
-            }
         }
     }
 

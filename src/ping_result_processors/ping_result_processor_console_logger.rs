@@ -1,13 +1,18 @@
 use crate::*;
 use std::io::{stdout, Write};
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tracing;
+use futures_intrusive::sync::ManualResetEvent;
 
 pub struct PingResultProcessorConsoleLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,
     last_console_flush_time: Option<Instant>,
+
+    ping_stop_event: Arc<ManualResetEvent>,
+    exit_on_fail: bool,
+    exit_failure_reason: Option<Arc<Mutex<Option<PingResultDto>>>>,
 
     protocol: Option<String>,
     target: Option<SocketAddr>,
@@ -23,10 +28,18 @@ pub struct PingResultProcessorConsoleLogger {
 
 impl PingResultProcessorConsoleLogger {
     #[tracing::instrument(name = "Creating ping result console logger", level = "debug")]
-    pub fn new(common_config: Arc<PingResultProcessorCommonConfig>) -> PingResultProcessorConsoleLogger {
+    pub fn new(
+        common_config: Arc<PingResultProcessorCommonConfig>,
+        ping_stop_event: Arc<ManualResetEvent>,
+        exit_on_fail: bool,
+        exit_failure_reason: Option<Arc<Mutex<Option<PingResultDto>>>>,
+    ) -> PingResultProcessorConsoleLogger {
         return PingResultProcessorConsoleLogger {
             common_config,
             last_console_flush_time: None,
+            ping_stop_event,
+            exit_on_fail,
+            exit_failure_reason,
             protocol: None,
             target: None,
             ping_count: 0,
@@ -135,16 +148,33 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
         }
 
         self.output_result_to_console(ping_result);
+
+        if self.exit_on_fail {
+            // We ignore the preparation error here, because it is not really network issue.
+            if !ping_result.is_succeeded() && !ping_result.is_preparation_error() {
+                tracing::debug!("Ping failure received! Save result as exit reason and signal all ping workers to exit: Result = {:?}", ping_result);
+                *self.exit_failure_reason.as_ref().unwrap().lock().unwrap() = Some(ping_result.create_dto());
+                self.ping_stop_event.set();
+            }
+        }
     }
 
     fn rundown(&mut self) {
-        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
-            return;
-        }
-
         if self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_RESULT || self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_SUMMARY {
             self.output_ping_count_update_to_console(true);
             println!();
+        }
+
+        // We delay the log output here, because during rundown, we will flush the pending log to console once.
+        // If we don't do it, the output will be chaotic.
+        if !self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+            if self.exit_on_fail && self.exit_failure_reason.as_ref().unwrap().lock().unwrap().is_some() {
+                println!("Ping failure received! Exiting...");
+            }
+        }
+
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
+            return;
         }
 
         // Didn't received any result, skip output statistics.
