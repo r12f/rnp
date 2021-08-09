@@ -3,6 +3,7 @@ use crate::ping_clients::ping_client::PingClientWarning;
 use chrono::{offset::Utc, DateTime};
 use contracts::requires;
 use std::{net::SocketAddr, time::Duration};
+use crate::PingResultDto;
 
 #[derive(Debug)]
 pub struct PingResult {
@@ -92,193 +93,72 @@ impl PingResult {
         }
     }
 
-    pub fn format_as_console_log(&self) -> String {
-        let warmup_sign = if self.is_warmup() { " (warmup)" } else { "" };
-
-        if self.is_timed_out() {
-            return format!(
-                "Reaching {} {} from {}{} failed: Timed out, RTT = {:.2}ms",
-                self.protocol(),
-                self.target(),
-                self.source(),
-                warmup_sign,
-                self.round_trip_time().as_micros() as f64 / 1000.0,
-            );
-        }
-
-        if let Some(error) = self.error() {
-            return match error {
-                PingClientError::PreparationFailed(e) => {
-                    format!(
-                        "Unable to perform ping to {} {} from {}{}, because failed preparing to ping: Error = {}",
-                        self.protocol(),
-                        self.target(),
-                        self.source(),
-                        warmup_sign,
-                        e
-                    )
-                }
-
-                PingClientError::PingFailed(e) => {
-                    format!("Reaching {} {} from {}{} failed: {}", self.protocol(), self.target(), self.source(), warmup_sign, e,)
-                }
-            };
-        }
-
-        if let Some(warning) = self.warning() {
-            match warning {
-                PingClientWarning::AppHandshakeFailed(e) => {
-                    return format!(
-                        "Reaching {} {} from {}{} succeeded, but app handshake failed: RTT={:.2}ms, Error = {}",
-                        self.protocol(),
-                        self.target(),
-                        self.source(),
-                        warmup_sign,
-                        self.round_trip_time().as_micros() as f64 / 1000.0,
-                        e,
-                    );
-                }
-
-                PingClientWarning::DisconnectFailed(e) => {
-                    return format!(
-                        "Reaching {} {} from {}{} succeeded, but disconnect failed: RTT={:.2}ms, Error = {}",
-                        self.protocol(),
-                        self.target(),
-                        self.source(),
-                        warmup_sign,
-                        self.round_trip_time().as_micros() as f64 / 1000.0,
-                        e,
-                    );
-                }
+    pub fn create_dto(&self) -> PingResultDto {
+        let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
+            if let PingClientError::PreparationFailed(pe) = e {
+                pe.to_string()
+            } else {
+                String::from("")
             }
-        }
+        });
 
-        return format!(
-            "Reaching {} {} from {}{} succeeded: RTT={:.2}ms",
-            self.protocol(),
-            self.target(),
-            self.source(),
-            warmup_sign,
-            self.round_trip_time().as_micros() as f64 / 1000.0,
-        );
+        let ping_error =
+            self.error().as_ref().map_or(
+                String::from(""),
+                |e| {
+                    if let PingClientError::PingFailed(pe) = e {
+                        pe.to_string()
+                    } else {
+                        String::from("")
+                    }
+                },
+            );
+
+        let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
+            if let PingClientWarning::AppHandshakeFailed(hw) = w {
+                hw.to_string()
+            } else {
+                String::from("")
+            }
+        });
+
+        let disconnect_error = self.warning().as_ref().map_or(String::from(""), |w| {
+            if let PingClientWarning::DisconnectFailed(dw) = w {
+                dw.to_string()
+            } else {
+                String::from("")
+            }
+        });
+
+        return PingResultDto {
+            utc_time: self.ping_time().clone(),
+            worker_id: self.worker_id(),
+            protocol: self.protocol().to_string(),
+            target_ip: self.target().ip(),
+            target_port: self.target().port(),
+            source_ip: self.source().ip(),
+            source_port: self.source().port(),
+            is_warmup: self.is_warmup(),
+            is_succeeded: self.is_succeeded(),
+            rtt_in_ms: self.round_trip_time().as_millis() as f64,
+            is_timed_out: self.is_timed_out(),
+            preparation_error,
+            ping_error,
+            handshake_error,
+            disconnect_error,
+        };
+    }
+
+    pub fn format_as_console_log(&self) -> String {
+        return self.create_dto().to_console_log();
     }
 
     pub fn format_as_json_string(&self) -> String {
-        let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PreparationFailed(pe) = e {
-                pe.to_string()
-            } else {
-                String::from("")
-            }
-        });
-
-        let ping_error =
-            self.error().as_ref().map_or(
-                String::from(""),
-                |e| {
-                    if let PingClientError::PingFailed(pe) = e {
-                        pe.to_string()
-                    } else {
-                        String::from("")
-                    }
-                },
-            );
-
-        let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::AppHandshakeFailed(hw) = w {
-                hw.to_string()
-            } else {
-                String::from("")
-            }
-        });
-
-        let disconnect_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::DisconnectFailed(dw) = w {
-                dw.to_string()
-            } else {
-                String::from("")
-            }
-        });
-
-        let json = format!(
-            "{{\"utcTime\":\"{:?}\",\"protocol\":\"{}\",\"workerId\":{},\"targetIp\":\"{}\",\"targetPort\":{},\"sourceIp\":\"{}\",\"sourcePort\":{},\"isWarmup\":{},\"isSucceeded\":{},\"rttInMs\":{:.2},\"isTimedOut\":{},\"preparationError\":\"{}\",\"pingError\":\"{}\",\"handshakeError\":\"{}\",\"disconnectError\":\"{}\"}}",
-            self.ping_time(),
-            self.protocol(),
-            self.worker_id(),
-            self.target().ip(),
-            self.target().port(),
-            self.source().ip(),
-            self.source().port(),
-            self.is_warmup(),
-            self.is_succeeded(),
-            self.round_trip_time().as_micros() as f64 / 1000.0,
-            self.is_timed_out(),
-            preparation_error,
-            ping_error,
-            handshake_error,
-            disconnect_error,
-        );
-
-        return json;
+        return self.create_dto().to_json_lite();
     }
 
     pub fn format_as_csv_string(&self) -> String {
-        let preparation_error = self.error().as_ref().map_or(String::from(""), |e| {
-            if let PingClientError::PreparationFailed(pe) = e {
-                pe.to_string()
-            } else {
-                String::from("")
-            }
-        });
-
-        let ping_error =
-            self.error().as_ref().map_or(
-                String::from(""),
-                |e| {
-                    if let PingClientError::PingFailed(pe) = e {
-                        pe.to_string()
-                    } else {
-                        String::from("")
-                    }
-                },
-            );
-
-        let handshake_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::AppHandshakeFailed(hw) = w {
-                hw.to_string()
-            } else {
-                String::from("")
-            }
-        });
-
-        let disconnect_error = self.warning().as_ref().map_or(String::from(""), |w| {
-            if let PingClientWarning::DisconnectFailed(dw) = w {
-                dw.to_string()
-            } else {
-                String::from("")
-            }
-        });
-
-        let csv = format!(
-            "{:?},{},{},{},{},{},{},{},{},{:.2},{},\"{}\",\"{}\",\"{}\",\"{}\"",
-            self.ping_time(),
-            self.worker_id(),
-            self.protocol(),
-            self.target().ip(),
-            self.target().port(),
-            self.source().ip(),
-            self.source().port(),
-            self.is_warmup(),
-            self.is_succeeded(),
-            self.round_trip_time().as_micros() as f64 / 1000.0,
-            self.is_timed_out(),
-            preparation_error,
-            ping_error,
-            handshake_error,
-            disconnect_error,
-        );
-
-        return csv;
+        return self.create_dto().to_csv_lite();
     }
 }
 
@@ -339,12 +219,12 @@ mod tests {
         let results = rnp_test_common::generate_ping_result_test_samples();
         assert_eq!(
             vec![
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":true,\"isSucceeded\":true,\"rttInMs\":10.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\",\"disconnectError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":1000.00,\"isTimedOut\":true,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\",\"disconnectError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":true,\"rttInMs\":20.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"connect aborted\",\"disconnectError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":true,\"rttInMs\":20.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"\",\"handshakeError\":\"\",\"disconnectError\":\"disconnect timeout\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":0.00,\"isTimedOut\":false,\"preparationError\":\"\",\"pingError\":\"connect failed\",\"handshakeError\":\"\",\"disconnectError\":\"\"}",
-                "{\"utcTime\":\"2021-07-06T09:10:11.012Z\",\"protocol\":\"TCP\",\"workerId\":1,\"targetIp\":\"1.2.3.4\",\"targetPort\":443,\"sourceIp\":\"5.6.7.8\",\"sourcePort\":8080,\"isWarmup\":false,\"isSucceeded\":false,\"rttInMs\":0.00,\"isTimedOut\":false,\"preparationError\":\"address in use\",\"pingError\":\"\",\"handshakeError\":\"\",\"disconnectError\":\"\"}",
+                "{\"UtcTime\":\"2021-07-06T09:10:11.012Z\",\"WorkerId\":1,\"Protocol\":\"TCP\",\"TargetIp\":\"1.2.3.4\",\"TargetPort\":443,\"SourceIp\":\"5.6.7.8\",\"SourcePort\":8080,\"IsWarmup\":true,\"IsSucceeded\":true,\"RttInMs\":10.00,\"IsTimedOut\":false,\"PreparationError\":\"\",\"PingError\":\"\",\"HandshakeError\":\"\",\"DisconnectError\":\"\"}",
+                "{\"UtcTime\":\"2021-07-06T09:10:11.012Z\",\"WorkerId\":1,\"Protocol\":\"TCP\",\"TargetIp\":\"1.2.3.4\",\"TargetPort\":443,\"SourceIp\":\"5.6.7.8\",\"SourcePort\":8080,\"IsWarmup\":false,\"IsSucceeded\":false,\"RttInMs\":1000.00,\"IsTimedOut\":true,\"PreparationError\":\"\",\"PingError\":\"\",\"HandshakeError\":\"\",\"DisconnectError\":\"\"}",
+                "{\"UtcTime\":\"2021-07-06T09:10:11.012Z\",\"WorkerId\":1,\"Protocol\":\"TCP\",\"TargetIp\":\"1.2.3.4\",\"TargetPort\":443,\"SourceIp\":\"5.6.7.8\",\"SourcePort\":8080,\"IsWarmup\":false,\"IsSucceeded\":true,\"RttInMs\":20.00,\"IsTimedOut\":false,\"PreparationError\":\"\",\"PingError\":\"\",\"HandshakeError\":\"connect aborted\",\"DisconnectError\":\"\"}",
+                "{\"UtcTime\":\"2021-07-06T09:10:11.012Z\",\"WorkerId\":1,\"Protocol\":\"TCP\",\"TargetIp\":\"1.2.3.4\",\"TargetPort\":443,\"SourceIp\":\"5.6.7.8\",\"SourcePort\":8080,\"IsWarmup\":false,\"IsSucceeded\":true,\"RttInMs\":20.00,\"IsTimedOut\":false,\"PreparationError\":\"\",\"PingError\":\"\",\"HandshakeError\":\"\",\"DisconnectError\":\"disconnect timeout\"}",
+                "{\"UtcTime\":\"2021-07-06T09:10:11.012Z\",\"WorkerId\":1,\"Protocol\":\"TCP\",\"TargetIp\":\"1.2.3.4\",\"TargetPort\":443,\"SourceIp\":\"5.6.7.8\",\"SourcePort\":8080,\"IsWarmup\":false,\"IsSucceeded\":false,\"RttInMs\":0.00,\"IsTimedOut\":false,\"PreparationError\":\"\",\"PingError\":\"connect failed\",\"HandshakeError\":\"\",\"DisconnectError\":\"\"}",
+                "{\"UtcTime\":\"2021-07-06T09:10:11.012Z\",\"WorkerId\":1,\"Protocol\":\"TCP\",\"TargetIp\":\"1.2.3.4\",\"TargetPort\":443,\"SourceIp\":\"5.6.7.8\",\"SourcePort\":8080,\"IsWarmup\":false,\"IsSucceeded\":false,\"RttInMs\":0.00,\"IsTimedOut\":false,\"PreparationError\":\"address in use\",\"PingError\":\"\",\"HandshakeError\":\"\",\"DisconnectError\":\"\"}",
             ],
             results.into_iter().map(|x| x.format_as_json_string()).collect::<Vec<String>>()
         );
