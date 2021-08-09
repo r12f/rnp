@@ -6,9 +6,9 @@ use rnp::{
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use structopt::StructOpt;
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug, StructOpt, PartialEq)]
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]

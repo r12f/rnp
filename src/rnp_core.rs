@@ -115,6 +115,7 @@ impl RnpCore {
         extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
         parallel_ping_count: u32,
         stop_event: Arc<ManualResetEvent>,
+        ping_stop_event: Arc<ManualResetEvent>,
     ) -> (mpsc::Sender<PingResult>, JoinHandle<()>) {
         let mut ping_result_channel_size = parallel_ping_count * 2;
         if ping_result_channel_size < 128 {
@@ -122,8 +123,13 @@ impl RnpCore {
         }
 
         let (ping_result_sender, ping_result_receiver) = mpsc::channel(ping_result_channel_size as usize);
-        let ping_result_processor_join_handle =
-            PingResultProcessingWorker::run(Arc::new(result_processor_config), extra_ping_result_processors, stop_event, ping_result_receiver);
+        let ping_result_processor_join_handle = PingResultProcessingWorker::run(
+            Arc::new(result_processor_config),
+            extra_ping_result_processors,
+            stop_event,
+            ping_stop_event,
+            ping_result_receiver,
+        );
 
         return (ping_result_sender, ping_result_processor_join_handle);
     }

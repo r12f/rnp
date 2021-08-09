@@ -1,26 +1,38 @@
 use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig};
 use futures_intrusive::sync::ManualResetEvent;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
 
 pub struct PingResultProcessingWorker {
     stop_event: Arc<ManualResetEvent>,
+
     receiver: mpsc::Receiver<PingResult>,
     processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
+
+    ping_stop_event: Arc<ManualResetEvent>,
+    exit_on_fail: bool,
+    exit_failure_reason: Option<Arc<Mutex<Option<PingResult>>>>,
 }
 
 impl PingResultProcessingWorker {
+    #[requires(config.exit_on_fail -> config.exit_failure_reason.is_some())]
     pub fn run(
         config: Arc<PingResultProcessorConfig>,
         extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
         stop_event: Arc<ManualResetEvent>,
+        ping_stop_event: Arc<ManualResetEvent>,
         receiver: mpsc::Receiver<PingResult>,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
             let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors);
-
-            let mut worker = PingResultProcessingWorker { stop_event, receiver, processors };
-
+            let mut worker = PingResultProcessingWorker {
+                stop_event,
+                receiver,
+                processors,
+                ping_stop_event,
+                exit_on_fail: config.exit_on_fail,
+                exit_failure_reason: config.exit_failure_reason.clone(),
+            };
             worker.run_worker().await;
         });
 
@@ -66,6 +78,10 @@ impl PingResultProcessingWorker {
     fn process_ping_result(&mut self, ping_result: &PingResult) {
         for processor in &mut self.processors {
             processor.process_ping_result(ping_result);
+        }
+
+        if self.exit_on_fail && !ping_result.is_succeeded() {
+            self.exit_failure_reason.unwrap();
         }
     }
 
