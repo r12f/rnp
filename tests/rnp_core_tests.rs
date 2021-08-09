@@ -96,7 +96,7 @@ fn ping_with_rnp_core_exit_on_fail_should_work() {
 
     let failed_ping_result = exit_reason.lock().unwrap();
     assert!(!failed_ping_result.as_ref().unwrap().is_succeeded);
-    assert!(!failed_ping_result.as_ref().unwrap().ping_error.is_empty());
+    assert!(failed_ping_result.as_ref().unwrap().is_timed_out || !failed_ping_result.as_ref().unwrap().ping_error.is_empty());
 }
 
 fn create_mock_rnp_config(

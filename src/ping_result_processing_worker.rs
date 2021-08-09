@@ -1,10 +1,11 @@
-use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig, PingResultDto};
+use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig, PingResultDto, PingResultProcessorCommonConfig, RNP_QUIET_LEVEL_NO_OUTPUT};
 use futures_intrusive::sync::ManualResetEvent;
 use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task, task::JoinHandle};
 use contracts::requires;
 
 pub struct PingResultProcessingWorker {
+    common_config: Arc<PingResultProcessorCommonConfig>,
     stop_event: Arc<ManualResetEvent>,
 
     receiver: mpsc::Receiver<PingResult>,
@@ -27,6 +28,7 @@ impl PingResultProcessingWorker {
         let join_handle = task::spawn(async move {
             let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors);
             let mut worker = PingResultProcessingWorker {
+                common_config: Arc::new(config.common_config.clone()),
                 stop_event,
                 receiver,
                 processors,
@@ -84,6 +86,11 @@ impl PingResultProcessingWorker {
         if self.exit_on_fail {
             if !ping_result.is_succeeded() && !ping_result.is_preparation_error() {
                 tracing::debug!("Ping failure received! Save result as exit reason and signal all ping workers to exit: Result = {:?}", ping_result);
+
+                if self.common_config.quiet_level < RNP_QUIET_LEVEL_NO_OUTPUT {
+                    println!("Ping failure received! Exiting.");
+                }
+
                 *self.exit_failure_reason.as_ref().unwrap().lock().unwrap() = Some(ping_result.create_dto());
                 self.ping_stop_event.set();
             }
