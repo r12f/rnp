@@ -1,8 +1,9 @@
-use crate::{PingClientFactory, PingResultProcessor, PortRangeList};
+use crate::{PingClientFactory, PingResult, PingResultProcessor, PortRangeList};
 use std::fmt;
 use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use std::{path::PathBuf, time::Duration};
 
 pub const RNP_NAME: &str = "rnp";
@@ -117,15 +118,50 @@ pub struct PingResultProcessorCommonConfig {
     pub quiet_level: i32,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct PingResultProcessorConfig {
     pub common_config: PingResultProcessorCommonConfig,
+    pub exit_on_fail: bool,
+    pub exit_failure_reason: Option<Arc<Mutex<Option<PingResult>>>>,
     pub csv_log_path: Option<PathBuf>,
     pub json_log_path: Option<PathBuf>,
     pub text_log_path: Option<PathBuf>,
     pub show_result_scatter: bool,
     pub show_latency_scatter: bool,
     pub latency_buckets: Option<Vec<f64>>,
+}
+
+impl PartialEq for PingResultProcessorConfig {
+    fn eq(&self, other: &PingResultProcessorConfig) -> bool {
+        if self.common_config != other.common_config {
+            return false;
+        }
+        if self.exit_on_fail != other.exit_on_fail {
+            return false;
+        }
+        if self.exit_failure_reason.is_some() != other.exit_failure_reason.is_some() {
+            return false;
+        }
+        if self.csv_log_path != other.csv_log_path {
+            return false;
+        }
+        if self.json_log_path != other.json_log_path {
+            return false;
+        }
+        if self.text_log_path != other.text_log_path {
+            return false;
+        }
+        if self.show_result_scatter != other.show_result_scatter {
+            return false;
+        }
+        if self.show_latency_scatter != other.show_latency_scatter {
+            return false;
+        }
+        if self.latency_buckets != other.latency_buckets {
+            return false;
+        }
+        return true;
+    }
 }
 
 pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
