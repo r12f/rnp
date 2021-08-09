@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 pub struct PingResultProcessorConsoleLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,
-    last_console_flush_time: Instant,
+    last_console_flush_time: Option<Instant>,
 
     protocol: Option<String>,
     target: Option<SocketAddr>,
@@ -26,7 +26,7 @@ impl PingResultProcessorConsoleLogger {
     pub fn new(common_config: Arc<PingResultProcessorCommonConfig>) -> PingResultProcessorConsoleLogger {
         return PingResultProcessorConsoleLogger {
             common_config,
-            last_console_flush_time: Instant::now(),
+            last_console_flush_time: None,
             protocol: None,
             target: None,
             ping_count: 0,
@@ -90,20 +90,24 @@ impl PingResultProcessorConsoleLogger {
             return;
         }
 
-        println!("{}", ping_result.format_as_console_log());
+        if !self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_RESULT) {
+            println!("{}", ping_result.format_as_console_log());
+        }
     }
 
     fn output_ping_count_update_to_console(&mut self, force: bool) {
         // Only flush once per sec at maximum to avoid frequent flushing.
         let now = Instant::now();
-        let time_since_last_flush = now - self.last_console_flush_time;
-        if !force {
-            if time_since_last_flush.as_millis() < 1000 {
-                return;
+        if let Some(last_console_flush_time) = self.last_console_flush_time {
+            let time_since_last_flush = now - last_console_flush_time;
+            if !force {
+                if time_since_last_flush.as_millis() < 1000 {
+                    return;
+                }
             }
         }
 
-        self.last_console_flush_time = now;
+        self.last_console_flush_time = Some(now);
 
         print!("\r{0} pings finished.", self.ping_count);
 
@@ -122,11 +126,13 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
-        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
-            return;
+        // We use RNP_QUIET_LEVEL_NO_OUTPUT instead of RNP_QUIET_LEVEL_NO_PING_SUMMARY here,
+        // because in no summary level, we still need to count the number of pings and output
+        // to console, which is part of the summary.
+        if !self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+            self.update_statistics(ping_result);
         }
 
-        self.update_statistics(ping_result);
         self.output_result_to_console(ping_result);
     }
 

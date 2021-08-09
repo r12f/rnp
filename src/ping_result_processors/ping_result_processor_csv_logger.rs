@@ -64,7 +64,7 @@ mod tests {
     fn ping_result_process_csv_logger_should_work() {
         let test_log_file_path = "tests_data\\test_log.csv";
         let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(
-            PingResultProcessorCsvLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: 0 }), &PathBuf::from(test_log_file_path)),
+            PingResultProcessorCsvLogger::new(Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }), &PathBuf::from(test_log_file_path)),
         );
         ping_result_processor_test_common::run_ping_result_processor_with_test_samples(
             &mut processor,
