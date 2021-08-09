@@ -139,6 +139,10 @@ impl RnpCore {
     }
 
     fn log_header_to_console(&self) {
+        if self.config.result_processor_config.common_config.quiet_level == RNP_QUIET_LEVEL_NO_OUTPUT {
+            return;
+        }
+
         let ttl_message = match self.config.worker_config.ping_client_config.time_to_live {
             Some(ttl) => format!(" with TTL={}", ttl),
             None => "".to_string(),

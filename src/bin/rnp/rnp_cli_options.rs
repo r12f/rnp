@@ -10,13 +10,13 @@ use structopt::StructOpt;
 #[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
 pub struct RnpCliOptions {
     #[structopt(flatten)]
-    common_options: RnpCliCommonOptions,
+    pub common_options: RnpCliCommonOptions,
 
     #[structopt(flatten)]
-    output_options: RnpCliOutputOptions,
+    pub output_options: RnpCliOutputOptions,
 
     #[structopt(flatten)]
-    quic_options: RnpCliQuicPingOptions,
+    pub quic_options: RnpCliQuicPingOptions,
 }
 
 #[derive(Debug, StructOpt, PartialEq)]
@@ -99,7 +99,7 @@ pub struct RnpCliOutputOptions {
     #[structopt(
         short = "q",
         parse(from_occurrences),
-        help = "Don't log each ping result to console. Summary and other things will still be written to console."
+        help = "Quiet mode. -q = Don't output each ping result; -qq = Don't output final summaries; -qqq = Don't output anything."
     )]
     pub quiet_level: i32,
 
@@ -151,7 +151,7 @@ pub struct RnpCliOutputOptions {
 }
 
 #[derive(Debug, StructOpt, PartialEq)]
-struct RnpCliQuicPingOptions {
+pub struct RnpCliQuicPingOptions {
     #[structopt(
         long,
         help = "Specify the server name in the QUIC pings. Example: localhost."
@@ -609,7 +609,7 @@ mod tests {
                 "--alpn",
                 "hq-29",
                 "--use-timer-rtt",
-                "-qq",
+                "-qqq",
                 "--log-csv",
                 "log.csv",
                 "--log-json",

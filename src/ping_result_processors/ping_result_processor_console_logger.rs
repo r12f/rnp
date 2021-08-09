@@ -85,7 +85,7 @@ impl PingResultProcessorConsoleLogger {
     }
 
     fn output_result_to_console(&mut self, ping_result: &PingResult) {
-        if self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_RESULT {
+        if self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_RESULT || self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_SUMMARY {
             self.output_ping_count_update_to_console(false);
             return;
         }
@@ -122,7 +122,7 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
-        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
             return;
         }
 
@@ -131,11 +131,11 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
     }
 
     fn rundown(&mut self) {
-        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
             return;
         }
 
-        if self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_RESULT {
+        if self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_RESULT || self.config().quiet_level == RNP_QUIET_LEVEL_NO_PING_SUMMARY {
             self.output_ping_count_update_to_console(true);
             println!();
         }

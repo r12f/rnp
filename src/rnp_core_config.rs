@@ -147,4 +147,5 @@ pub struct PingResultProcessorConfig {
 
 pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
 pub const RNP_QUIET_LEVEL_NO_PING_RESULT: i32 = 1;
-pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 2;
+pub const RNP_QUIET_LEVEL_NO_PING_SUMMARY: i32 = 2;
+pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 3;

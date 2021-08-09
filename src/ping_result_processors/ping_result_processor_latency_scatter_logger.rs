@@ -64,7 +64,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
     fn config(&self) -> &PingResultProcessorCommonConfig { self.common_config.as_ref() }
 
     fn process_ping_result(&mut self, ping_result: &PingResult) {
-        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
             return;
         }
 
@@ -112,7 +112,7 @@ impl PingResultProcessor for PingResultProcessorLatencyScatterLogger {
     }
 
     fn rundown(&mut self) {
-        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_OUTPUT) {
+        if self.has_quiet_level(RNP_QUIET_LEVEL_NO_PING_SUMMARY) {
             return;
         }
 
