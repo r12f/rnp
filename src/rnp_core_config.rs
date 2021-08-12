@@ -118,6 +118,11 @@ pub struct PingResultProcessorCommonConfig {
     pub quiet_level: i32,
 }
 
+pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
+pub const RNP_QUIET_LEVEL_NO_PING_RESULT: i32 = 1;
+pub const RNP_QUIET_LEVEL_NO_PING_SUMMARY: i32 = 2;
+pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 3;
+
 #[derive(Debug, Clone)]
 pub struct PingResultProcessorConfig {
     pub common_config: PingResultProcessorCommonConfig,
@@ -164,7 +169,8 @@ impl PartialEq for PingResultProcessorConfig {
     }
 }
 
-pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
-pub const RNP_QUIET_LEVEL_NO_PING_RESULT: i32 = 1;
-pub const RNP_QUIET_LEVEL_NO_PING_SUMMARY: i32 = 2;
-pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 3;
+#[derive(Debug, Clone, PartialEq)]
+pub struct StubServerConfig {
+    pub protocol: RnpSupportedProtocol,
+    pub server_address: SocketAddr,
+}
