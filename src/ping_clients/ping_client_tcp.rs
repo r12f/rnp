@@ -93,13 +93,12 @@ impl PingClient for PingClientTcp {
 #[cfg(test)]
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol};
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol, RnpStubServerConfig};
     use futures_intrusive::sync::ManualResetEvent;
     use std::sync::Arc;
     use std::time::Duration;
-    use tide::prelude::*;
-    use tide::Request;
     use tokio::runtime::Runtime;
+    use crate::stub_servers::stub_server_factory;
 
     #[test]
     fn ping_client_tcp_should_work() {
@@ -108,11 +107,15 @@ mod tests {
         let ready_event = Arc::new(ManualResetEvent::new(false));
         let ready_event_clone = ready_event.clone();
         let _server = rt.spawn(async move {
-            let mut app = tide::new();
-            app.at("/test").get(valid_http_handler);
-            let mut listener = app.bind("127.0.0.1:11337").await.unwrap();
+            let stub_server_config = RnpStubServerConfig {
+                protocol: RnpSupportedProtocol::TCP,
+                server_address: "127.0.0.1:11337".parse().unwrap(),
+                sleep_before_write: Duration::from_millis(0),
+                write_chunk_size: 1024,
+            };
+            let stub_server = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)));
             ready_event_clone.set();
-            listener.accept().await.unwrap_or_default();
+            return stub_server.await;
         });
         rt.block_on(ready_event.wait());
 
@@ -147,9 +150,5 @@ mod tests {
 
             run_ping_client_tests(&mut ping_client, &"127.0.0.1:11337".parse().unwrap(), &expected_results).await;
         });
-    }
-
-    async fn valid_http_handler(_req: Request<()>) -> tide::Result {
-        Ok("It works!".into())
     }
 }
