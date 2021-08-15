@@ -60,8 +60,6 @@ impl StubServerTcp {
 
             if ready.is_readable() {
                 let mut data = vec![0; 1024];
-                // Try to read data, this may still fail with `WouldBlock`
-                // if the readiness event is a false positive.
                 match stream.try_read(&mut data) {
                     Ok(n) => {
                         println!("read {} bytes", n);
@@ -78,8 +76,6 @@ impl StubServerTcp {
             }
 
             if ready.is_writable() {
-                // Try to write data, this may still fail with `WouldBlock`
-                // if the readiness event is a false positive.
                 match stream.try_write(b"hello world") {
                     Ok(n) => {
                         println!("write {} bytes", n);
