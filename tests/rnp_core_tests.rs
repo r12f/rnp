@@ -104,8 +104,8 @@ fn create_mock_rnp_config(
     ping_count: u32,
     warmup_count: u32,
     parallel_ping_count: u32,
-) -> RnpCoreConfig {
-    RnpCoreConfig {
+) -> RnpPingConfig {
+    RnpPingConfig {
         worker_config: PingWorkerConfig {
             protocol: RnpSupportedProtocol::TCP,
             target: "10.0.0.1:443".parse().unwrap(),

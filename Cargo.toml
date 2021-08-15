@@ -42,7 +42,6 @@ webpki = "0.21"
 winres = "0.1.11"
 
 [dev-dependencies]
-tide = "0.16.0"
 async-std = "1.9.0"
 pretty_assertions = "0.7.2"
 serde_json = "1.0"

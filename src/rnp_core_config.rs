@@ -41,7 +41,7 @@ impl fmt::Display for RnpSupportedProtocol {
     }
 }
 
-pub struct RnpCoreConfig {
+pub struct RnpPingConfig {
     pub worker_config: PingWorkerConfig,
     pub worker_scheduler_config: PingWorkerSchedulerConfig,
     pub result_processor_config: PingResultProcessorConfig,
@@ -49,7 +49,7 @@ pub struct RnpCoreConfig {
     pub extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
 }
 
-impl Debug for RnpCoreConfig {
+impl Debug for RnpPingConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("RnpCoreConfig")
             .field("worker_config", &self.worker_config)
@@ -64,8 +64,8 @@ impl Debug for RnpCoreConfig {
     }
 }
 
-impl PartialEq for RnpCoreConfig {
-    fn eq(&self, other: &RnpCoreConfig) -> bool {
+impl PartialEq for RnpPingConfig {
+    fn eq(&self, other: &RnpPingConfig) -> bool {
         if self.worker_config != other.worker_config {
             return false;
         }
@@ -118,6 +118,11 @@ pub struct PingResultProcessorCommonConfig {
     pub quiet_level: i32,
 }
 
+pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
+pub const RNP_QUIET_LEVEL_NO_PING_RESULT: i32 = 1;
+pub const RNP_QUIET_LEVEL_NO_PING_SUMMARY: i32 = 2;
+pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 3;
+
 #[derive(Debug, Clone)]
 pub struct PingResultProcessorConfig {
     pub common_config: PingResultProcessorCommonConfig,
@@ -164,7 +169,10 @@ impl PartialEq for PingResultProcessorConfig {
     }
 }
 
-pub const RNP_QUIET_LEVEL_NONE: i32 = 0;
-pub const RNP_QUIET_LEVEL_NO_PING_RESULT: i32 = 1;
-pub const RNP_QUIET_LEVEL_NO_PING_SUMMARY: i32 = 2;
-pub const RNP_QUIET_LEVEL_NO_OUTPUT: i32 = 3;
+#[derive(Debug, Clone, PartialEq)]
+pub struct RnpStubServerConfig {
+    pub protocol: RnpSupportedProtocol,
+    pub server_address: SocketAddr,
+    pub sleep_before_write: Duration,
+    pub write_chunk_size: usize,
+}
