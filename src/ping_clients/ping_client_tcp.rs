@@ -112,6 +112,7 @@ mod tests {
                 server_address: "127.0.0.1:11337".parse().unwrap(),
                 sleep_before_write: Duration::from_millis(0),
                 write_chunk_size: 1024,
+                report_interval: Duration::from_secs(1),
             };
             let stub_server = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)));
             ready_event_clone.set();

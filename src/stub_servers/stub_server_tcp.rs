@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use tokio::io::Interest;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
-use tokio::time::{Instant, Duration};
+use tokio::time::Instant;
 
 pub struct StubServerTcp {
     config: Arc<RnpStubServerConfig>,
@@ -55,7 +55,7 @@ impl StubServerTcp {
                 // Report interval reached
                 _ = tokio::time::sleep_until(next_report_time) => {
                     self.report_and_reset_conn_stats();
-                    next_report_time += Duration::from_secs(1);
+                    next_report_time += self.config.report_interval;
                 }
 
                 // Stopped
@@ -99,7 +99,9 @@ impl StubServerTcp {
         println!("========== Connection Stats ==========");
         for (id, conn_stats) in &self.conn_stats_map {
             let conn_stats = conn_stats.lock().unwrap().clone_and_clear_stats();
-            println!("[{}] {} => Read = {} bps, Write = {} bps", id, conn_stats.remote_address, conn_stats.bytes_read * 8, conn_stats.bytes_write * 8);
+            let read_bps = conn_stats.bytes_read * 8 * 1000 / (self.config.report_interval.as_millis() as usize);
+            let write_bps = conn_stats.bytes_write * 8 * 1000 / (self.config.report_interval.as_millis() as usize);
+            println!("[{}] {} => Read = {} bytes ({} bps), Write = {} ({} bps)", id, conn_stats.remote_address, read_bps, conn_stats.bytes_read, write_bps, conn_stats.bytes_write);
         }
         println!();
 
