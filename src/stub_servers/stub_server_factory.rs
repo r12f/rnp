@@ -5,6 +5,7 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
+#[tracing::instrument(name = "Start running stub server", level = "debug", skip(stop_event))]
 pub fn run(config: &RnpStubServerConfig, stop_event: Arc<ManualResetEvent>) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
     match config.protocol {
         RnpSupportedProtocol::TCP => return StubServerTcp::run_new(config.clone(), stop_event),

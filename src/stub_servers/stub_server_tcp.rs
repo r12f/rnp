@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use tokio::io::Interest;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
+use tokio::time::{Instant, Duration};
 
 pub struct StubServerTcp {
     config: Arc<RnpStubServerConfig>,
@@ -18,6 +19,7 @@ pub struct StubServerTcp {
 }
 
 impl StubServerTcp {
+    #[tracing::instrument(name = "Start running new TCP stub server", level = "debug", skip(stop_event))]
     pub fn run_new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
         return tokio::spawn(async move {
             let mut server = StubServerTcp::new(config, stop_event);
@@ -25,15 +27,19 @@ impl StubServerTcp {
         });
     }
 
+    #[tracing::instrument(name = "Creating TCP stub server", level = "debug", skip(stop_event))]
     fn new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>) -> StubServerTcp {
         return StubServerTcp { config: Arc::new(config), stop_event, next_conn_id: 0, conn_stats_map: HashMap::new() };
     }
 
+    #[tracing::instrument(name = "Running TCP stub server loop", level = "debug", skip(self))]
     async fn run(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         let listener = TcpListener::bind(self.config.server_address).await?;
 
+        let mut next_report_time = Instant::now();
         loop {
             tokio::select! {
+                // New connection arrived.
                 accept_result = listener.accept() => {
                     match accept_result {
                         Ok((stream, peer_addr)) => {
@@ -45,13 +51,24 @@ impl StubServerTcp {
                         }
                     }
                 }
-                _ = self.stop_event.wait() => { return Ok(()); }
+
+                // Report interval reached
+                _ = tokio::time::sleep_until(next_report_time) => {
+                    self.report_and_reset_conn_stats();
+                    next_report_time += Duration::from_secs(1);
+                }
+
+                // Stopped
+                _ = self.stop_event.wait() => {
+                    break;
+                }
             }
         }
 
         return Ok(());
     }
 
+    #[tracing::instrument(name = "New connection received", level = "debug", skip(self))]
     async fn handle_new_connection(&mut self, stream: TcpStream, peer_addr: SocketAddr) {
         println!("New connection received: Remote = {}", peer_addr);
 
@@ -61,7 +78,7 @@ impl StubServerTcp {
         let conn_id = self.next_conn_id;
         self.next_conn_id += 1;
 
-        let conn_stats = Arc::new(Mutex::new(StubServerTcpConnectionStats::new()));
+        let conn_stats = Arc::new(Mutex::new(StubServerTcpConnectionStats::new(&peer_addr)));
         self.conn_stats_map.insert(conn_id, conn_stats.clone());
 
         tokio::spawn(async move {
@@ -71,6 +88,23 @@ impl StubServerTcp {
                 _ = stream_stop_event.wait() => { return; }
             }
         });
+    }
+
+    #[tracing::instrument(name = "Report and reset connection stats", level = "debug", skip(self))]
+    fn report_and_reset_conn_stats(&mut self) {
+        if self.conn_stats_map.len() == 0 {
+            return;
+        }
+
+        println!("========== Connection Stats ==========");
+        for (id, conn_stats) in &self.conn_stats_map {
+            let conn_stats = conn_stats.lock().unwrap().clone_and_clear_stats();
+            println!("[{}] {} => Read = {} bps, Write = {} bps", id, conn_stats.remote_address, conn_stats.bytes_read * 8, conn_stats.bytes_write * 8);
+        }
+        println!();
+
+        // We clean up the dead connections after reporting, otherwise we will miss the stats in the last round of report.
+        self.conn_stats_map.retain(|_, v| v.lock().unwrap().is_alive);
     }
 }
 
@@ -84,6 +118,7 @@ struct StubServerTcpConnection {
 }
 
 impl StubServerTcpConnection {
+    #[tracing::instrument(name = "Creating new TCP connection worker", level = "debug", skip(stream, conn_stats))]
     fn new(
         id: u32,
         config: Arc<RnpStubServerConfig>,
@@ -94,6 +129,7 @@ impl StubServerTcpConnection {
         return StubServerTcpConnection { id, config, stream, remote_address, read_buf: vec![0; 4096], conn_stats };
     }
 
+    #[tracing::instrument(name = "Running new TCP connection worker", level = "debug", skip(self), fields(id = %self.id, remote_address = %self.remote_address))]
     async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         let result = self.run_loop().await;
         self.conn_stats.lock().unwrap().is_alive = false;
@@ -147,23 +183,29 @@ impl StubServerTcpConnection {
 
 #[derive(Debug, Clone, PartialEq)]
 struct StubServerTcpConnectionStats {
+    pub remote_address: SocketAddr,
     pub is_alive: bool,
     pub bytes_read: usize,
     pub bytes_write: usize,
 }
 
 impl StubServerTcpConnectionStats {
-    pub fn new() -> StubServerTcpConnectionStats {
-        return StubServerTcpConnectionStats { is_alive: true, bytes_read: 0, bytes_write: 0 };
+    pub fn new(remote_address: &SocketAddr) -> StubServerTcpConnectionStats {
+        return StubServerTcpConnectionStats {
+            remote_address: remote_address.clone(),
+            is_alive: true,
+            bytes_read: 0,
+            bytes_write: 0,
+        };
     }
 
-    pub fn clone_and_clear(&mut self) -> StubServerTcpConnectionStats {
+    pub fn clone_and_clear_stats(&mut self) -> StubServerTcpConnectionStats {
         let stats = self.clone();
-        self.clear();
+        self.clear_stats();
         return stats;
     }
 
-    pub fn clear(&mut self) {
+    pub fn clear_stats(&mut self) {
         self.bytes_write = 0;
         self.bytes_read = 0;
     }
