@@ -114,8 +114,11 @@ mod tests {
                 write_chunk_size: 1024,
                 report_interval: Duration::from_secs(1),
             };
-            let stub_server = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)));
-            ready_event_clone.set();
+            let stub_server = stub_server_factory::run(
+                &stub_server_config,
+                Arc::new(ManualResetEvent::new(false)),
+                ready_event_clone,
+            );
             return stub_server.await;
         });
         rt.block_on(ready_event.wait());
@@ -132,7 +135,7 @@ mod tests {
             };
             let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
 
-            // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
+            // When connecting to a non-existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
             let expected_results = ExpectedPingClientTestResults {
                 timeout_min_time: Duration::from_millis(200),
                 ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,

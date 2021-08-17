@@ -13,6 +13,7 @@ use tokio::time::Instant;
 pub struct StubServerTcp {
     config: Arc<RnpStubServerConfig>,
     stop_event: Arc<ManualResetEvent>,
+    server_started_event: Arc<ManualResetEvent>,
 
     next_conn_id: u32,
     conn_stats_map: HashMap<u32, Arc<Mutex<StubServerTcpConnectionStats>>>,
@@ -20,21 +21,28 @@ pub struct StubServerTcp {
 
 impl StubServerTcp {
     #[tracing::instrument(name = "Start running new TCP stub server", level = "debug", skip(stop_event))]
-    pub fn run_new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
+    pub fn run_new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>, server_started_event: Arc<ManualResetEvent>) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
         return tokio::spawn(async move {
-            let mut server = StubServerTcp::new(config, stop_event);
+            let mut server = StubServerTcp::new(config, stop_event, server_started_event);
             return server.run().await;
         });
     }
 
     #[tracing::instrument(name = "Creating TCP stub server", level = "debug", skip(stop_event))]
-    fn new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>) -> StubServerTcp {
-        return StubServerTcp { config: Arc::new(config), stop_event, next_conn_id: 0, conn_stats_map: HashMap::new() };
+    fn new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>, server_started_event: Arc<ManualResetEvent>) -> StubServerTcp {
+        return StubServerTcp {
+            config: Arc::new(config),
+            stop_event,
+            server_started_event,
+            next_conn_id: 0,
+            conn_stats_map: HashMap::new(),
+        };
     }
 
     #[tracing::instrument(name = "Running TCP stub server loop", level = "debug", skip(self))]
     async fn run(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         let listener = TcpListener::bind(self.config.server_address).await?;
+        self.server_started_event.set();
 
         let mut next_report_time = Instant::now();
         loop {
