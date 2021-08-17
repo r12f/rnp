@@ -175,4 +175,5 @@ pub struct RnpStubServerConfig {
     pub server_address: SocketAddr,
     pub sleep_before_write: Duration,
     pub write_chunk_size: usize,
+    pub report_interval: Duration,
 }
