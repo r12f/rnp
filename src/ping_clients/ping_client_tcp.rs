@@ -93,12 +93,12 @@ impl PingClient for PingClientTcp {
 #[cfg(test)]
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpSupportedProtocol, RnpStubServerConfig};
+    use crate::stub_servers::stub_server_factory;
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpStubServerConfig, RnpSupportedProtocol};
     use futures_intrusive::sync::ManualResetEvent;
     use std::sync::Arc;
     use std::time::Duration;
     use tokio::runtime::Runtime;
-    use crate::stub_servers::stub_server_factory;
 
     #[test]
     fn ping_client_tcp_should_work() {
@@ -114,11 +114,7 @@ mod tests {
                 write_chunk_size: 1024,
                 report_interval: Duration::from_secs(1),
             };
-            let stub_server = stub_server_factory::run(
-                &stub_server_config,
-                Arc::new(ManualResetEvent::new(false)),
-                ready_event_clone,
-            );
+            let stub_server = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone);
             return stub_server.await;
         });
         rt.block_on(ready_event.wait());

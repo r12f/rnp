@@ -21,7 +21,11 @@ pub struct StubServerTcp {
 
 impl StubServerTcp {
     #[tracing::instrument(name = "Start running new TCP stub server", level = "debug", skip(stop_event))]
-    pub fn run_new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>, server_started_event: Arc<ManualResetEvent>) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
+    pub fn run_new(
+        config: RnpStubServerConfig,
+        stop_event: Arc<ManualResetEvent>,
+        server_started_event: Arc<ManualResetEvent>,
+    ) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
         return tokio::spawn(async move {
             let mut server = StubServerTcp::new(config, stop_event, server_started_event);
             return server.run().await;
@@ -30,13 +34,7 @@ impl StubServerTcp {
 
     #[tracing::instrument(name = "Creating TCP stub server", level = "debug", skip(stop_event))]
     fn new(config: RnpStubServerConfig, stop_event: Arc<ManualResetEvent>, server_started_event: Arc<ManualResetEvent>) -> StubServerTcp {
-        return StubServerTcp {
-            config: Arc::new(config),
-            stop_event,
-            server_started_event,
-            next_conn_id: 0,
-            conn_stats_map: HashMap::new(),
-        };
+        return StubServerTcp { config: Arc::new(config), stop_event, server_started_event, next_conn_id: 0, conn_stats_map: HashMap::new() };
     }
 
     #[tracing::instrument(name = "Running TCP stub server loop", level = "debug", skip(self))]
@@ -109,7 +107,10 @@ impl StubServerTcp {
             let conn_stats = conn_stats.lock().unwrap().clone_and_clear_stats();
             let read_bps = conn_stats.bytes_read * 8 * 1000 / (self.config.report_interval.as_millis() as usize);
             let write_bps = conn_stats.bytes_write * 8 * 1000 / (self.config.report_interval.as_millis() as usize);
-            println!("[{}] {} => Read = {} bytes ({} bps), Write = {} ({} bps)", id, conn_stats.remote_address, read_bps, conn_stats.bytes_read, write_bps, conn_stats.bytes_write);
+            println!(
+                "[{}] {} => Read = {} bytes ({} bps), Write = {} ({} bps)",
+                id, conn_stats.remote_address, read_bps, conn_stats.bytes_read, write_bps, conn_stats.bytes_write
+            );
         }
         println!();
 
@@ -201,12 +202,7 @@ struct StubServerTcpConnectionStats {
 
 impl StubServerTcpConnectionStats {
     pub fn new(remote_address: &SocketAddr) -> StubServerTcpConnectionStats {
-        return StubServerTcpConnectionStats {
-            remote_address: remote_address.clone(),
-            is_alive: true,
-            bytes_read: 0,
-            bytes_write: 0,
-        };
+        return StubServerTcpConnectionStats { remote_address: remote_address.clone(), is_alive: true, bytes_read: 0, bytes_write: 0 };
     }
 
     pub fn clone_and_clear_stats(&mut self) -> StubServerTcpConnectionStats {

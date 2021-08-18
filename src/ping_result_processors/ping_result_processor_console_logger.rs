@@ -1,10 +1,10 @@
 use crate::*;
+use futures_intrusive::sync::ManualResetEvent;
 use std::io::{stdout, Write};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tracing;
-use futures_intrusive::sync::ManualResetEvent;
 
 pub struct PingResultProcessorConsoleLogger {
     common_config: Arc<PingResultProcessorCommonConfig>,

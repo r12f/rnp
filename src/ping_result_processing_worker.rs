@@ -1,8 +1,8 @@
 use crate::{ping_result_processors::ping_result_processor_factory, PingResult, PingResultProcessor, PingResultProcessorConfig};
+use contracts::requires;
 use futures_intrusive::sync::ManualResetEvent;
 use std::sync::Arc;
 use tokio::{sync::mpsc, task, task::JoinHandle};
-use contracts::requires;
 
 pub struct PingResultProcessingWorker {
     stop_event: Arc<ManualResetEvent>,
@@ -22,11 +22,7 @@ impl PingResultProcessingWorker {
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
             let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors, ping_stop_event);
-            let mut worker = PingResultProcessingWorker {
-                stop_event,
-                receiver,
-                processors,
-            };
+            let mut worker = PingResultProcessingWorker { stop_event, receiver, processors };
             worker.run_worker().await;
         });
 

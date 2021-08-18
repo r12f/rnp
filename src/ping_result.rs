@@ -1,9 +1,9 @@
 use crate::ping_clients::ping_client::PingClientError;
 use crate::ping_clients::ping_client::PingClientWarning;
+use crate::PingResultDto;
 use chrono::{offset::Utc, DateTime};
 use contracts::requires;
 use std::{net::SocketAddr, time::Duration};
-use crate::PingResultDto;
 
 #[derive(Debug)]
 pub struct PingResult {
