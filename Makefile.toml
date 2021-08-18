@@ -68,9 +68,9 @@ echo "Windows builds generates PDB by default, so nothing to generate here."
 
 [tasks.make-symbol-linux]
 script = '''
-$(GCC_XCOMPILER_ID)objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
-$(GCC_XCOMPILER_ID)strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
-$(GCC_XCOMPILER_ID)objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+$(GCC_XCOMPILER_ID)-objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
+$(GCC_XCOMPILER_ID)-strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
+$(GCC_XCOMPILER_ID)-objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
 '''
 
 [tasks.make-symbol-mac]
