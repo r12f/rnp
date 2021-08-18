@@ -1,0 +1,29 @@
+fn eval_build_template
+    content = set ${1}
+
+    # Build related definitions
+    content = replace ${content} "{build_branch_name}" ${BUILD_BRANCH}
+    content = replace ${content} "{build_tag}" ${BUILD_TAG}
+    content = replace ${content} "{version}" ${BUILD_VERSION}
+    content = replace ${content} "{target_short}" ${BUILD_FLAVOR}
+    content = replace ${content} "{target}" ${BUILD_TARGET}
+    content = replace ${content} "{build_arch}" ${BUILD_ARCH}
+
+    # File hash
+    content = replace ${content} "{rnp_bin_hash_x86}" ${RNP_BIN_HASH_X86}
+    content = replace ${content} "{rnp_bin_hash_x64}" ${RNP_BIN_HASH_X64}
+    content = replace ${content} "{package_zip_hash_x86}" ${PACKAGE_ZIP_HASH_X86}
+    content = replace ${content} "{package_zip_hash_x64}" ${PACKAGE_ZIP_HASH_X64}
+    content = replace ${content} "{source_package_tar_hash}" ${SOURCE_PACKAGE_TAR_HASH}
+
+    return ${content}
+end
+
+fn eval_build_template_file
+    echo "Evaluating build template file: File = ${1}, Target = ${2}"
+    content = readfile ${1}
+    content = eval_build_template ${content}
+
+    echo "Write evaluated build template file: File = ${2}, Content = ${content}"
+    writefile ${2} ${content}
+end
