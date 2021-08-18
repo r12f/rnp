@@ -14,8 +14,8 @@ BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
 RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
 
 # Sign settings
+RNP_SIGNING_VAULT_URL = { value = "${RNP_SIGNING_VAULT_URL}", condition = { env_set = ["RNP_SIGNING_VAULT_URL"] } }
 RNP_SIGNING_URL = ""
-RNP_SIGNING_VAULT_URL = ""
 RNP_SIGNING_CLIENT_ID = ""
 RNP_SIGNING_CLIENT_SECRET = ""
 RNP_SIGNING_CERT_NAME = ""
@@ -84,7 +84,7 @@ strip -S ${BUILD_DIR}/rnp
 # Sign
 [tasks.sign]
 description = "Run AzureSignTool to sign the binaries."
-condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_CLIENT_ID" ] }
+condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_VAULT_URL" ] }
 command = "AzureSignTool"
 args = ["sign", "-du", "${RNP_SIGNING_URL}", "${RNP_SIGNING_VAULT_URL}", "-kvi", "${RNP_SIGNING_CLIENT_ID}", "-kvs", "${RNP_SIGNING_CLIENT_SECRET}", "-kvc", "${RNP_SIGNING_CERT_NAME}", "-v", "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/release/rnp.exe"]
 
