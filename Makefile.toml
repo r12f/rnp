@@ -13,12 +13,12 @@ BUILD_BRANCH = "main"
 BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
 RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
 
-# Sign settings
-RNP_SIGNING_VAULT_URL = { value = "${RNP_SIGNING_VAULT_URL}", condition = { env_set = ["RNP_SIGNING_VAULT_URL"] } }
-RNP_SIGNING_URL = ""
-RNP_SIGNING_CLIENT_ID = ""
-RNP_SIGNING_CLIENT_SECRET = ""
-RNP_SIGNING_CERT_NAME = ""
+# Sign settings (Use RNP_SIGNING_URL as enablement key.)
+RNP_SIGNING_URL = { value = "${RNP_SIGNING_URL}", condition = { env_set = ["RNP_SIGNING_URL"] } }
+RNP_SIGNING_VAULT_URL = { value = "${RNP_SIGNING_VAULT_URL}", condition = { env_not_set = ["RNP_SIGNING_VAULT_URL"] } }
+RNP_SIGNING_CLIENT_ID = { value = "${RNP_SIGNING_CLIENT_ID}", condition = { env_not_set = ["RNP_SIGNING_CLIENT_ID"] } }
+RNP_SIGNING_CLIENT_SECRET = { value = "${RNP_SIGNING_CLIENT_SECRET}", condition = { env_not_set = ["RNP_SIGNING_CLIENT_SECRET"] } }
+RNP_SIGNING_CERT_NAME = { value = "${RNP_SIGNING_CERT_NAME}", condition = { env_not_set = ["RNP_SIGNING_CERT_NAME"] } }
 
 ##############################################
 # Build
@@ -84,7 +84,7 @@ strip -S ${BUILD_DIR}/rnp
 # Sign
 [tasks.sign]
 description = "Run AzureSignTool to sign the binaries."
-condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_VAULT_URL" ] }
+condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_URL" ] }
 command = "AzureSignTool"
 args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}", "-kvi", "${RNP_SIGNING_CLIENT_ID}", "-kvs", "${RNP_SIGNING_CLIENT_SECRET}", "-kvc", "${RNP_SIGNING_CERT_NAME}", "-v", "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/release/rnp.exe"]
 
