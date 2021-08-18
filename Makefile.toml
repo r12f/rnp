@@ -27,7 +27,7 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 [tasks.build]
 description = "Build the program."
 clear = true
-dependencies = ["format", "cargo-build", "make-symbol", "sign", "pack"]
+dependencies = ["format", "cargo-build", "make-symbol", "sign"]
 
 # Format the code in dev profile.
 [tasks.format]
