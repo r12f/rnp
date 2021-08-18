@@ -1,4 +1,4 @@
-use crate::{PingClientFactory, PingResultProcessor, PortRangeList, PingResultDto};
+use crate::{PingClientFactory, PingResultDto, PingResultProcessor, PortRangeList};
 use std::fmt;
 use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};

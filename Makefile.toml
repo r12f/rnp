@@ -1,0 +1,191 @@
+[env]
+# Directories
+BUILD_DIR = { source = "${CARGO_MAKE_PROFILE}", default_value = "target/debug", mapping = {"production" = "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/release" } }
+PUBLISH_DIR = "./publish"
+PACKAGE_DIR = "./publish/packages"
+
+# Build settings
+GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
+BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}", mapping = {"x86_64" = "x64"} }
+BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
+BUILD_VERSION = "0.1.0"
+BUILD_BRANCH = "main"
+BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
+RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
+
+# Sign settings (Use RNP_SIGNING_URL as enablement key.)
+RNP_SIGNING_URL = { value = "${RNP_SIGNING_URL}", condition = { env_set = ["RNP_SIGNING_URL"] } }
+RNP_SIGNING_VAULT_URL = { value = "${RNP_SIGNING_VAULT_URL}", condition = { env_not_set = ["RNP_SIGNING_VAULT_URL"] } }
+RNP_SIGNING_CLIENT_ID = { value = "${RNP_SIGNING_CLIENT_ID}", condition = { env_not_set = ["RNP_SIGNING_CLIENT_ID"] } }
+RNP_SIGNING_CLIENT_SECRET = { value = "${RNP_SIGNING_CLIENT_SECRET}", condition = { env_not_set = ["RNP_SIGNING_CLIENT_SECRET"] } }
+RNP_SIGNING_CERT_NAME = { value = "${RNP_SIGNING_CERT_NAME}", condition = { env_not_set = ["RNP_SIGNING_CERT_NAME"] } }
+
+##############################################
+# Build
+#
+[tasks.build]
+description = "Build the program."
+clear = true
+dependencies = ["format", "cargo-build", "make-symbol", "sign", "pack"]
+
+# Format the code in dev profile.
+[tasks.format]
+description = "Use rustfmt to format the code."
+condition = { profiles = ["development"] }
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+# Cargo build
+[tasks.cargo-build]
+description = "Run cargo build."
+run_task = [
+    { name = "cargo-build-dev", condition = { profiles = ["development"] } },
+    { name = "cargo-build-release", condition = { profiles = ["production"] } },
+]
+
+[tasks.cargo-build-dev]
+description = "Run cargo build with dev profile."
+command = "cargo"
+args = ["build"]
+
+[tasks.cargo-build-release]
+description = "Run cargo build with release profile."
+command = "cargo"
+args = ["build", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+
+# Make symbols
+[tasks.make-symbol]
+windows_alias = "make-symbol-win"
+linux_alias = "make-symbol-linux"
+mac_alias = "make-symbol-mac"
+
+[tasks.make-symbol-win]
+script_runner = "@duckscript"
+script = '''
+echo "Windows builds generates PDB by default, so nothing to generate here."
+'''
+
+[tasks.make-symbol-linux]
+script = '''
+$(GCC_XCOMPILER_ID)-objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
+$(GCC_XCOMPILER_ID)-strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
+$(GCC_XCOMPILER_ID)-objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+'''
+
+[tasks.make-symbol-mac]
+script = '''
+brew install binutils
+/usr/local/opt/binutils/bin/gobjcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
+strip -S ${BUILD_DIR}/rnp
+/usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+'''
+
+# Sign
+[tasks.sign]
+description = "Run AzureSignTool to sign the binaries."
+condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_URL" ] }
+command = "AzureSignTool"
+args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}", "-kvi", "${RNP_SIGNING_CLIENT_ID}", "-kvs", "${RNP_SIGNING_CLIENT_SECRET}", "-kvc", "${RNP_SIGNING_CERT_NAME}", "-v", "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/release/rnp.exe"]
+
+# Pack packages for each platform
+[tasks.pack]
+description = "Pack binaries into packages."
+condition = { profiles = ["production"] }
+run_task = [
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip"], condition = { platforms = ["windows"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar"], condition = { platforms = ["linux", "macos"] } },
+]
+
+[tasks.pack-prepare]
+description = "Prepare environments for pack."
+script_runner = "@duckscript"
+script = '''
+echo "Removing publish directory: ${PUBLISH_DIR}"
+rm -r ${PUBLISH_DIR}
+
+if not is_dir ${PUBLISH_DIR}
+    echo "Creating publish directory: ${PUBLISH_DIR}"
+    mkdir ${PUBLISH_DIR}
+end
+
+if not is_dir ${PACKAGE_DIR}
+    echo "Creating package directory: ${PACKAGE_DIR}"
+    mkdir ${PACKAGE_DIR}
+end
+'''
+
+[tasks.pack-binaries]
+description = "Pack binaries."
+script_runner = "@duckscript"
+script = '''
+OUT_DIR = set "${PUBLISH_DIR}/bin"
+
+if not is_dir ${OUT_DIR}
+    echo "Creating output directory: ${OUT_DIR}"
+    mkdir ${OUT_DIR}
+end
+
+cp ${BUILD_DIR}/${RNP_FILE_NAME} ${OUT_DIR}/${RNP_FILE_NAME}
+cp README.md ${OUT_DIR}/README.md
+cp LICENSE.txt ${OUT_DIR}/LICENSE.txt
+'''
+
+[tasks.pack-symbols]
+description = "Pack symbol files."
+script_runner = "@duckscript"
+script = '''
+OUT_DIR = set "${PUBLISH_DIR}/symbols"
+
+if not is_dir ${OUT_DIR}
+    echo "Creating output directory: ${OUT_DIR}"
+    mkdir ${OUT_DIR}
+end
+
+if is_path_exists ${BUILD_DIR}/rnp.pdb
+    cp ${BUILD_DIR}/rnp.pdb ${OUT_DIR}/rnp.pdb
+end
+
+if is_path_exists ${BUILD_DIR}/rnp.debug
+    cp ${BUILD_DIR}/*.debug ${OUT_DIR}/rnp.debug
+end
+'''
+
+[tasks.pack-zip]
+description = "Pack zip package."
+script_runner = "@duckscript"
+script = '''
+ZIP_FILE_PATH = set "${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.zip"
+echo "Pack binaries to ${ZIP_FILE_PATH}"
+exec 7z -tzip a ${ZIP_FILE_PATH} ./${PUBLISH_DIR}/bin/*
+'''
+
+[tasks.pack-tar]
+description = "Pack tar package."
+script_runner = "@duckscript"
+script = '''
+TAR_FILE_PATH = set "${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
+echo "Pack binaries to ${TAR_FILE_PATH}"
+exec tar -cvzf ${TAR_FILE_PATH} --directory ${PUBLISH_DIR}/bin *
+'''
+
+##############################################
+# Test
+#
+[tasks.test]
+description = "Run all tests."
+clear = true
+run_task = [
+    { name = "test-dev", condition = { profiles = ["development"] } },
+    { name = "test-release", condition = { profiles = ["production"] } },
+]
+
+[tasks.test-dev]
+description = "Run all tests with dev profile."
+command = "cargo"
+args = ["test"]
+
+[tasks.test-release]
+description = "Run all tests with release profile."
+command = "cargo"
+args = ["test", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]

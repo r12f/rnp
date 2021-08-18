@@ -17,12 +17,12 @@ mod ping_result;
 mod ping_result_processing_worker;
 mod ping_result_processors;
 mod ping_worker;
-mod stub_servers;
 mod rnp_basic_types;
 mod rnp_core;
 mod rnp_core_config;
 mod rnp_dto;
 mod rnp_utils;
+mod stub_servers;
 
 #[cfg(test)]
 mod rnp_test_common;

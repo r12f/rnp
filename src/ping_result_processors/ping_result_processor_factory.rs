@@ -6,8 +6,8 @@ use crate::ping_result_processors::ping_result_processor_latency_scatter_logger:
 use crate::ping_result_processors::ping_result_processor_result_scatter_logger::PingResultProcessorResultScatterLogger;
 use crate::ping_result_processors::ping_result_processor_text_logger::PingResultProcessorTextLogger;
 use crate::{PingResultProcessor, PingResultProcessorConfig};
-use std::sync::Arc;
 use futures_intrusive::sync::ManualResetEvent;
+use std::sync::Arc;
 
 pub fn new(
     config: &PingResultProcessorConfig,
@@ -71,8 +71,8 @@ pub fn new(
 mod tests {
     use crate::ping_result_processors::ping_result_processor_factory::new;
     use crate::*;
-    use std::path::PathBuf;
     use futures_intrusive::sync::ManualResetEvent;
+    use std::path::PathBuf;
     use std::sync::Arc;
 
     #[test]
