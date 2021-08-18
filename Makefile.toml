@@ -1,8 +1,8 @@
 [env]
 # Directories
-BUILD_DIR = { source = "${CARGO_MAKE_PROFILE}", default_value = "target/debug", mapping = {"production" = "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/release" } }
-PUBLISH_DIR = "./publish"
-PACKAGE_DIR = "./publish/packages"
+BUILD_DIR = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}"
+PUBLISH_DIR = "./publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
+PACKAGE_DIR = "${PUBLISH_DIR}/packages"
 
 # Build settings
 GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
@@ -48,7 +48,7 @@ run_task = [
 [tasks.cargo-build-dev]
 description = "Run cargo build with dev profile."
 command = "cargo"
-args = ["build"]
+args = ["build", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
 
 [tasks.cargo-build-release]
 description = "Run cargo build with release profile."
@@ -87,14 +87,14 @@ strip -S ${BUILD_DIR}/rnp
 description = "Run AzureSignTool to sign the binaries."
 condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_URL" ] }
 command = "AzureSignTool"
-args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}", "-kvi", "${RNP_SIGNING_CLIENT_ID}", "-kvs", "${RNP_SIGNING_CLIENT_SECRET}", "-kvc", "${RNP_SIGNING_CERT_NAME}", "-v", "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/release/rnp.exe"]
+args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}", "-kvi", "${RNP_SIGNING_CLIENT_ID}", "-kvs", "${RNP_SIGNING_CLIENT_SECRET}", "-kvc", "${RNP_SIGNING_CERT_NAME}", "-v", "${BUILD_DIR}/rnp.exe"]
 
 # Pack packages for each platform
 [tasks.pack]
 description = "Pack binaries into packages."
 condition = { profiles = ["production"] }
 run_task = [
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget"], condition = { platforms = ["windows"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix"], condition = { platforms = ["windows"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["linux", "macos"] } },
 ]
 
@@ -171,7 +171,7 @@ exec tar -cvzf ${TAR_FILE_PATH} --directory ${PUBLISH_DIR}/bin *
 '''
 
 [tasks.pack-nuget]
-description = "Pack zip package."
+description = "Pack nuget package."
 script_runner = "@duckscript"
 script = '''
 !include_files ./build/pack/pack_utils.ds
@@ -195,6 +195,33 @@ end
 exec dotnet pack ${INT_DIR}/rnp_nupkg.csproj -o ${OUT_DIR}
 '''
 
+[tasks.pack-msix]
+description = "Pack msix package."
+script_runner = "@duckscript"
+script = '''
+!include_files ./build/pack/pack_utils.ds
+
+INT_DIR = set "${BUILD_DIR}/msix"
+
+echo "Removing intermediate directory: ${INT_DIR}"
+rm -r ${INT_DIR}
+
+echo "Copying bin output as intermediate directory: ${INT_DIR}"
+cp ${PUBLISH_DIR}/bin ${INT_DIR}
+cp ./assets ${INT_DIR}
+eval_build_template_file "./build/templates/msix/appxmanifest.xml" ${INT_DIR}/appxmanifest.xml
+eval_build_template_file "./build/templates/msix/appxmappings-make.txt" ${INT_DIR}/appxmappings.txt
+
+OUT_DIR = set "${PUBLISH_DIR}/msix"
+
+if not is_dir ${OUT_DIR}
+    echo "Creating output directory: ${OUT_DIR}"
+    mkdir ${OUT_DIR}
+end
+
+exec "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/makeappx.exe" pack /m "${INT_DIR}/appxmanifest.xml" /f "${INT_DIR}/appxmappings.txt" /p "${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
+'''
+
 ##############################################
 # Test
 #
@@ -209,7 +236,7 @@ run_task = [
 [tasks.test-dev]
 description = "Run all tests with dev profile."
 command = "cargo"
-args = ["test"]
+args = ["test", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
 
 [tasks.test-release]
 description = "Run all tests with release profile."
