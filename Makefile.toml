@@ -69,15 +69,28 @@ echo "Windows builds generates PDB by default, so nothing to generate here."
 '''
 
 [tasks.make-symbol-linux]
+script_runner="bash"
 script = '''
-$(GCC_XCOMPILER_ID)-objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
-$(GCC_XCOMPILER_ID)-strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
-$(GCC_XCOMPILER_ID)-objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+GCC_PREFIX=""
+if [[ "${GCC_XCOMPILER_ID}" -ne "" ]]; then GCC_PREFIX="${GCC_XCOMPILER_ID}-"; fi
+
+echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
+rm -f ${BUILD_DIR}/rnp.debug
+
+echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
+${GCC_PREFIX}objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
+${GCC_PREFIX}strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
+${GCC_PREFIX}objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
 '''
 
 [tasks.make-symbol-mac]
 script = '''
 brew install binutils
+
+echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
+rm -f ${BUILD_DIR}/rnp.debug
+
+echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
 /usr/local/opt/binutils/bin/gobjcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
 strip -S ${BUILD_DIR}/rnp
 /usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
@@ -151,7 +164,7 @@ if is_path_exists ${BUILD_DIR}/rnp.pdb
 end
 
 if is_path_exists ${BUILD_DIR}/rnp.debug
-    cp ${BUILD_DIR}/*.debug ${OUT_DIR}/rnp.debug
+    cp ${BUILD_DIR}/rnp.debug ${OUT_DIR}/rnp.debug
 end
 '''
 
