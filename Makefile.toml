@@ -2,7 +2,7 @@
 # Directories
 BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
 BUILD_DIR = "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
-PUBLISH_DIR = "./publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
+PUBLISH_DIR = "./publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 PACKAGE_DIR = "${PUBLISH_DIR}/packages"
 
 # Build settings
@@ -93,7 +93,6 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 # Pack packages for each platform
 [tasks.pack]
 description = "Pack binaries into packages."
-# condition = { profiles = ["production"] }
 run_task = [
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix"], condition = { platforms = ["windows"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["linux", "macos"] } },
