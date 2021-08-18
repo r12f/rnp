@@ -15,13 +15,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="rnp*" Exclude="**\*.d;**\*.csproj;">
+    <Content Include="bin\rnp*" Exclude="**\*.d;**\*.csproj;">
       <PackagePath>content</PackagePath>
     </Content>
-    <Content Include="README.md">
+    <Content Include="bin\README.md">
       <PackagePath>content</PackagePath>
     </Content>
-    <Content Include="LICENSE.txt">
+    <Content Include="bin\LICENSE.txt">
       <PackagePath>content</PackagePath>
     </Content>
   </ItemGroup>

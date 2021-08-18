@@ -133,7 +133,8 @@ function PackPerFlavorReleases() {
         $nugetProjectRoot = ".\Staging\NugetPackages\$flavor"
         Write-Host "Creating nuget package under $nugetProjectRoot"
         New-Item -ItemType Directory -Path "$nugetProjectRoot" | Out-Null
-        Copy-Item -Path .\$root\bin\* $nugetProjectRoot -Verbose -Force
+        New-Item -ItemType Directory -Path "$nugetProjectRoot\bin" | Out-Null
+        Copy-Item -Path .\$root\bin\* $nugetProjectRoot\bin -Verbose -Force
         EvaluateTemplateFile ".\Build.Build.windowsx64\templates\nuget_packages\rnp_nupkg.csproj" "$nugetProjectRoot\rnp_nupkg.csproj" $flavor $target
         dotnet pack $nugetProjectRoot\rnp_nupkg.csproj -o .\Releases\NugetPackages
 

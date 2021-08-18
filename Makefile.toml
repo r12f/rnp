@@ -11,6 +11,7 @@ BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
 BUILD_VERSION = "0.1.0"
 BUILD_BRANCH = "main"
 BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
+BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
 
 # Sign settings (Use RNP_SIGNING_URL as enablement key.)
@@ -167,6 +168,31 @@ script = '''
 TAR_FILE_PATH = set "${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
 echo "Pack binaries to ${TAR_FILE_PATH}"
 exec tar -cvzf ${TAR_FILE_PATH} --directory ${PUBLISH_DIR}/bin *
+'''
+
+[tasks.pack-nuget]
+description = "Pack zip package."
+script_runner = "@duckscript"
+script = '''
+!include_files ./build/pack/pack_utils.ds
+
+INT_DIR = set "${BUILD_DIR}/nuget"
+
+echo "Removing intermediate directory: ${INT_DIR}"
+rm -r ${INT_DIR}
+
+echo "Copying bin output as intermediate directory: ${INT_DIR}"
+cp ${PUBLISH_DIR}/bin ${INT_DIR}
+eval_build_template_file "./build/templates/nuget_packages/rnp_nupkg.csproj" ${INT_DIR}/rnp_nupkg.csproj
+
+OUT_DIR = set "${PUBLISH_DIR}/nuget"
+
+if not is_dir ${OUT_DIR}
+    echo "Creating output directory: ${OUT_DIR}"
+    mkdir ${OUT_DIR}
+end
+
+exec dotnet pack ${INT_DIR}/rnp_nupkg.csproj -o ${OUT_DIR}
 '''
 
 ##############################################
