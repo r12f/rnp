@@ -1,3 +1,12 @@
+env_scripts = [
+    '''
+    #!@duckscript
+    git_branch = get_env CARGO_MAKE_GIT_BRANCH
+    git_branch = replace ${git_branch} "_"
+    set_env BUILD_BRANCH ${git_branch}
+    '''
+]
+
 [env]
 # Directories
 BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
@@ -9,8 +18,7 @@ PACKAGE_DIR = "${PUBLISH_DIR}/packages"
 GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
 BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}", mapping = {"x86_64" = "x64"} }
 BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
-BUILD_VERSION = "0.1.0"
-BUILD_BRANCH = "main"
+BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
 BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
 BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
