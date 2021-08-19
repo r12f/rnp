@@ -1,3 +1,20 @@
+##############################################
+# Environment variables
+#
+
+# Environment scripts will be run after global environment variables get defined.
+# However, this has to be put in the beginning of the toml file, otherwise it won't run at all.
+env_scripts = [
+'''
+#!@duckscript
+echo "Setting environment variables ..."
+git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
+git_branch = replace ${git_branch} "/" "_"
+set_env BUILD_BRANCH ${git_branch}
+set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
+'''
+]
+
 [env]
 # Directories
 BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
@@ -9,9 +26,7 @@ PACKAGE_DIR = "${PUBLISH_DIR}/packages"
 GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
 BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}", mapping = {"x86_64" = "x64"} }
 BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
-BUILD_VERSION = "0.1.0"
-BUILD_BRANCH = "main"
-BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
+BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
 BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
 
@@ -21,6 +36,67 @@ RNP_SIGNING_VAULT_URL = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 RNP_SIGNING_CLIENT_ID = { value = "", condition = { env_not_set = ["RNP_SIGNING_CLIENT_ID"] } }
 RNP_SIGNING_CLIENT_SECRET = { value = "", condition = { env_not_set = ["RNP_SIGNING_CLIENT_SECRET"] } }
 RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_CERT_NAME"] } }
+
+##############################################
+# Init development environment
+#
+[tasks.init-dev-env]
+description = "Init development environment."
+windows_alias = "init-dev-env-windows"
+linux_alias = "init-dev-env-linux"
+mac_alias = "init-dev-env-mac"
+
+[tasks.init-dev-env-windows]
+description = "Init development environment on linux."
+script = '''
+@echo off
+
+:: Install toolchains for cross builds
+rustup target install i686-pc-windows-msvc
+rustup target install x86_64-pc-windows-msvc
+rustup target install aarch64-pc-windows-msvc
+
+:: Install AzureSignTool
+:: dotnet tool update is now the better (or more expected) way to install the tools. For details, please see the PR and issue below:
+:: - https://github.com/dotnet/cli/pull/10205
+:: - https://github.com/dotnet/sdk/issues/9500
+dotnet tool update --global azuresigntool
+'''
+
+[tasks.init-dev-env-linux]
+description = "Init development environment on linux."
+script_runner="bash"
+script = '''
+# "sudo" needs to be added within this script, since running "sudo cargo" might results in cargo not found error.
+# Add dotnet source and key
+wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+
+# Add https support to apt and sync apt repo
+sudo apt update
+sudo apt install -y apt-transport-https
+sudo apt update
+
+# Install GCC and required libs/tools
+sudo apt install -y build-essential libssl-dev gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+# Install toolchains for cross builds
+rustup target install i686-unknown-linux-gnu
+rustup target install x86_64-unknown-linux-gnu
+rustup target install arm-unknown-linux-gnueabi
+rustup target install aarch64-unknown-linux-gnu
+
+# Install dotnet SDK
+sudo apt install -y dotnet-sdk-5.0
+'''
+
+[tasks.init-dev-env-mac]
+description = "Init development environment on macos."
+script_runner="bash"
+script = '''
+# Install binutils for objcopy
+sudo brew install binutils
+'''
 
 ##############################################
 # Build
@@ -85,8 +161,6 @@ ${GCC_PREFIX}objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
 
 [tasks.make-symbol-mac]
 script = '''
-brew install binutils
-
 echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
