@@ -36,18 +36,18 @@ script_runner="bash"
 script = '''
 # Add dotnet source and key
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-dpkg -i packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
 
 # Add https support to apt and sync apt repo
-apt update
-apt install -y apt-transport-https
-apt update
+sudo apt update
+sudo apt install -y apt-transport-https
+sudo apt update
 
 # Install GCC and required libs/tools
-apt install -y build-essential libssl-dev
+sudo apt install -y build-essential libssl-dev
 
 # Install dotnet SDK
-apt install -y dotnet-sdk-5.0
+sudo apt install -y dotnet-sdk-5.0
 '''
 
 [tasks.init-dev-env-mac]
