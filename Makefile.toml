@@ -87,6 +87,9 @@ rustup target install aarch64-unknown-linux-gnu
 
 # Install dotnet SDK
 sudo apt install -y dotnet-sdk-5.0
+
+# Install required misc tools
+sudo apt install -y p7zip-full
 '''
 
 [tasks.init-dev-env-mac]
