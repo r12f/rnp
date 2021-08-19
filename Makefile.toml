@@ -78,7 +78,7 @@ sudo apt install -y apt-transport-https
 sudo apt update
 
 # Install GCC and required libs/tools
-sudo apt install -y build-essential libssl-dev gcc-x86_64-linux-gnu binutils-x86_64-linux-gnu gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+sudo apt install -y build-essential libssl-dev gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
 # Install toolchains for cross builds
 rustup target install i686-unknown-linux-gnu
