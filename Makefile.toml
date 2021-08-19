@@ -108,7 +108,8 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 description = "Pack binaries into packages."
 run_task = [
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix"], condition = { platforms = ["windows"] } },
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["linux", "macos"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb"], condition = { platforms = ["linux"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["macos"] } },
 ]
 
 [tasks.pack-prepare]
@@ -179,11 +180,11 @@ exec 7z -tzip a ${ZIP_FILE_PATH} ./${PUBLISH_DIR}/bin/*
 
 [tasks.pack-tar]
 description = "Pack tar package."
-script_runner = "@duckscript"
+script_runner = "bash"
 script = '''
-TAR_FILE_PATH = set "${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
-echo "Pack binaries to ${TAR_FILE_PATH}"
-exec tar -cvzf ${TAR_FILE_PATH} --directory ${PUBLISH_DIR}/bin *
+TAR_FILE_PATH="${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
+echo "Pack binaries under ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
+tar --transform "s/.*\///g" -zcvf ${TAR_FILE_PATH} ${PUBLISH_DIR}/bin/*
 '''
 
 [tasks.pack-nuget]
