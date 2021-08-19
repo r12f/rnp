@@ -90,7 +90,7 @@ sudo apt install -y dotnet-sdk-5.0
 '''
 
 [tasks.init-dev-env-mac]
-description = "Init development environment on macos."
+description = "Init development environment on mac."
 script_runner="bash"
 script = '''
 # Install binutils for objcopy
@@ -182,7 +182,7 @@ description = "Pack binaries into packages."
 run_task = [
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "pack-choco", "sign-packages"], condition = { platforms = ["windows"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb"], condition = { platforms = ["linux"] } },
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["macos"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-brew"], condition = { platforms = ["mac"] } },
 ]
 
 [tasks.pack-prepare]
@@ -396,7 +396,7 @@ cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
 '''
 
 [tasks.pack-choco]
-description = "Run AzureSignTool to sign the packages."
+description = "Pack chocolatecy package source."
 script_runner = "@duckscript"
 script = '''
 !include_files ./build/pack/pack_utils.ds
@@ -417,6 +417,26 @@ eval_build_template_file "${TEMPLATE_DIR}/rnp.nuspec" ${OUT_DIR}/rnp.nuspec
 eval_build_template_file "${TEMPLATE_DIR}/tools/chocolateyinstall.ps1" ${OUT_DIR}/tools/chocolateyinstall.ps1
 eval_build_template_file "${TEMPLATE_DIR}/tools/LICENSE.txt" ${OUT_DIR}/tools/LICENSE.txt
 eval_build_template_file "${TEMPLATE_DIR}/tools/VERIFICATION.txt" ${OUT_DIR}/tools/VERIFICATION.txt
+'''
+
+[tasks.pack-brew]
+description = "Pack homebrew package source."
+script_runner = "@duckscript"
+script = '''
+!include_files ./build/pack/pack_utils.ds
+
+# Build to output folder
+OUT_DIR = set "${PUBLISH_DIR}/homebrew"
+if not is_dir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
+end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
+
+TEMPLATE_DIR = set "./build/templates/homebrew"
+echo "Generating chocolatey package source from ${TEMPLATE_DIR} to ${OUT_DIR}"
+eval_build_template_file "${TEMPLATE_DIR}/rnp.rb" ${OUT_DIR}/rnp.rb
 '''
 
 [tasks.sign-packages]
