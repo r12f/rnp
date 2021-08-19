@@ -180,7 +180,7 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 [tasks.pack]
 description = "Pack binaries into packages."
 run_task = [
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "sign-packages"], condition = { platforms = ["windows"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "pack-choco", "sign-packages"], condition = { platforms = ["windows"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb"], condition = { platforms = ["linux"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["macos"] } },
 ]
