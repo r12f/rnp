@@ -23,6 +23,42 @@ RNP_SIGNING_CLIENT_SECRET = { value = "", condition = { env_not_set = ["RNP_SIGN
 RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_CERT_NAME"] } }
 
 ##############################################
+# Init development environment
+#
+[tasks.init-dev-env]
+description = "Init development environment."
+linux_alias = "init-dev-env-linux"
+mac_alias = "init-dev-env-mac"
+
+[tasks.init-dev-env-linux]
+description = "Init development environment on linux."
+script_runner="bash"
+script = '''
+# Add dotnet source and key
+wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+dpkg -i packages-microsoft-prod.deb
+
+# Add https support to apt and sync apt repo
+apt update
+apt install -y apt-transport-https
+apt update
+
+# Install GCC and required libs/tools
+apt install -y build-essential libssl-dev
+
+# Install dotnet SDK
+apt install -y dotnet-sdk-5.0
+'''
+
+[tasks.init-dev-env-mac]
+description = "Init development environment on macos."
+script_runner="bash"
+script = '''
+# Install binutils for objcopy
+brew install binutils
+'''
+
+##############################################
 # Build
 #
 [tasks.build]
@@ -85,8 +121,6 @@ ${GCC_PREFIX}objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
 
 [tasks.make-symbol-mac]
 script = '''
-brew install binutils
-
 echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
