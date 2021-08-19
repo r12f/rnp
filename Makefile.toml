@@ -1,10 +1,18 @@
+##############################################
+# Environment variables
+#
+
+# Environment scripts will be run after global environment variables get defined.
+# However, this has to be put in the beginning of the toml file, otherwise it won't run at all.
 env_scripts = [
-    '''
-    #!@duckscript
-    git_branch = get_env CARGO_MAKE_GIT_BRANCH
-    git_branch = replace ${git_branch} "_"
-    set_env BUILD_BRANCH ${git_branch}
-    '''
+'''
+#!@duckscript
+echo "Setting environment variables ..."
+git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
+git_branch = replace ${git_branch} "/" "_"
+set_env BUILD_BRANCH ${git_branch}
+set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
+'''
 ]
 
 [env]
@@ -19,7 +27,6 @@ GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value 
 BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}", mapping = {"x86_64" = "x64"} }
 BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
 BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
-BUILD_TAG = "${BUILD_VERSION}.${BUILD_BRANCH}"
 BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
 
