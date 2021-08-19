@@ -12,10 +12,6 @@ fn eval_build_template
     content = replace ${content} "{build_dir}" ${BUILD_DIR}
 
     # File hash
-    content = replace ${content} "{rnp_bin_hash_x86}" ${RNP_BIN_HASH_X86}
-    content = replace ${content} "{rnp_bin_hash_x64}" ${RNP_BIN_HASH_X64}
-    content = replace ${content} "{package_zip_hash_x86}" ${PACKAGE_ZIP_HASH_X86}
-    content = replace ${content} "{package_zip_hash_x64}" ${PACKAGE_ZIP_HASH_X64}
     content = replace ${content} "{source_package_tar_hash}" ${SOURCE_PACKAGE_TAR_HASH}
 
     return ${content}

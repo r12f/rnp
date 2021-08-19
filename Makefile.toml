@@ -395,6 +395,30 @@ echo "Copying deb package to output folder: File = ${INT_DIR}/${DEB_PACKAGE_NAME
 cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
 '''
 
+[tasks.pack-choco]
+description = "Run AzureSignTool to sign the packages."
+script_runner = "@duckscript"
+script = '''
+!include_files ./build/pack/pack_utils.ds
+
+# Build to output folder
+OUT_DIR = set "${PUBLISH_DIR}/choco"
+if not is_dir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
+end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
+mkdir ${OUT_DIR}/tools
+
+TEMPLATE_DIR = set "./build/templates/chocolatey"
+echo "Generating chocolatey package source from ${TEMPLATE_DIR} to ${OUT_DIR}"
+eval_build_template_file "${TEMPLATE_DIR}/rnp.nuspec" ${OUT_DIR}/rnp.nuspec
+eval_build_template_file "${TEMPLATE_DIR}/tools/chocolateyinstall.ps1" ${OUT_DIR}/tools/chocolateyinstall.ps1
+eval_build_template_file "${TEMPLATE_DIR}/tools/LICENSE.txt" ${OUT_DIR}/tools/LICENSE.txt
+eval_build_template_file "${TEMPLATE_DIR}/tools/VERIFICATION.txt" ${OUT_DIR}/tools/VERIFICATION.txt
+'''
+
 [tasks.sign-packages]
 description = "Run AzureSignTool to sign the packages."
 condition = { env_set = [ "RNP_SIGNING_URL" ] }
