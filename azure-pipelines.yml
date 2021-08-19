@@ -353,7 +353,7 @@ stages:
 
         echo "Generating deb package control file: $deb_pkg_name"
         mkdir -p $deb_pkg_name/DEBIAN
-        cat $(Build.SourcesDirectory)/build/templates/debian/control | sed -e 's/{build_version}/$(build.version)/g' -e 's/{deb_arch}/$(DEB_ARCH)/g' > $deb_pkg_name/DEBIAN/control
+        cat $(Build.SourcesDirectory)/build/templates/debian/control | sed -e 's/{version}/$(build.version)/g' -e 's/{deb_arch}/$(DEB_ARCH)/g' > $deb_pkg_name/DEBIAN/control
         echo "Deb package control file generated: $deb_pkg_name/DEBIAN/control"
         cat $deb_pkg_name/DEBIAN/control
         echo ""

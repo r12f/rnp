@@ -1,5 +1,5 @@
 Package: Rnp
-Version: {build_version}
+Version: {version}
 Architecture: {deb_arch}
 Maintainer: r12f <r12f.code@gmail.com>
 Description: A simple layer 4 ping tool for cloud.

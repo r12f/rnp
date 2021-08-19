@@ -108,7 +108,8 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 description = "Pack binaries into packages."
 run_task = [
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix"], condition = { platforms = ["windows"] } },
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["linux", "macos"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb"], condition = { platforms = ["linux"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["macos"] } },
 ]
 
 [tasks.pack-prepare]
@@ -179,11 +180,11 @@ exec 7z -tzip a ${ZIP_FILE_PATH} ./${PUBLISH_DIR}/bin/*
 
 [tasks.pack-tar]
 description = "Pack tar package."
-script_runner = "@duckscript"
+script_runner = "bash"
 script = '''
-TAR_FILE_PATH = set "${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
-echo "Pack binaries to ${TAR_FILE_PATH}"
-exec tar -cvzf ${TAR_FILE_PATH} --directory ${PUBLISH_DIR}/bin *
+TAR_FILE_PATH="${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
+echo "Pack binaries under ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
+tar --transform "s/.*\///g" -zcvf ${TAR_FILE_PATH} ${PUBLISH_DIR}/bin/*
 '''
 
 [tasks.pack-nuget]
@@ -236,6 +237,61 @@ if not is_dir ${OUT_DIR}
 end
 
 exec "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/makeappx.exe" pack /m "${INT_DIR}/appxmanifest.xml" /f "${INT_DIR}/appxmappings.txt" /p "${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
+'''
+
+[tasks.pack-deb]
+description = "Pack deb package."
+script_runner = "@duckscript"
+script = '''
+!include_files ./build/pack/pack_utils.ds
+
+proc_version = readfile "/proc/version"
+echo "Read proc version for detecting WSL: ${proc_version}"
+wsl_identity = indexof ${proc_version} "microsoft"
+if not is_empty ${wsl_identity}
+    echo "Found we are running in WSL environment. Building DEBIAN package is not supported in WSL, due to linux chmod is not fully supported by NTFS."
+    echo "Skipping build task: pack-deb."
+    exit 0
+end
+
+INT_DIR = set "${BUILD_DIR}/deb"
+
+echo "Removing intermediate directory: ${INT_DIR}"
+rm -r ${INT_DIR}
+
+DEB_ARCH = set ${BUILD_ARCH}
+if equals ${DEB_ARCH} "x64"
+    DEB_ARCH = set "amd64"
+end
+
+DEB_PACKAGE_NAME = set "rnp_${BUILD_VERSION}-1_${DEB_ARCH}"
+echo "Creating deb package: ${DEB_PACKAGE_NAME}"
+
+INT_DEB_BIN_DIR = set "${INT_DIR}/${DEB_PACKAGE_NAME}/usr/local/bin"
+echo "Creating intermediate directory for binary: ${INT_DEB_BIN_DIR}"
+mkdir ${INT_DEB_BIN_DIR}
+
+echo "Copy binaries to deb package: ${INT_DEB_BIN_DIR}"
+cp ${PUBLISH_DIR}/bin/rnp ${INT_DEB_BIN_DIR}/rnp
+
+INT_DEB_CONTROL_DIR = set "${INT_DIR}/${DEB_PACKAGE_NAME}/DEBIAN"
+echo "Creating intermediate directory for debain control: ${INT_DEB_CONTROL_DIR}"
+mkdir ${INT_DEB_CONTROL_DIR}
+
+eval_build_template_file "./build/templates/debian/control" ${INT_DEB_CONTROL_DIR}/control
+
+echo "Generating deb package: ${INT_DIR}/${DEB_PACKAGE_NAME}"
+exec dpkg-deb --build --root-owner-group ${INT_DIR}/${DEB_PACKAGE_NAME}
+
+OUT_DIR = set "${PUBLISH_DIR}/deb"
+
+if not is_dir ${OUT_DIR}
+    echo "Creating output directory: ${OUT_DIR}"
+    mkdir ${OUT_DIR}
+end
+
+echo "Copying deb package to output folder: File = ${INT_DIR}/${DEB_PACKAGE_NAME}.deb, Target = ${OUT_DIR}"
+cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
 '''
 
 ##############################################

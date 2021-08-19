@@ -8,6 +8,7 @@ fn eval_build_template
     content = replace ${content} "{target_short}" ${BUILD_FLAVOR}
     content = replace ${content} "{target}" ${BUILD_TARGET}
     content = replace ${content} "{build_arch}" ${BUILD_ARCH}
+    content = replace ${content} "{deb_arch}" ${DEB_ARCH}
     content = replace ${content} "{build_dir}" ${BUILD_DIR}
 
     # File hash
