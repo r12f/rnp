@@ -39,14 +39,14 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 ##############################################
 # Init development environment
 #
-[tasks.init-dev-env]
-description = "Init development environment."
-windows_alias = "init-dev-env-windows"
-linux_alias = "init-dev-env-linux"
-mac_alias = "init-dev-env-mac"
+[tasks.install-build-tools]
+description = "Install build tools."
+windows_alias = "install-build-tools-windows"
+linux_alias = "install-build-tools-linux"
+mac_alias = "install-build-tools-mac"
 
-[tasks.init-dev-env-windows]
-description = "Init development environment on linux."
+[tasks.install-build-tools-windows]
+description = "Install build tools on windows."
 script = '''
 @echo off
 
@@ -62,8 +62,38 @@ rustup target install aarch64-pc-windows-msvc
 dotnet tool update --global azuresigntool
 '''
 
-[tasks.init-dev-env-linux]
-description = "Init development environment on linux."
+[tasks.install-build-tools-linux]
+description = "Install build tools on linux."
+script_runner="bash"
+script = '''
+# "sudo" needs to be added within this script, since running "sudo cargo" might results in cargo not found error.
+sudo apt update
+
+
+# Install GCC and required libs/tools
+sudo apt install -y build-essential libssl-dev gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+# Install toolchains for cross builds
+rustup target install i686-unknown-linux-gnu
+rustup target install x86_64-unknown-linux-gnu
+rustup target install arm-unknown-linux-gnueabi
+rustup target install aarch64-unknown-linux-gnu
+'''
+
+[tasks.install-build-tools-mac]
+description = "Install build tools on mac."
+script_runner="bash"
+script = '''
+# Install binutils for objcopy
+sudo brew install binutils
+'''
+
+[tasks.install-pack-tools]
+description = "Install pack tools."
+linux_alias = "install-pack-tools-linux"
+
+[tasks.install-pack-tools-linux]
+description = "Install pack tools on linux."
 script_runner="bash"
 script = '''
 # "sudo" needs to be added within this script, since running "sudo cargo" might results in cargo not found error.
@@ -76,28 +106,11 @@ sudo apt update
 sudo apt install -y apt-transport-https
 sudo apt update
 
-# Install GCC and required libs/tools
-sudo apt install -y build-essential libssl-dev gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
-
-# Install toolchains for cross builds
-rustup target install i686-unknown-linux-gnu
-rustup target install x86_64-unknown-linux-gnu
-rustup target install arm-unknown-linux-gnueabi
-rustup target install aarch64-unknown-linux-gnu
-
 # Install dotnet SDK
 sudo apt install -y dotnet-sdk-5.0
 
 # Install required misc tools
 sudo apt install -y p7zip-full
-'''
-
-[tasks.init-dev-env-mac]
-description = "Init development environment on mac."
-script_runner="bash"
-script = '''
-# Install binutils for objcopy
-sudo brew install binutils
 '''
 
 ##############################################
