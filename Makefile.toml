@@ -20,7 +20,6 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
 BUILD_DIR = "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
 PUBLISH_DIR = "./publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
-PACKAGE_DIR = "${PUBLISH_DIR}/packages"
 
 # Build settings
 GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
@@ -197,11 +196,6 @@ if not is_dir ${PUBLISH_DIR}
     echo "Creating publish directory: ${PUBLISH_DIR}"
     mkdir ${PUBLISH_DIR}
 end
-
-if not is_dir ${PACKAGE_DIR}
-    echo "Creating package directory: ${PACKAGE_DIR}"
-    mkdir ${PACKAGE_DIR}
-end
 '''
 
 [tasks.pack-binaries]
@@ -209,11 +203,12 @@ description = "Pack binaries."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/bin"
-
 if not is_dir ${OUT_DIR}
-    echo "Creating output directory: ${OUT_DIR}"
-    mkdir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
 end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
 
 echo "Copying binaries from build output: ${BUILD_DIR}"
 cp ${BUILD_DIR}/${RNP_FILE_NAME} ${OUT_DIR}/${RNP_FILE_NAME}
@@ -228,11 +223,12 @@ description = "Pack symbol files."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/symbols"
-
 if not is_dir ${OUT_DIR}
-    echo "Creating output directory: ${OUT_DIR}"
-    mkdir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
 end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
 
 if is_path_exists ${BUILD_DIR}/rnp.pdb
     cp ${BUILD_DIR}/rnp.pdb ${OUT_DIR}/rnp.pdb
@@ -247,17 +243,33 @@ end
 description = "Pack zip package."
 script_runner = "@duckscript"
 script = '''
-ZIP_FILE_PATH = set "${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.zip"
-echo "Pack binaries to ${ZIP_FILE_PATH}"
-exec 7z -tzip a ${ZIP_FILE_PATH} ./${PUBLISH_DIR}/bin/*
+OUT_DIR = set "${PUBLISH_DIR}/zipped"
+if not is_dir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
+end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
+
+ZIP_FILE_PATH = set "${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.zip"
+echo "Pack binaries ${PUBLISH_DIR}/bin/* to ${ZIP_FILE_PATH}"
+exec 7z -tzip a ${ZIP_FILE_PATH} ${PUBLISH_DIR}/bin/*
 '''
 
 [tasks.pack-tar]
 description = "Pack tar package."
 script_runner = "bash"
 script = '''
-TAR_FILE_PATH="${PACKAGE_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
-echo "Pack binaries under ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
+OUT_DIR = set "${PUBLISH_DIR}/zipped"
+if not is_dir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
+end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
+
+TAR_FILE_PATH="${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
+echo "Pack binaries ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
 tar --transform "s/.*\///g" -zcvf ${TAR_FILE_PATH} ${PUBLISH_DIR}/bin/*
 '''
 
@@ -269,20 +281,25 @@ script = '''
 
 INT_DIR = set "${BUILD_DIR}/nuget"
 
+# Clean up
 echo "Removing intermediate directory: ${INT_DIR}"
 rm -r ${INT_DIR}
 
+# Prepare to build package
 echo "Copying bin output as intermediate directory: ${INT_DIR}"
 cp ${PUBLISH_DIR}/bin ${INT_DIR}
 eval_build_template_file "./build/templates/nuget_packages/rnp_nupkg.csproj" ${INT_DIR}/rnp_nupkg.csproj
 
+# Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/nuget"
-
 if not is_dir ${OUT_DIR}
-    echo "Creating output directory: ${OUT_DIR}"
-    mkdir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
 end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
 
+echo "Build package from ${INT_DIR} to ${OUT_DIR}"
 exec dotnet pack ${INT_DIR}/rnp_nupkg.csproj -o ${OUT_DIR}
 '''
 
@@ -294,23 +311,29 @@ script = '''
 
 INT_DIR = set "${BUILD_DIR}/msix"
 
+# Cleanup
 echo "Removing intermediate directory: ${INT_DIR}"
 rm -r ${INT_DIR}
 
+# Prepare to build package
 echo "Copying bin output as intermediate directory: ${INT_DIR}"
 cp ${PUBLISH_DIR}/bin ${INT_DIR}
 cp ./assets ${INT_DIR}
 eval_build_template_file "./build/templates/msix/appxmanifest.xml" ${INT_DIR}/appxmanifest.xml
 eval_build_template_file "./build/templates/msix/appxmappings-make.txt" ${INT_DIR}/appxmappings.txt
 
+# Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/msix"
-
 if not is_dir ${OUT_DIR}
-    echo "Creating output directory: ${OUT_DIR}"
-    mkdir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
 end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
 
-exec "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/makeappx.exe" pack /m "${INT_DIR}/appxmanifest.xml" /f "${INT_DIR}/appxmappings.txt" /p "${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
+PACKAGE_PATH = set "${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
+echo "Build package from ${INT_DIR} to ${PACKAGE_PATH}"
+exec "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/makeappx.exe" pack /m "${INT_DIR}/appxmanifest.xml" /f "${INT_DIR}/appxmappings.txt" /p ${PACKAGE_PATH}
 '''
 
 [tasks.pack-deb]
@@ -330,9 +353,11 @@ end
 
 INT_DIR = set "${BUILD_DIR}/deb"
 
+# Clean up
 echo "Removing intermediate directory: ${INT_DIR}"
 rm -r ${INT_DIR}
 
+# Build deb package
 DEB_ARCH = set ${BUILD_ARCH}
 if equals ${DEB_ARCH} "x64"
     DEB_ARCH = set "amd64"
@@ -357,12 +382,14 @@ eval_build_template_file "./build/templates/debian/control" ${INT_DEB_CONTROL_DI
 echo "Generating deb package: ${INT_DIR}/${DEB_PACKAGE_NAME}"
 exec dpkg-deb --build --root-owner-group ${INT_DIR}/${DEB_PACKAGE_NAME}
 
+# Publish to output folder
 OUT_DIR = set "${PUBLISH_DIR}/deb"
-
 if not is_dir ${OUT_DIR}
-    echo "Creating output directory: ${OUT_DIR}"
-    mkdir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
 end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
 
 echo "Copying deb package to output folder: File = ${INT_DIR}/${DEB_PACKAGE_NAME}.deb, Target = ${OUT_DIR}"
 cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
