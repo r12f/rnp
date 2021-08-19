@@ -423,3 +423,13 @@ args = ["test", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
 description = "Run all tests with release profile."
 command = "cargo"
 args = ["test", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+
+##############################################
+# CI flow
+#
+[tasks.ci-flow]
+dependencies = [
+    "build",
+    "test",
+    "pack",
+]
