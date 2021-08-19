@@ -28,7 +28,7 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 [tasks.build]
 description = "Build the program."
 clear = true
-dependencies = ["format", "cargo-build", "make-symbol", "sign"]
+dependencies = ["format", "cargo-build", "make-symbol", "sign-binary"]
 
 # Format the code in dev profile.
 [tasks.format]
@@ -97,7 +97,7 @@ strip -S ${BUILD_DIR}/rnp
 '''
 
 # Sign
-[tasks.sign]
+[tasks.sign-binary]
 description = "Run AzureSignTool to sign the binaries."
 condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_URL" ] }
 command = "AzureSignTool"
@@ -107,7 +107,7 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 [tasks.pack]
 description = "Pack binaries into packages."
 run_task = [
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix"], condition = { platforms = ["windows"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "sign-packages"], condition = { platforms = ["windows"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb"], condition = { platforms = ["linux"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget"], condition = { platforms = ["macos"] } },
 ]
@@ -292,6 +292,14 @@ end
 
 echo "Copying deb package to output folder: File = ${INT_DIR}/${DEB_PACKAGE_NAME}.deb, Target = ${OUT_DIR}"
 cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
+'''
+
+[tasks.sign-packages]
+description = "Run AzureSignTool to sign the packages."
+condition = { env_set = [ "RNP_SIGNING_URL" ] }
+script_runner = "@duckscript"
+script = '''
+exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${PUBLISH_DIR}/msix/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
 '''
 
 ##############################################
