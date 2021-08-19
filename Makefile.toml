@@ -42,19 +42,25 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 #
 [tasks.init-dev-env]
 description = "Init development environment."
+windows_alias = "init-dev-env-windows"
 linux_alias = "init-dev-env-linux"
 mac_alias = "init-dev-env-mac"
 
 [tasks.init-dev-env-windows]
 description = "Init development environment on linux."
 script = '''
-# Install toolchains for cross builds
+@echo off
+
+:: Install toolchains for cross builds
 rustup target install i686-pc-windows-msvc
 rustup target install x86_64-pc-windows-msvc
 rustup target install aarch64-pc-windows-msvc
 
-# Install AzureSignTool
-dotnet tool install --global azuresigntool
+:: Install AzureSignTool
+:: dotnet tool update is now the better (or more expected) way to install the tools. For details, please see the PR and issue below:
+:: - https://github.com/dotnet/cli/pull/10205
+:: - https://github.com/dotnet/sdk/issues/9500
+dotnet tool update --global azuresigntool
 '''
 
 [tasks.init-dev-env-linux]
