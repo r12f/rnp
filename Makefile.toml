@@ -299,7 +299,7 @@ description = "Run AzureSignTool to sign the packages."
 condition = { env_set = [ "RNP_SIGNING_URL" ] }
 script_runner = "@duckscript"
 script = '''
-exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
+exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${PUBLISH_DIR}/msix/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
 '''
 
 ##############################################
