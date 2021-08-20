@@ -70,14 +70,14 @@ script = '''
 sudo apt update
 
 # Install GCC and required libs/tools
-sudo apt install -y build-essential libssl-dev  gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+sudo apt install -y build-essential libssl-dev
 
 case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
     "arm-unknown-linux-gnueabi")
         sudo apt install gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
         ;;
     "aarch64-unknown-linux-gnu")
-        sudo apt install gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
+        sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
         ;;
 esac
 
