@@ -39,6 +39,8 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 ##############################################
 # Init development environment
 #
+
+# Install build tools
 [tasks.install-build-tools]
 description = "Install build tools."
 windows_alias = "install-build-tools-windows"
@@ -69,7 +71,6 @@ script = '''
 # "sudo" needs to be added within this script, since running "sudo cargo" might results in cargo not found error.
 sudo apt update
 
-
 # Install GCC and required libs/tools
 sudo apt install -y build-essential libssl-dev gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
@@ -88,6 +89,7 @@ script = '''
 sudo brew install binutils
 '''
 
+# Install pack tools
 [tasks.install-pack-tools]
 description = "Install pack tools."
 linux_alias = "install-pack-tools-linux"
@@ -197,7 +199,7 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 description = "Pack binaries into packages."
 run_task = [
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "pack-choco", "sign-packages"], condition = { platforms = ["windows"] } },
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb"], condition = { platforms = ["linux"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb", "pack-source"], condition = { platforms = ["linux"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-brew"], condition = { platforms = ["mac"] } },
 ]
 
@@ -205,13 +207,13 @@ run_task = [
 description = "Prepare environments for pack."
 script_runner = "@duckscript"
 script = '''
-echo "Removing publish directory: ${PUBLISH_DIR}"
-rm -r ${PUBLISH_DIR}
-
-if not is_dir ${PUBLISH_DIR}
-    echo "Creating publish directory: ${PUBLISH_DIR}"
-    mkdir ${PUBLISH_DIR}
+if is_dir ${PUBLISH_DIR}
+    echo "Removing publish directory: ${PUBLISH_DIR}"
+    rm -r ${PUBLISH_DIR}
 end
+
+echo "Creating publish directory: ${PUBLISH_DIR}"
+mkdir ${PUBLISH_DIR}
 '''
 
 [tasks.pack-binaries]
@@ -219,7 +221,7 @@ description = "Pack binaries."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/bin"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -239,7 +241,7 @@ description = "Pack symbol files."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/symbols"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -255,12 +257,46 @@ if is_path_exists ${BUILD_DIR}/rnp.debug
 end
 '''
 
+[tasks.pack-source]
+description = "Pack source package."
+script_runner = "bash"
+script = '''
+INT_DIR="${BUILD_DIR}/source"
+
+# Clean up
+if [ -d ${INT_DIR} ]; then
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -rf ${INT_DIR}
+fi
+echo "Creating intermediate directory: ${INT_DIR}"
+mkdir ${INT_DIR}
+
+# Prepare the source package
+echo "Copying source code to ${INT_DIR}"
+ZIP_FILE_NAME="rnp.source.${BUILD_TAG}.zip"
+cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` ${INT_DIR}/
+cd ${INT_DIR} && git clean -xfd && rm -rf .git && 7z -tzip a ${ZIP_FILE_NAME} . && cd -
+
+# Create source package
+OUT_DIR="${PUBLISH_DIR}/source"
+if [ -d ${OUT_DIR} ]; then
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -rf ${OUT_DIR}
+fi
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
+
+ZIP_FILE_PATH=${OUT_DIR}/${ZIP_FILE_NAME}
+echo "Copy source package ${INT_DIR}/${ZIP_FILE_NAME} to ${ZIP_FILE_PATH}"
+cp -v ${INT_DIR}/${ZIP_FILE_NAME} ${ZIP_FILE_PATH}
+'''
+
 [tasks.pack-zip]
 description = "Pack zip package."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/zipped"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -276,11 +312,11 @@ exec 7z -tzip a ${ZIP_FILE_PATH} ${PUBLISH_DIR}/bin/*
 description = "Pack tar package."
 script_runner = "bash"
 script = '''
-OUT_DIR = set "${PUBLISH_DIR}/zipped"
-if not is_dir ${OUT_DIR}
+OUT_DIR="${PUBLISH_DIR}/zipped"
+if [ -d ${OUT_DIR}]; then
     echo "Removing previous output directory: ${OUT_DIR}"
-    rm -r ${OUT_DIR}
-end
+    rm -rf ${OUT_DIR}
+fi
 echo "Creating new output directory: ${OUT_DIR}"
 mkdir ${OUT_DIR}
 
@@ -298,8 +334,10 @@ script = '''
 INT_DIR = set "${BUILD_DIR}/nuget"
 
 # Clean up
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -r ${INT_DIR}
+if is_dir ${INT_DIR}
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -r ${INT_DIR}
+end
 
 # Prepare to build package
 echo "Copying bin output as intermediate directory: ${INT_DIR}"
@@ -308,7 +346,7 @@ eval_build_template_file "./build/templates/nuget_packages/rnp_nupkg.csproj" ${I
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/nuget"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -328,8 +366,10 @@ script = '''
 INT_DIR = set "${BUILD_DIR}/msix"
 
 # Cleanup
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -r ${INT_DIR}
+if is_dir ${INT_DIR}
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -r ${INT_DIR}
+end
 
 # Prepare to build package
 echo "Copying bin output as intermediate directory: ${INT_DIR}"
@@ -340,7 +380,7 @@ eval_build_template_file "./build/templates/msix/appxmappings-make.txt" ${INT_DI
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/msix"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -370,8 +410,10 @@ end
 INT_DIR = set "${BUILD_DIR}/deb"
 
 # Clean up
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -r ${INT_DIR}
+if is_dir ${INT_DIR}
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -r ${INT_DIR}
+end
 
 # Build deb package
 DEB_ARCH = set ${BUILD_ARCH}
@@ -400,7 +442,7 @@ exec dpkg-deb --build --root-owner-group ${INT_DIR}/${DEB_PACKAGE_NAME}
 
 # Publish to output folder
 OUT_DIR = set "${PUBLISH_DIR}/deb"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -419,7 +461,7 @@ script = '''
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/choco"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -443,7 +485,7 @@ script = '''
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/homebrew"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
