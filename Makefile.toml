@@ -53,9 +53,7 @@ script = '''
 @echo off
 
 :: Install toolchains for cross builds
-rustup target install i686-pc-windows-msvc
-rustup target install x86_64-pc-windows-msvc
-rustup target install aarch64-pc-windows-msvc
+rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
 
 :: Install AzureSignTool
 :: dotnet tool update is now the better (or more expected) way to install the tools. For details, please see the PR and issue below:
@@ -72,13 +70,19 @@ script = '''
 sudo apt update
 
 # Install GCC and required libs/tools
-sudo apt install -y build-essential libssl-dev gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+sudo apt install -y build-essential libssl-dev
+
+case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
+    "arm-unknown-linux-gnueabi")
+        sudo apt install -y gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
+        ;;
+    "aarch64-unknown-linux-gnu")
+        sudo apt install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+        ;;
+esac
 
 # Install toolchains for cross builds
-rustup target install i686-unknown-linux-gnu
-rustup target install x86_64-unknown-linux-gnu
-rustup target install arm-unknown-linux-gnueabi
-rustup target install aarch64-unknown-linux-gnu
+rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
 '''
 
 [tasks.install-build-tools-mac]
