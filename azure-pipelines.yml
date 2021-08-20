@@ -5,9 +5,9 @@
 # No CI trigger
 trigger: none
 
-# Daily build
+# Daily build. Time is UTC.
 schedules:
-- cron: "0 3 * * *"
+- cron: "0 10 * * *"
   displayName: Daily build
   branches:
     include:
