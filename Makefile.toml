@@ -207,13 +207,13 @@ run_task = [
 description = "Prepare environments for pack."
 script_runner = "@duckscript"
 script = '''
-echo "Removing publish directory: ${PUBLISH_DIR}"
-rm -r ${PUBLISH_DIR}
-
 if is_dir ${PUBLISH_DIR}
-    echo "Creating publish directory: ${PUBLISH_DIR}"
-    mkdir ${PUBLISH_DIR}
+    echo "Removing publish directory: ${PUBLISH_DIR}"
+    rm -r ${PUBLISH_DIR}
 end
+
+echo "Creating publish directory: ${PUBLISH_DIR}"
+mkdir ${PUBLISH_DIR}
 '''
 
 [tasks.pack-binaries]
@@ -264,13 +264,14 @@ script = '''
 INT_DIR="${BUILD_DIR}/source"
 
 # Clean up
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -rf ${INT_DIR}
-
-# Prepare the source package
+if [ -d ${INT_DIR} ]; then
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -rf ${INT_DIR}
+fi
 echo "Creating intermediate directory: ${INT_DIR}"
 mkdir ${INT_DIR}
 
+# Prepare the source package
 echo "Copying source code to ${INT_DIR}"
 ZIP_FILE_NAME="rnp.source.${BUILD_TAG}.zip"
 cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` ${INT_DIR}/
@@ -333,8 +334,10 @@ script = '''
 INT_DIR = set "${BUILD_DIR}/nuget"
 
 # Clean up
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -r ${INT_DIR}
+if is_dir ${INT_DIR}
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -r ${INT_DIR}
+end
 
 # Prepare to build package
 echo "Copying bin output as intermediate directory: ${INT_DIR}"
@@ -363,8 +366,10 @@ script = '''
 INT_DIR = set "${BUILD_DIR}/msix"
 
 # Cleanup
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -r ${INT_DIR}
+if is_dir ${INT_DIR}
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -r ${INT_DIR}
+end
 
 # Prepare to build package
 echo "Copying bin output as intermediate directory: ${INT_DIR}"
@@ -405,8 +410,10 @@ end
 INT_DIR = set "${BUILD_DIR}/deb"
 
 # Clean up
-echo "Removing intermediate directory: ${INT_DIR}"
-rm -r ${INT_DIR}
+if is_dir ${INT_DIR}
+    echo "Removing intermediate directory: ${INT_DIR}"
+    rm -r ${INT_DIR}
+end
 
 # Build deb package
 DEB_ARCH = set ${BUILD_ARCH}
