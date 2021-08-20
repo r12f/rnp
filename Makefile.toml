@@ -279,11 +279,10 @@ mkdir ${INT_DIR}
 
 # Prepare the source package
 echo "Copying source code to ${INT_DIR}"
-ZIP_FILE_NAME="rnp.source.${BUILD_TAG}.zip"
 cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` ${INT_DIR}/
-cd ${INT_DIR} && git clean -xfd && rm -rf .git && 7z -tzip a ${ZIP_FILE_NAME} . && cd -
+cd ${INT_DIR} && git clean -xfd && cd -
 
-# Create source package
+# Create source packages
 OUT_DIR="${PUBLISH_DIR}/source"
 if [ -d ${OUT_DIR} ]; then
     echo "Removing previous output directory: ${OUT_DIR}"
@@ -292,9 +291,20 @@ fi
 echo "Creating new output directory: ${OUT_DIR}"
 mkdir ${OUT_DIR}
 
-ZIP_FILE_PATH=${OUT_DIR}/${ZIP_FILE_NAME}
-echo "Copy source package ${INT_DIR}/${ZIP_FILE_NAME} to ${ZIP_FILE_PATH}"
-cp -v ${INT_DIR}/${ZIP_FILE_NAME} ${ZIP_FILE_PATH}
+CRATE_FILE_PATH="${OUT_DIR}/rnp.crate.7z"
+echo "Pack source code for crate publishing: ${CRATE_FILE_PATH}"
+cd ${INT_DIR} && 7z -t7z a ${CRATE_FILE_PATH} . && cd -
+
+echo "Cleanup git info in intermediate directory for source code publishing: ${INT_DIR}"
+rm -rf ${INT_DIR}/.git
+
+ZIP_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.zip"
+echo "Pack source code into zip: ${ZIP_FILE_PATH}"
+cd ${INT_DIR} && 7z -tzip a ${ZIP_FILE_PATH} . && cd -
+
+TAR_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.tar.gz"
+echo "Pack source code into tar: ${TAR_FILE_PATH}"
+cd ${INT_DIR} && tar -zcvf ${TAR_FILE_PATH} * && cd -
 '''
 
 [tasks.pack-zip]
