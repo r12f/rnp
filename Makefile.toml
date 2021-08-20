@@ -210,7 +210,7 @@ script = '''
 echo "Removing publish directory: ${PUBLISH_DIR}"
 rm -r ${PUBLISH_DIR}
 
-if not is_dir ${PUBLISH_DIR}
+if is_dir ${PUBLISH_DIR}
     echo "Creating publish directory: ${PUBLISH_DIR}"
     mkdir ${PUBLISH_DIR}
 end
@@ -221,7 +221,7 @@ description = "Pack binaries."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/bin"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -241,7 +241,7 @@ description = "Pack symbol files."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/symbols"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -295,7 +295,7 @@ description = "Pack zip package."
 script_runner = "@duckscript"
 script = '''
 OUT_DIR = set "${PUBLISH_DIR}/zipped"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -311,11 +311,11 @@ exec 7z -tzip a ${ZIP_FILE_PATH} ${PUBLISH_DIR}/bin/*
 description = "Pack tar package."
 script_runner = "bash"
 script = '''
-OUT_DIR = set "${PUBLISH_DIR}/zipped"
-if not is_dir ${OUT_DIR}
+OUT_DIR="${PUBLISH_DIR}/zipped"
+if [ -d ${OUT_DIR}]; then
     echo "Removing previous output directory: ${OUT_DIR}"
-    rm -r ${OUT_DIR}
-end
+    rm -rf ${OUT_DIR}
+fi
 echo "Creating new output directory: ${OUT_DIR}"
 mkdir ${OUT_DIR}
 
@@ -343,7 +343,7 @@ eval_build_template_file "./build/templates/nuget_packages/rnp_nupkg.csproj" ${I
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/nuget"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -375,7 +375,7 @@ eval_build_template_file "./build/templates/msix/appxmappings-make.txt" ${INT_DI
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/msix"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -435,7 +435,7 @@ exec dpkg-deb --build --root-owner-group ${INT_DIR}/${DEB_PACKAGE_NAME}
 
 # Publish to output folder
 OUT_DIR = set "${PUBLISH_DIR}/deb"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -454,7 +454,7 @@ script = '''
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/choco"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
@@ -478,7 +478,7 @@ script = '''
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/homebrew"
-if not is_dir ${OUT_DIR}
+if is_dir ${OUT_DIR}
     echo "Removing previous output directory: ${OUT_DIR}"
     rm -r ${OUT_DIR}
 end
