@@ -18,8 +18,8 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 [env]
 # Directories
 BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
-BUILD_DIR = "target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
-PUBLISH_DIR = "./publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
+BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
+PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 
 # Build settings
 GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
