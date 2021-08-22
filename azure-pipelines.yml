@@ -150,20 +150,9 @@ stages:
     # Environment variable updates
     #
     - bash: |
-        BUILD_BRANCH_NAME="$(Build.SourceBranch)"
-        BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
-        BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
-        BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
-        echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
-        echo "Updated build.branch_name to $BUILD_BRANCH_NAME"
-
         BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
         echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
         echo "Updated build.version to $BUILD_VERSION"
-
-        BUILD_TAG=$BUILD_VERSION.$BUILD_BRANCH_NAME
-        echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
-        echo "Updated build.tag to $BUILD_TAG"
       displayName: Update build environment variables
 
     #
@@ -322,27 +311,10 @@ stages:
         inputs:
           targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
           
-      - bash: |
-          BUILD_BRANCH_NAME="$(Build.SourceBranch)"
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
-          echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
-          echo "Updated build.branch_name to $BUILD_BRANCH_NAME"
-
-          BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
-          echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
-          echo "Updated build.version to $BUILD_VERSION"
-
-          BUILD_TAG=$BUILD_VERSION.$BUILD_BRANCH_NAME
-          echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
-          echo "Updated build.tag to $BUILD_TAG"
-        displayName: 'Set environment variables'
-        
       - task: ExtractFiles@1
         displayName: 'Extract packed source code'
         inputs:
-          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.$(build.tag).zip' 
+          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.*.zip'
           destinationFolder: $(System.DefaultWorkingDirectory)/Source
           cleanDestinationFolder: true 
         
@@ -357,7 +329,7 @@ stages:
           echo ""
 
           echo "Install rnp from debian package"
-          sudo dpkg -i ./rnp_$(build.version)-1_amd64.deb
+          sudo dpkg -i ./rnp_*-1_amd64.deb
           if [ $? -ne 0 ]; then
             echo "Failed to install rnp from debian package"
             exit 1
