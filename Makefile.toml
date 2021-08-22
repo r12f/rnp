@@ -204,7 +204,7 @@ args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}",
 [tasks.pack]
 description = "Pack binaries into packages."
 run_task = [
-    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "pack-choco", "sign-packages"], condition = { platforms = ["windows"] } },
+    { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-zip", "pack-nuget", "pack-msix", "pack-choco", "pack-scripts", "sign-packages"], condition = { platforms = ["windows"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-deb", "pack-source"], condition = { platforms = ["linux"] } },
     { name = ["pack-prepare", "pack-binaries", "pack-symbols", "pack-tar", "pack-nuget", "pack-brew"], condition = { platforms = ["mac"] } },
 ]
@@ -511,6 +511,23 @@ mkdir ${OUT_DIR}
 TEMPLATE_DIR = set "./build/templates/homebrew"
 echo "Generating chocolatey package source from ${TEMPLATE_DIR} to ${OUT_DIR}"
 eval_build_template_file "${TEMPLATE_DIR}/rnp.rb" ${OUT_DIR}/rnp.rb
+'''
+
+[tasks.pack-scripts]
+description = "Pack release scripts."
+script_runner = "@duckscript"
+script = '''
+OUT_DIR = set "${PUBLISH_DIR}/scripts"
+if is_dir ${OUT_DIR}
+    echo "Removing previous output directory: ${OUT_DIR}"
+    rm -r ${OUT_DIR}
+end
+echo "Creating new output directory: ${OUT_DIR}"
+mkdir ${OUT_DIR}
+
+RELEASE_SCRIPT_PATH = set "./build/pack/New-RnpReleasePackages.ps1"
+echo "Copying release script from ${RELEASE_SCRIPT_PATH} to ${OUT_DIR}"
+cp ${RELEASE_SCRIPT_PATH} "${OUT_DIR}/New-RnpReleasePackages.ps1"
 '''
 
 [tasks.sign-packages]
