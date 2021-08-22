@@ -52,83 +52,51 @@ stages:
         windows-x86:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
-          rustup_toolchain: stable
           target: i686-pc-windows-msvc
           target_short: windows.x86
           is_cross_compile: true
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
         windows-x64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
-          rustup_toolchain: stable
           target: x86_64-pc-windows-msvc
           target_short: windows.x64
           is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
         windows-arm64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
-          rustup_toolchain: stable
           target: aarch64-pc-windows-msvc
           target_short: windows.arm64
           is_cross_compile: true
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: i686-unknown-linux-gnu
           target_short: linux.x86
           is_cross_compile: true
-          gcc_prefix: x86_64-linux-gnu-
-          gcc_suffix: -x86_64-linux-gnu
-          deb_arch: x86
         linux-x64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: x86_64-unknown-linux-gnu
           target_short: linux.x64
           is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch: amd64
         linux-arm:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: arm-unknown-linux-gnueabi
           target_short: linux.arm
           is_cross_compile: true
-          gcc_prefix: arm-linux-gnueabi-
-          gcc_suffix: -arm-linux-gnueabi
-          deb_arch: arm
         linux-arm64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: aarch64-unknown-linux-gnu
           target_short: linux.arm64
           is_cross_compile: true
-          gcc_prefix: aarch64-linux-gnu-
-          gcc_suffix: -aarch64-linux-gnu
-          deb_arch: arm64
         macos-x64:
           poolName: Azure Pipelines
           imageName: 'macos-latest'
-          rustup_toolchain: stable
           target: x86_64-apple-darwin
           target_short: macos.x64
           is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
 
     pool:
       name: $(poolName)
@@ -159,8 +127,8 @@ stages:
     # Update build environment
     #
     - bash: |
-        rustup default $RUSTUP_TOOLCHAIN
-        rustup update $RUSTUP_TOOLCHAIN
+        rustup default stable
+        rustup update stable
       displayName: rustup update default toolchain
 
     - task: PowerShell@2
@@ -172,7 +140,7 @@ stages:
 
     - script: $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
       displayName: Install cargo make binary on Linux/MAC
-      condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
+      condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
 
     - script: cargo make install-build-tools
       displayName: Install build tools

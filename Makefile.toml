@@ -17,7 +17,7 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 
 [env]
 # Directories
-BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
+BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
 BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
 PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 
