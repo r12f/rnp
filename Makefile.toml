@@ -353,7 +353,7 @@ mkdir "${OUT_DIR}"
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
 echo "Pack binaries ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
-tar --transform "s/.*\///g" -zcvf "${TAR_FILE_PATH}" "${PUBLISH_DIR}/bin/*"
+tar --transform "s/.*\///g" -zcvf "${TAR_FILE_PATH}" ${PUBLISH_DIR}/bin/*
 '''
 
 [tasks.pack-nuget]
