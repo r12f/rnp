@@ -196,7 +196,7 @@ stages:
       condition: and(succeeded(), ne(variables['gcc_suffix'], ''), ne(variables['target'], 'i686-unknown-linux-gnu'))
 
     #
-    # Update version files and pack all source code for crate publishing
+    # Update version files and scripts all source code for crate publishing
     #
     - bash: |
         sed -i 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
@@ -336,11 +336,11 @@ stages:
         targetFolder: '$(Build.ArtifactStagingDirectory)/templates'
 
     - task: CopyFiles@2
-      displayName: Copy pack scripts to output
+      displayName: Copy scripts to output
       condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
       inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/build/pack'
-        targetFolder: '$(Build.ArtifactStagingDirectory)/pack'
+        sourceFolder: '$(Build.SourcesDirectory)/build/scripts'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/scripts'
 
     - bash: |
         deb_pkg_name=rnp_$(build.version)-1_$(DEB_ARCH)
@@ -428,7 +428,7 @@ stages:
         displayName: 'Generate all packages'
         inputs:
           targetType: 'filePath'
-          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/pack/PackReleasePackages.ps1'
+          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/scripts/PackReleasePackages.ps1'
           arguments:
             -BuildBranchName $(build.branch_name)
             -BuildTag $(build.tag)
