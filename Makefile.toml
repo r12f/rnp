@@ -40,6 +40,9 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 # Debug settings
 RUST_BACKTRACE = "full" # Enable full stack trace all the time.
 
+# Tools
+GNU_TAR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "tar", mapping = { "mac" = "gtar" } }
+
 ##############################################
 # Init development environment
 #
@@ -105,7 +108,7 @@ script_runner="bash"
 script = '''
 # Install binutils for objcopy
 echo "Installing binutils."
-brew install binutils
+brew install binutils gnu-tar
 '''
 
 # Install scripts tools
@@ -319,7 +322,7 @@ cd "${INT_DIR}" && 7z -tzip a "${ZIP_FILE_PATH}" . && cd -
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.tar.gz"
 echo "Pack source code into tar: ${TAR_FILE_PATH}"
-cd "${INT_DIR}" && tar --transform "s/^\.\///g" -zcvf "${TAR_FILE_PATH}" . && cd -
+cd "${INT_DIR}" && ${GNU_TAR} --transform "s/^\.\///g" -zcvf "${TAR_FILE_PATH}" . && cd -
 '''
 
 [tasks.pack-zip]
@@ -353,7 +356,7 @@ mkdir "${OUT_DIR}"
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
 echo "Pack binaries ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
-tar --transform "s/.*\///g" -zcvf "${TAR_FILE_PATH}" ${PUBLISH_DIR}/bin/*
+${GNU_TAR} --transform "s/.*\///g" -zcvf "${TAR_FILE_PATH}" ${PUBLISH_DIR}/bin/*
 '''
 
 [tasks.pack-nuget]
