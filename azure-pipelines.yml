@@ -138,7 +138,9 @@ stages:
         targetType: 'filePath'
         filePath: '$(Build.SourcesDirectory)/build/scripts/Install-CargoMakeBinary.ps1'
 
-    - script: $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
+    - bash: |
+        chmod +x $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
+        $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
       displayName: Install cargo make binary on Linux/MAC
       condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
 

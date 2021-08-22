@@ -356,7 +356,7 @@ tar --transform "s/.*\///g" -zcvf ${TAR_FILE_PATH} ${PUBLISH_DIR}/bin/*
 description = "Pack nuget package."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 INT_DIR = set "${BUILD_DIR}/nuget"
 
@@ -388,7 +388,7 @@ exec dotnet pack ${INT_DIR}/rnp_nupkg.csproj -o ${OUT_DIR}
 description = "Pack msix package."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 INT_DIR = set "${BUILD_DIR}/msix"
 
@@ -423,7 +423,7 @@ exec "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/makeappx.exe" 
 description = "Pack deb package."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 proc_version = readfile "/proc/version"
 echo "Read proc version for detecting WSL: ${proc_version}"
@@ -484,7 +484,7 @@ cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
 description = "Pack chocolatecy package source."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/choco"
@@ -508,7 +508,7 @@ eval_build_template_file "${TEMPLATE_DIR}/tools/VERIFICATION.txt" ${OUT_DIR}/too
 description = "Pack homebrew package source."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/homebrew"
@@ -536,7 +536,7 @@ end
 echo "Creating new output directory: ${OUT_DIR}"
 mkdir ${OUT_DIR}
 
-RELEASE_SCRIPT_PATH = set "./build/pack/New-RnpReleasePackages.ps1"
+RELEASE_SCRIPT_PATH = set "./build/scripts/New-RnpReleasePackages.ps1"
 echo "Copying release script from ${RELEASE_SCRIPT_PATH} to ${OUT_DIR}"
 cp ${RELEASE_SCRIPT_PATH} "${OUT_DIR}/New-RnpReleasePackages.ps1"
 '''
