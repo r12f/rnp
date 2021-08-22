@@ -9,6 +9,7 @@ env_scripts = [
 #!@duckscript
 echo "Setting environment variables ..."
 git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
+git_branch = replace ${git_branch} " " "_"
 git_branch = replace ${git_branch} "/" "_"
 set_env BUILD_BRANCH ${git_branch}
 set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
@@ -35,6 +36,9 @@ RNP_SIGNING_VAULT_URL = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 RNP_SIGNING_CLIENT_ID = { value = "", condition = { env_not_set = ["RNP_SIGNING_CLIENT_ID"] } }
 RNP_SIGNING_CLIENT_SECRET = { value = "", condition = { env_not_set = ["RNP_SIGNING_CLIENT_SECRET"] } }
 RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_CERT_NAME"] } }
+
+# Debug settings
+RUST_BACKTRACE = "full" # Enable full stack trace all the time.
 
 ##############################################
 # Init development environment
@@ -101,7 +105,7 @@ script_runner="bash"
 script = '''
 # Install binutils for objcopy
 echo "Installing binutils."
-sudo brew install binutils
+brew install binutils
 '''
 
 # Install scripts tools
@@ -186,9 +190,9 @@ echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
 echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
-${GCC_PREFIX}objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
-${GCC_PREFIX}strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
-${GCC_PREFIX}objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+${GCC_PREFIX}objcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
+${GCC_PREFIX}strip --strip-debug --strip-unneeded -p "${BUILD_DIR}/rnp"
+${GCC_PREFIX}objcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
 '''
 
 [tasks.make-symbol-mac]
@@ -197,9 +201,9 @@ echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
 echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
-/usr/local/opt/binutils/bin/gobjcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
-strip -S ${BUILD_DIR}/rnp
-/usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+/usr/local/opt/binutils/bin/gobjcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
+strip -S "${BUILD_DIR}/rnp"
+/usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
 '''
 
 # Sign
@@ -281,41 +285,41 @@ script = '''
 INT_DIR="${BUILD_DIR}/source"
 
 # Clean up
-if [ -d ${INT_DIR} ]; then
+if [ -d "${INT_DIR}" ]; then
     echo "Removing intermediate directory: ${INT_DIR}"
-    rm -rf ${INT_DIR}
+    rm -rf "${INT_DIR}"
 fi
 echo "Creating intermediate directory: ${INT_DIR}"
-mkdir ${INT_DIR}
+mkdir "${INT_DIR}"
 
 # Prepare the source package
 echo "Copying source code to ${INT_DIR}"
-cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` ${INT_DIR}/
-cd ${INT_DIR} && git clean -xfd && cd -
+cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` "${INT_DIR}/"
+cd "${INT_DIR}" && git clean -xfd && cd -
 
 # Create source packages
 OUT_DIR="${PUBLISH_DIR}/source"
-if [ -d ${OUT_DIR} ]; then
+if [ -d "${OUT_DIR}" ]; then
     echo "Removing previous output directory: ${OUT_DIR}"
-    rm -rf ${OUT_DIR}
+    rm -rf "${OUT_DIR}"
 fi
 echo "Creating new output directory: ${OUT_DIR}"
-mkdir ${OUT_DIR}
+mkdir "${OUT_DIR}"
 
 CRATE_FILE_PATH="${OUT_DIR}/rnp.crate.7z"
 echo "Pack source code for crate publishing: ${CRATE_FILE_PATH}"
-cd ${INT_DIR} && 7z -t7z a ${CRATE_FILE_PATH} . && cd -
+cd "${INT_DIR}" && 7z -t7z a "${CRATE_FILE_PATH}" . && cd -
 
 echo "Cleanup git info in intermediate directory for source code publishing: ${INT_DIR}"
-rm -rf ${INT_DIR}/.git
+rm -rf "${INT_DIR}/.git"
 
 ZIP_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.zip"
 echo "Pack source code into zip: ${ZIP_FILE_PATH}"
-cd ${INT_DIR} && 7z -tzip a ${ZIP_FILE_PATH} . && cd -
+cd "${INT_DIR}" && 7z -tzip a "${ZIP_FILE_PATH}" . && cd -
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.tar.gz"
 echo "Pack source code into tar: ${TAR_FILE_PATH}"
-cd ${INT_DIR} && tar --transform "s/^\.\///g" -zcvf ${TAR_FILE_PATH} . && cd -
+cd "${INT_DIR}" && tar --transform "s/^\.\///g" -zcvf "${TAR_FILE_PATH}" . && cd -
 '''
 
 [tasks.pack-zip]
@@ -340,16 +344,16 @@ description = "Pack tar package."
 script_runner = "bash"
 script = '''
 OUT_DIR="${PUBLISH_DIR}/zipped"
-if [ -d ${OUT_DIR} ]; then
+if [ -d "${OUT_DIR}" ]; then
     echo "Removing previous output directory: ${OUT_DIR}"
-    rm -rf ${OUT_DIR}
+    rm -rf "${OUT_DIR}"
 fi
 echo "Creating new output directory: ${OUT_DIR}"
-mkdir ${OUT_DIR}
+mkdir "${OUT_DIR}"
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
 echo "Pack binaries ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
-tar --transform "s/.*\///g" -zcvf ${TAR_FILE_PATH} ${PUBLISH_DIR}/bin/*
+tar --transform "s/.*\///g" -zcvf "${TAR_FILE_PATH}" "${PUBLISH_DIR}/bin/*"
 '''
 
 [tasks.pack-nuget]
