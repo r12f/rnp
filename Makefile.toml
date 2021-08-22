@@ -106,15 +106,15 @@ rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
 description = "Install build tools on mac."
 script_runner="bash"
 script = '''
-# Install binutils for objcopy
-echo "Installing binutils."
-brew install binutils gnu-tar
+echo "Installing build tools: binutils"
+brew install binutils
 '''
 
 # Install scripts tools
 [tasks.install-pack-tools]
 description = "Install pack tools."
 linux_alias = "install-pack-tools-linux"
+mac_alias = "install-pack-tools-mac"
 
 [tasks.install-pack-tools-linux]
 description = "Install pack tools on linux."
@@ -135,6 +135,14 @@ sudo apt install -y dotnet-sdk-5.0
 
 # Install required misc tools
 sudo apt install -y p7zip-full
+'''
+
+[tasks.install-pack-tools-mac]
+description = "Install pack tools on mac."
+script_runner="bash"
+script = '''
+echo "Installing pack tools: gnu-tar"
+brew install gnu-tar
 '''
 
 ##############################################
