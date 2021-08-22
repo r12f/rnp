@@ -225,7 +225,8 @@ stages:
       displayName: Copy published artifacts to output
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/publish'
-        contents: *
+        contents: |
+          *
         targetFolder: '$(Build.ArtifactStagingDirectory)'
 
     - task: PublishPipelineArtifact@1
