@@ -53,12 +53,14 @@ script = '''
 @echo off
 
 :: Install toolchains for cross builds
-rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
+echo Installing rust target: %CARGO_MAKE_RUST_TARGET_TRIPLE%.
+rustup target install %CARGO_MAKE_RUST_TARGET_TRIPLE%
 
 :: Install AzureSignTool
 :: dotnet tool update is now the better (or more expected) way to install the tools. For details, please see the PR and issue below:
 :: - https://github.com/dotnet/cli/pull/10205
 :: - https://github.com/dotnet/sdk/issues/9500
+echo Installing AzureSignTool.
 dotnet tool update --global azuresigntool
 '''
 
@@ -70,9 +72,16 @@ script = '''
 sudo apt update
 
 # Install GCC and required libs/tools
+echo "Installing build tools and required libs."
 sudo apt install -y build-essential libssl-dev
 
 case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
+    "i686-unknown-linux-gnu")
+        # For building x86 binary, we are using gcc-multilib.
+        # This package is conflicting with other gcc-* packages, but we don't know any better package to use.
+        # But sadly, this package is lacking of tools that we need to build ARM/ARM64, so we can only pick 1 to use - either support x86 or ARM/ARM64.
+        sudo apt install -y gcc-multilib
+        ;;
     "arm-unknown-linux-gnueabi")
         sudo apt install -y gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
         ;;
@@ -82,6 +91,7 @@ case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
 esac
 
 # Install toolchains for cross builds
+echo "Installing rust target: ${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
 '''
 
@@ -90,6 +100,7 @@ description = "Install build tools on mac."
 script_runner="bash"
 script = '''
 # Install binutils for objcopy
+echo "Installing binutils."
 sudo brew install binutils
 '''
 
