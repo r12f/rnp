@@ -304,7 +304,7 @@ cd ${INT_DIR} && 7z -tzip a ${ZIP_FILE_PATH} . && cd -
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.tar.gz"
 echo "Pack source code into tar: ${TAR_FILE_PATH}"
-cd ${INT_DIR} && tar -zcvf ${TAR_FILE_PATH} * && cd -
+cd ${INT_DIR} && tar --transform "s/^\.\///g" -zcvf ${TAR_FILE_PATH} . && cd -
 '''
 
 [tasks.pack-zip]
