@@ -41,7 +41,7 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 RUST_BACKTRACE = "full" # Enable full stack trace all the time.
 
 # Tools
-GNU_TAR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "tar", mapping = { "mac" = "gtar" } }
+GNU_TAR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "tar", mapping = { "macos" = "gtar" } }
 
 ##############################################
 # Init development environment
