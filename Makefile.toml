@@ -93,7 +93,7 @@ script = '''
 sudo brew install binutils
 '''
 
-# Install pack tools
+# Install scripts tools
 [tasks.install-pack-tools]
 description = "Install pack tools."
 linux_alias = "install-pack-tools-linux"
