@@ -28,7 +28,7 @@ BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CAR
 BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
 BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
 BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
-RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
+RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
 
 # Sign settings (Use RNP_SIGNING_URL as enablement key.)
 RNP_SIGNING_URL = { value = "${RNP_SIGNING_URL}", condition = { env_set = ["RNP_SIGNING_URL"] } }
