@@ -49,48 +49,48 @@ stages:
     #
     strategy:
       matrix:
-        # windows-x86:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   target: i686-pc-windows-msvc
-        #   target_short: windows.x86
-        #   is_cross_compile: true
-        # windows-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   target: x86_64-pc-windows-msvc
-        #   target_short: windows.x64
-        #   is_cross_compile: false
-        # windows-arm64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'windows-latest'
-        #   target: aarch64-pc-windows-msvc
-        #   target_short: windows.arm64
-        #   is_cross_compile: true
-        # linux-x86:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   target: i686-unknown-linux-gnu
-        #   target_short: linux.x86
-        #   is_cross_compile: true
-        # linux-x64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   target: x86_64-unknown-linux-gnu
-        #   target_short: linux.x64
-        #   is_cross_compile: false
-        # linux-arm:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   target: arm-unknown-linux-gnueabi
-        #   target_short: linux.arm
-        #   is_cross_compile: true
-        # linux-arm64:
-        #   poolName: Azure Pipelines
-        #   imageName: 'ubuntu-latest'
-        #   target: aarch64-unknown-linux-gnu
-        #   target_short: linux.arm64
-        #   is_cross_compile: true
+        windows-x86:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          target: i686-pc-windows-msvc
+          target_short: windows.x86
+          is_cross_compile: true
+        windows-x64:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          target: x86_64-pc-windows-msvc
+          target_short: windows.x64
+          is_cross_compile: false
+        windows-arm64:
+          poolName: Azure Pipelines
+          imageName: 'windows-latest'
+          target: aarch64-pc-windows-msvc
+          target_short: windows.arm64
+          is_cross_compile: true
+        linux-x86:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          target: i686-unknown-linux-gnu
+          target_short: linux.x86
+          is_cross_compile: true
+        linux-x64:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          target: x86_64-unknown-linux-gnu
+          target_short: linux.x64
+          is_cross_compile: false
+        linux-arm:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          target: arm-unknown-linux-gnueabi
+          target_short: linux.arm
+          is_cross_compile: true
+        linux-arm64:
+          poolName: Azure Pipelines
+          imageName: 'ubuntu-latest'
+          target: aarch64-unknown-linux-gnu
+          target_short: linux.arm64
+          is_cross_compile: true
         macos-x64:
           poolName: Azure Pipelines
           imageName: 'macos-latest'
@@ -161,7 +161,7 @@ stages:
     # Build
     #
     - script: cargo make build --profile production --target $(TARGET)
-      displayName: Cargo build
+      displayName: Cargo make build
       env:
         RNP_SIGNING_URL: $(RnpSigningURL)
         RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
@@ -173,14 +173,14 @@ stages:
     # Running all tests
     #
     - bash: cargo make test --profile production --target $(TARGET)
-      displayName: Cargo test
+      displayName: Cargo make test
       condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
     #
     # Pack
     #
     - script: cargo make pack --profile production --target $(TARGET)
-      displayName: Cargo pack
+      displayName: Cargo make pack
       env:
         RNP_SIGNING_URL: $(RnpSigningURL)
         RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
@@ -194,7 +194,7 @@ stages:
     - task: CopyFiles@2
       displayName: Copy published artifacts to output
       inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/publish'
+        sourceFolder: '$(Build.SourcesDirectory)/publish/$(TARGET)'
         targetFolder: '$(Build.ArtifactStagingDirectory)'
 
     - task: PublishPipelineArtifact@1
