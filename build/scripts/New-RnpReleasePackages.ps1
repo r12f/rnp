@@ -75,7 +75,7 @@ function Copy-RnpBuildOutputToReleaseFolder([string] $packageFolder, [string] $p
     }
 
     Write-Host "Build output folder is found, copying files with path: $packagePath"
-    New-Item -ItemType Directory -Path $targetFolder
+    New-Item -ItemType Directory -Path $targetFolder -Force
     Copy-Item -Path $packagePath $targetFolder -Verbose -Force
 }
 
@@ -98,9 +98,9 @@ function New-RnpChocolateyPackage($fileHashs) {
     $chocoReleaseFolder = ".\Releases\Chocolatey"
     Write-Host "Creating chocolatey package: ReleaseFolder = $chocoReleaseFolder, StagingFolder = $chocoStagingFolder"
 
-    New-Item -ItemType Directory -Path $chocoReleaseFolder
-    New-Item -ItemType Directory -Path $chocoStagingFolder
-    New-Item -ItemType Directory -Path "$chocoStagingFolder\tools"
+    New-Item -ItemType Directory -Path $chocoReleaseFolder -Force
+    New-Item -ItemType Directory -Path $chocoStagingFolder -Force
+    New-Item -ItemType Directory -Path "$chocoStagingFolder\tools" -Force
 
     Expand-RnpPackageTemplateFileWithFileHash ".\Build.Build.windowsx64\choco\rnp.nuspec" "$chocoStagingFolder\rnp.nuspec" $fileHashs
     Expand-RnpPackageTemplateFileWithFileHash ".\Build.Build.windowsx64\choco\tools\chocolateyInstall.ps1" "$chocoStagingFolder\tools\chocolateyInstall.ps1" $fileHashs
