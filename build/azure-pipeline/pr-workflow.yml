@@ -1,0 +1,38 @@
+#
+# Triggers
+#
+
+# No CI trigger
+trigger: none
+
+# PR merge validations
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - build
+      - src
+      - azure-pipelines.yml
+
+#
+# Version and jobs
+#
+variables:
+  - name: buildVersionMajor
+    value: 0
+  - name: buildVersionMinor
+    value: 1
+  - name: buildVersionRevision
+    value: $[counter(format('{0}.{1}.{2}', variables['Build.SourceBranch'], variables['buildVersionMajor'], variables['buildVersionMinor']), 1)]
+
+# Run
+name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
+
+extends:
+  template: build/azure-pipeline/build-stages.yml
+  parameters:
+    buildVersionMajor: $(buildVersionMajor)
+    buildVersionMinor: $(buildVersionMinor)
+    buildVersionRevision: $(buildVersionRevision)
