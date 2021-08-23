@@ -224,14 +224,14 @@ echo "Windows builds generates PDB by default, so nothing to generate here."
 script_runner="bash"
 script = '''
 GCC_PREFIX=""
-if [[ "${GCC_XCOMPILER_ID}" -ne "" ]]; then
+if [[ "${GCC_XCOMPILER_ID}" != "" ]]; then
     GCC_PREFIX="${GCC_XCOMPILER_ID}-";
 fi
 
 echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
-echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
+echo "Generating new symbol file (with GCC prefix \"${GCC_PREFIX}\"): ${BUILD_DIR}/rnp.debug"
 ${GCC_PREFIX}objcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
 ${GCC_PREFIX}strip --strip-debug --strip-unneeded -p "${BUILD_DIR}/rnp"
 ${GCC_PREFIX}objcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
