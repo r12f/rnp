@@ -65,7 +65,7 @@ function Copy-RnpBuildOutputToRelease
     }
 }
 
-function Copy-RnpPackagesToReleaseFolder([string] $packageFolder, [string] $packageName, [string] $targetFolder)
+function Copy-RnpBuildOutputToReleaseFolder([string] $packageFolder, [string] $packageName, [string] $targetFolder)
 {
     $packagePath = "$packageFolder\$packageName"
 
