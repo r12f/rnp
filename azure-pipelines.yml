@@ -160,7 +160,7 @@ stages:
     #
     # Build
     #
-    - script: cargo make build --profile production --target $(TARGET)
+    - script: cargo make build --profile production -e BUILD_TARGET=$(TARGET)
       displayName: Cargo make build
       env:
         RNP_SIGNING_URL: $(RnpSigningURL)
@@ -172,14 +172,14 @@ stages:
     #
     # Running all tests
     #
-    - bash: cargo make test --profile production --target $(TARGET)
+    - bash: cargo make test --profile production -e BUILD_TARGET=$(TARGET)
       displayName: Cargo make test
       condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
     #
     # Pack
     #
-    - script: cargo make pack --profile production --target $(TARGET)
+    - script: cargo make pack --profile production -e BUILD_TARGET=$(TARGET)
       displayName: Cargo make pack
       env:
         RNP_SIGNING_URL: $(RnpSigningURL)

@@ -20,6 +20,7 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 # Build flavor
 BUILD_TARGET = { value = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", condition = { env_not_set = ["BUILD_TARGET"] } }
 
+# Cargo make doesn't support passing target as parameter yet, so we have to manually set these variables instead of reading from predefined ones.
 BUILD_ARCH.source = "${BUILD_TARGET}"
 BUILD_ARCH.default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}"
 BUILD_ARCH.mapping.x86_64 = "x64"
