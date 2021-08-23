@@ -56,8 +56,9 @@ function Copy-RnpBuildOutputToRelease
 
         Copy-RnpBuildOutputToReleaseFolder "$root\symbols" "*" "$symbolStagingFolder\$flavor"
         Copy-RnpBuildOutputToReleaseFolder "$root\nuget" "*" $nugetPackageReleaseFolder
-        Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "rnp.crate.*" $crateReleaseFolder
-        Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "rnp.source.*" $githubReleasePackagesFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.crate.*" $crateReleaseFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.source.*" $githubReleasePackagesFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\nuget" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\deb" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\msix" "*" $githubReleasePackagesFolder
@@ -82,11 +83,11 @@ function Copy-RnpBuildOutputToReleaseFolder([string] $packageFolder, [string] $p
 function New-RnpMultiArchPackageWithFilePath
 {
     $fileHashs = [pscustomobject]@{
-        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.*.windows.x86.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
-        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.*.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ZipX86" = (Get-FileHash "$githubReleasePackagesFolder\rnp.*.windows.x86.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ZipX64" = (Get-FileHash "$githubReleasePackagesFolder\rnp.*.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
         "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
-        "SourceTar" = (Get-FileHash ".\Releases\GithubReleases\rnp.source.*.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "SourceTar" = (Get-FileHash "$githubReleasePackagesFolder\rnp.source.*.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
     }
     Write-Host "File hash: $fileHashs"
 
