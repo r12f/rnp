@@ -112,7 +112,7 @@ function New-RnpChocolateyPackage($fileHashs) {
 }
 
 function Expand-RnpPackageTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs) {
-    $templateFileContent = Get-Content $templateFile;
+    $targetFileContent = Get-Content $templateFile
     $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64).Replace("{source_package_tar_hash}", $fileHashs.SourceTar);
     $utf8NoBom = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
