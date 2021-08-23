@@ -1,14 +1,13 @@
-variables:
-  - group: RnpCodeSign
+parameters:
   - name: buildVersionMajor
-    value: 0
+    type: string
+    default: 0
   - name: buildVersionMinor
-    value: 1
+    type: string
+    default: 0
   - name: buildVersionRevision
-    value: $[counter(format('{0}.{1}.{2}', variables['Build.SourceBranch'], variables['buildVersionMajor'], variables['buildVersionMinor']), 0)]
-
-# Run
-name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
+    type: string
+    default: 0
 
 stages:
   - stage: Build
