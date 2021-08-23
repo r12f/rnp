@@ -193,7 +193,7 @@ impl PingResultProcessor for PingResultProcessorConsoleLogger {
             if self.disconnect_failed_count > 0 {
                 warning_messages.push(format!("Disconnect Failed = {}", self.disconnect_failed_count));
             }
-            warning = format!(" ({})", warning_messages.join(","));
+            warning = format!(" ({})", warning_messages.join(", "));
         }
 
         println!(

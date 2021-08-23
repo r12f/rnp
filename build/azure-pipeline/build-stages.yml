@@ -1,0 +1,299 @@
+parameters:
+  - name: buildVersionMajor
+    type: string
+    default: 0
+  - name: buildVersionMinor
+    type: string
+    default: 0
+  - name: buildVersionRevision
+    type: string
+    default: 0
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        #
+        # Build flavors
+        #
+        strategy:
+          matrix:
+            windows-x86:
+              poolName: Azure Pipelines
+              imageName: 'windows-latest'
+              target: i686-pc-windows-msvc
+              target_short: windows.x86
+              is_cross_compile: true
+            windows-x64:
+              poolName: Azure Pipelines
+              imageName: 'windows-latest'
+              target: x86_64-pc-windows-msvc
+              target_short: windows.x64
+              is_cross_compile: false
+            windows-arm64:
+              poolName: Azure Pipelines
+              imageName: 'windows-latest'
+              target: aarch64-pc-windows-msvc
+              target_short: windows.arm64
+              is_cross_compile: true
+            linux-x86:
+              poolName: Azure Pipelines
+              imageName: 'ubuntu-latest'
+              target: i686-unknown-linux-gnu
+              target_short: linux.x86
+              is_cross_compile: true
+            linux-x64:
+              poolName: Azure Pipelines
+              imageName: 'ubuntu-latest'
+              target: x86_64-unknown-linux-gnu
+              target_short: linux.x64
+              is_cross_compile: false
+            linux-arm:
+              poolName: Azure Pipelines
+              imageName: 'ubuntu-latest'
+              target: arm-unknown-linux-gnueabi
+              target_short: linux.arm
+              is_cross_compile: true
+            linux-arm64:
+              poolName: Azure Pipelines
+              imageName: 'ubuntu-latest'
+              target: aarch64-unknown-linux-gnu
+              target_short: linux.arm64
+              is_cross_compile: true
+            macos-x64:
+              poolName: Azure Pipelines
+              imageName: 'macos-latest'
+              target: x86_64-apple-darwin
+              target_short: macos.x64
+              is_cross_compile: false
+
+        pool:
+          name: $(poolName)
+          vmImage: $(imageName)
+
+        workspace:
+          clean: all
+
+        steps:
+          #
+          # Force cleanup.
+          # Self-hosted agents must be cleaned up, otherwise it might carry the previous result to the latest build.
+          # https://docs.microsoft.com/en-us/azure/devops/pipelines/repos/pipeline-options-for-git?view=azure-devops&tabs=yaml#clean-the-local-repo-on-the-agent
+          #
+          - checkout: self
+            clean: true
+
+          #
+          # Environment variable updates
+          #
+          - bash: |
+              BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
+              echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
+              echo "Updated build.version to $BUILD_VERSION"
+            displayName: Update build environment variables
+
+          #
+          # Update build environment
+          #
+          - bash: |
+              rustup default stable
+              rustup update stable
+            displayName: rustup update default toolchain
+
+          - task: PowerShell@2
+            displayName: Install cargo make binary on Windows
+            condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/build/scripts/Install-CargoMakeBinary.ps1'
+
+          - bash: |
+              chmod +x $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
+              $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
+            displayName: Install cargo make binary on Linux/MAC
+            condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
+
+          - script: cargo make install-build-tools -e BUILD_TARGET=$(TARGET)
+            displayName: Install build tools
+
+          - script: cargo make install-pack-tools
+            displayName: Install pack tools
+
+          #
+          # Update version files and scripts all source code for crate publishing
+          #
+          - bash: |
+              sed -i.bak 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
+            displayName: Update crate version
+
+          #
+          # Build
+          #
+          - script: cargo make build --profile production -e BUILD_TARGET=$(TARGET)
+            displayName: Cargo make build
+            env:
+              RNP_SIGNING_URL: $(RnpSigningURL)
+              RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
+              RNP_SIGNING_CLIENT_ID: $(RnpSigningClientId)
+              RNP_SIGNING_CLIENT_SECRET: $(RnpSigningClientSecret)
+              RNP_SIGNING_CERT_NAME: $(RnpSigningCertName)
+
+          #
+          # Running all tests
+          #
+          - bash: cargo make test --profile production -e BUILD_TARGET=$(TARGET)
+            displayName: Cargo make test
+            condition: and(succeeded(), eq(variables['is_cross_compile'], false))
+
+          #
+          # Pack
+          #
+          - script: cargo make pack --profile production -e BUILD_TARGET=$(TARGET)
+            displayName: Cargo make pack
+            env:
+              RNP_SIGNING_URL: $(RnpSigningURL)
+              RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
+              RNP_SIGNING_CLIENT_ID: $(RnpSigningClientId)
+              RNP_SIGNING_CLIENT_SECRET: $(RnpSigningClientSecret)
+              RNP_SIGNING_CERT_NAME: $(RnpSigningCertName)
+
+          #
+          # Publish files for release
+          #
+          - task: CopyFiles@2
+            displayName: Copy published artifacts to output
+            inputs:
+              sourceFolder: '$(Build.SourcesDirectory)/publish/$(TARGET)'
+              targetFolder: '$(Build.ArtifactStagingDirectory)'
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish pipeline artifact
+            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+
+  - stage: Pack
+    jobs:
+      - job: Pack
+        condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+        pool:
+          name: Azure Pipelines
+          vmImage: 'windows-latest'
+
+        workspace:
+          clean: all
+
+        steps:
+          - checkout: none
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Pipeline Artifact'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
+
+          - task: PowerShell@2
+            displayName: 'Generate all packages'
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/scripts/New-RnpReleasePackages.ps1'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
+
+          - task: CopyFiles@2
+            displayName: Copy packages to staging folder
+            inputs:
+              sourceFolder: '$(System.DefaultWorkingDirectory)/r12f.rnp/Releases'
+              targetFolder: '$(Build.ArtifactStagingDirectory)/Releases'
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish pipeline artifact
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+
+
+  - stage: Validate
+    jobs:
+      - job: Validate
+        condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+        #
+        # Flavors to validate
+        #
+        strategy:
+          matrix:
+            windows-x64:
+              poolName: Azure Pipelines
+              imageName: 'windows-latest'
+              target_short: windows.x64
+            linux-x64:
+              poolName: Azure Pipelines
+              imageName: 'ubuntu-latest'
+              target_short: linux.x64
+            macos-x64:
+              poolName: Azure Pipelines
+              imageName: 'macos-latest'
+              target_short: macos.x64
+
+        pool:
+          name: $(poolName)
+          vmImage: $(imageName)
+
+        workspace:
+          clean: all
+
+        steps:
+          - checkout: none
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Pipeline Artifact'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
+
+          - task: ExtractFiles@1
+            displayName: 'Extract packed source code'
+            inputs:
+              archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.*.zip'
+              destinationFolder: $(System.DefaultWorkingDirectory)/Source
+              cleanDestinationFolder: true
+
+          - bash: |
+              cargo install --path .
+            displayName: 'Install Rnp from source package'
+            workingDirectory: $(System.DefaultWorkingDirectory)/Source
+
+          - bash: |
+              echo "Checking rnp exists before installation"
+              dpkg -l | grep rnp
+              echo ""
+
+              echo "Install rnp from debian package"
+              sudo dpkg -i ./rnp_*-1_amd64.deb
+              if [ $? -ne 0 ]; then
+                echo "Failed to install rnp from debian package"
+                exit 1
+              fi
+              echo ""
+
+              echo "Check if rnp is successfully installed"
+              dpkg -l | grep rnp
+              echo ""
+
+              echo "Uninstall rnp"
+              sudo dpkg -r rnp
+              if [ $? -ne 0 ]; then
+                echo "Failed to uninstall rnp"
+                exit 1
+              fi
+              echo ""
+
+              echo "Check if rnp is successfully uninstalled"
+              dpkg -l | grep rnp
+              echo ""
+            displayName: 'Install Rnp from debian package'
+            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'))
+            workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish pipeline artifact
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)'
