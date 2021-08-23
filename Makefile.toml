@@ -17,7 +17,9 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 ]
 
 [env]
-# Build flavor
+# Build settings
+BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
+BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
 BUILD_TARGET = { value = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", condition = { env_not_set = ["BUILD_TARGET"] } }
 
 # Cargo make doesn't support passing target as parameter yet, so we have to manually set these variables instead of reading from predefined ones.
@@ -46,13 +48,14 @@ BUILD_OS.mapping.x86_64-apple-darwin = "macos"
 
 BUILD_FLAVOR = "${BUILD_OS}.${BUILD_ARCH}"
 
-# Build settings
-BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
-BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
-RNP_FILE_NAME = { source = "${BUILD_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
-GCC_XCOMPILER_ID = { source = "${BUILD_TARGET}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
+GCC_XCOMPILER_ID.source = "${BUILD_TARGET}"
+GCC_XCOMPILER_ID.default_value = ""
+GCC_XCOMPILER_ID.mapping.i686-unknown-linux-gnu = "x86_64-linux-gnu"
+GCC_XCOMPILER_ID.mapping.arm-unknown-linux-gnueabi = "arm-linux-gnueabi"
+GCC_XCOMPILER_ID.mapping.aarch64-unknown-linux-gnu = "aarch64-linux-gnu"
 
-# Directories
+# File names and directories
+RNP_FILE_NAME = { source = "${BUILD_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
 BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${BUILD_TARGET}/${BUILD_CONFIG}"
 PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${BUILD_TARGET}"
 
@@ -221,7 +224,9 @@ echo "Windows builds generates PDB by default, so nothing to generate here."
 script_runner="bash"
 script = '''
 GCC_PREFIX=""
-if [[ "${GCC_XCOMPILER_ID}" -ne "" ]]; then GCC_PREFIX="${GCC_XCOMPILER_ID}-"; fi
+if [[ "${GCC_XCOMPILER_ID}" -ne "" ]]; then
+    GCC_PREFIX="${GCC_XCOMPILER_ID}-";
+fi
 
 echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
