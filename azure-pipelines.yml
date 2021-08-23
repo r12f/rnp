@@ -144,7 +144,7 @@ stages:
       displayName: Install cargo make binary on Linux/MAC
       condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
 
-    - script: cargo make install-build-tools
+    - script: cargo make install-build-tools -e BUILD_TARGET=$(TARGET)
       displayName: Install build tools
 
     - script: cargo make install-pack-tools
