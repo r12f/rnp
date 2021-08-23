@@ -20,18 +20,19 @@ pr:
 # Version and jobs
 #
 variables:
+  - group: RnpCodeSign
   - name: buildVersionMajor
     value: 0
   - name: buildVersionMinor
     value: 1
   - name: buildVersionRevision
-    value: $[counter(format('{0}.{1}.{2}', variables['Build.SourceBranch'], variables['buildVersionMajor'], variables['buildVersionMinor']), 1)]
+    value: $[counter(format('{0}.{1}.{2}', variables['Build.SourceBranch'], variables['buildVersionMajor'], variables['buildVersionMinor']), 0)]
 
 # Run
 name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
 
 extends:
-  template: ./build-stages.yml
+  template: build/azure-pipeline/build-stages.yml
   parameters:
     buildVersionMajor: $(buildVersionMajor)
     buildVersionMinor: $(buildVersionMinor)
