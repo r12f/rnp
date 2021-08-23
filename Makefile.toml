@@ -17,18 +17,43 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 ]
 
 [env]
-# Directories
-BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
-BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
-PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
+# Build flavor
+BUILD_TARGET = { value = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", condition = { env_not_set = ["BUILD_TARGET"] } }
+
+BUILD_ARCH.source = "${BUILD_TARGET}"
+BUILD_ARCH.default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}"
+BUILD_ARCH.mapping.x86_64 = "x64"
+BUILD_ARCH.mapping.i686-pc-windows-msvc = "x86"
+BUILD_ARCH.mapping.x86_64-pc-windows-msvc = "x64"
+BUILD_ARCH.mapping.aarch64-pc-windows-msvc = "arm64"
+BUILD_ARCH.mapping.i686-unknown-linux-gnu = "x86"
+BUILD_ARCH.mapping.x86_64-unknown-linux-gnu = "x64"
+BUILD_ARCH.mapping.arm-unknown-linux-gnueabi = "arm"
+BUILD_ARCH.mapping.aarch64-unknown-linux-gnu = "arm64"
+BUILD_ARCH.mapping.x86_64-apple-darwin = "x64"
+
+BUILD_OS.source = "${BUILD_TARGET}"
+BUILD_OS.default_value = "${CARGO_MAKE_RUST_TARGET_OS}"
+BUILD_OS.mapping.i686-pc-windows-msvc = "windows"
+BUILD_OS.mapping.x86_64-pc-windows-msvc = "windows"
+BUILD_OS.mapping.aarch64-pc-windows-msvc = "windows"
+BUILD_OS.mapping.i686-unknown-linux-gnu = "linux"
+BUILD_OS.mapping.x86_64-unknown-linux-gnu = "linux"
+BUILD_OS.mapping.arm-unknown-linux-gnueabi = "linux"
+BUILD_OS.mapping.aarch64-unknown-linux-gnu = "linux"
+BUILD_OS.mapping.x86_64-apple-darwin = "macos"
+
+BUILD_FLAVOR = "${BUILD_OS}.${BUILD_ARCH}"
 
 # Build settings
-GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
-BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}", mapping = {"x86_64" = "x64"} }
-BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
 BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
-BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
-RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
+BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
+RNP_FILE_NAME = { source = "${BUILD_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
+GCC_XCOMPILER_ID = { source = "${BUILD_TARGET}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
+
+# Directories
+BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${BUILD_TARGET}/${BUILD_CONFIG}"
+PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${BUILD_TARGET}"
 
 # Sign settings (Use RNP_SIGNING_URL as enablement key.)
 RNP_SIGNING_URL = { value = "${RNP_SIGNING_URL}", condition = { env_set = ["RNP_SIGNING_URL"] } }
@@ -41,7 +66,7 @@ RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 RUST_BACKTRACE = "full" # Enable full stack trace all the time.
 
 # Tools
-GNU_TAR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "tar", mapping = { "macos" = "gtar" } }
+GNU_TAR = { source = "${BUILD_OS}", default_value = "tar", mapping = { "macos" = "gtar" } }
 
 ##############################################
 # Init development environment
@@ -60,8 +85,8 @@ script = '''
 @echo off
 
 :: Install toolchains for cross builds
-echo Installing rust target: %CARGO_MAKE_RUST_TARGET_TRIPLE%.
-rustup target install %CARGO_MAKE_RUST_TARGET_TRIPLE%
+echo Installing rust target: %BUILD_TARGET%.
+rustup target install %BUILD_TARGET%
 
 :: Install AzureSignTool
 :: dotnet tool update is now the better (or more expected) way to install the tools. For details, please see the PR and issue below:
@@ -82,7 +107,7 @@ sudo apt update
 echo "Installing build tools and required libs."
 sudo apt install -y build-essential libssl-dev
 
-case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
+case "${BUILD_TARGET}" in
     "i686-unknown-linux-gnu")
         # For building x86 binary, we are using gcc-multilib.
         # This package is conflicting with other gcc-* packages, but we don't know any better package to use.
@@ -98,8 +123,8 @@ case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
 esac
 
 # Install toolchains for cross builds
-echo "Installing rust target: ${CARGO_MAKE_RUST_TARGET_TRIPLE}"
-rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
+echo "Installing rust target: ${BUILD_TARGET}"
+rustup target install ${BUILD_TARGET}
 '''
 
 [tasks.install-build-tools-mac]
@@ -172,12 +197,12 @@ run_task = [
 [tasks.cargo-build-dev]
 description = "Run cargo build with dev profile."
 command = "cargo"
-args = ["build", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["build", "--target", "${BUILD_TARGET}"]
 
 [tasks.cargo-build-release]
 description = "Run cargo build with release profile."
 command = "cargo"
-args = ["build", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["build", "--release", "--target", "${BUILD_TARGET}"]
 
 # Make symbols
 [tasks.make-symbol]
@@ -578,12 +603,12 @@ run_task = [
 [tasks.test-dev]
 description = "Run all tests with dev profile."
 command = "cargo"
-args = ["test", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["test", "--target", "${BUILD_TARGET}"]
 
 [tasks.test-release]
 description = "Run all tests with release profile."
 command = "cargo"
-args = ["test", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["test", "--release", "--target", "${BUILD_TARGET}"]
 
 ##############################################
 # CI flow
