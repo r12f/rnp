@@ -89,8 +89,8 @@ function New-RnpMultiArchPackageWithFilePath
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
         "SourceTar" = (Get-FileHash "$githubReleasePackagesFolder\rnp.source.*.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
     }
-    Write-Host "File hash: $fileHashs"
 
+    Write-Host "Start packing multi-arch packages with file hash: $fileHashs"
     New-RnpChocolateyPackage
 }
 
