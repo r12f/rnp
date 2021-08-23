@@ -5,6 +5,9 @@
 # No CI trigger
 trigger: none
 
+# Disable PR merge validations
+pr: none
+
 # Daily build. Time is UTC.
 schedules:
 - cron: "0 10 * * *"
