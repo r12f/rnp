@@ -52,83 +52,51 @@ stages:
         windows-x86:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
-          rustup_toolchain: stable
           target: i686-pc-windows-msvc
           target_short: windows.x86
           is_cross_compile: true
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
         windows-x64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
-          rustup_toolchain: stable
           target: x86_64-pc-windows-msvc
           target_short: windows.x64
           is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
         windows-arm64:
           poolName: Azure Pipelines
           imageName: 'windows-latest'
-          rustup_toolchain: stable
           target: aarch64-pc-windows-msvc
           target_short: windows.arm64
           is_cross_compile: true
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
         linux-x86:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: i686-unknown-linux-gnu
           target_short: linux.x86
           is_cross_compile: true
-          gcc_prefix: x86_64-linux-gnu-
-          gcc_suffix: -x86_64-linux-gnu
-          deb_arch: x86
         linux-x64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: x86_64-unknown-linux-gnu
           target_short: linux.x64
           is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch: amd64
         linux-arm:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: arm-unknown-linux-gnueabi
           target_short: linux.arm
           is_cross_compile: true
-          gcc_prefix: arm-linux-gnueabi-
-          gcc_suffix: -arm-linux-gnueabi
-          deb_arch: arm
         linux-arm64:
           poolName: Azure Pipelines
           imageName: 'ubuntu-latest'
-          rustup_toolchain: stable
           target: aarch64-unknown-linux-gnu
           target_short: linux.arm64
           is_cross_compile: true
-          gcc_prefix: aarch64-linux-gnu-
-          gcc_suffix: -aarch64-linux-gnu
-          deb_arch: arm64
         macos-x64:
           poolName: Azure Pipelines
           imageName: 'macos-latest'
-          rustup_toolchain: stable
           target: x86_64-apple-darwin
           target_short: macos.x64
           is_cross_compile: false
-          gcc_prefix:
-          gcc_suffix:
-          deb_arch:
 
     pool:
       name: $(poolName)
@@ -150,230 +118,85 @@ stages:
     # Environment variable updates
     #
     - bash: |
-        BUILD_BRANCH_NAME="$(Build.SourceBranch)"
-        BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
-        BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
-        BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
-        echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
-        echo "Updated build.branch_name to $BUILD_BRANCH_NAME"
-
         BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
         echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
         echo "Updated build.version to $BUILD_VERSION"
-
-        BUILD_TAG=$BUILD_VERSION.$BUILD_BRANCH_NAME
-        echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
-        echo "Updated build.tag to $BUILD_TAG"
       displayName: Update build environment variables
 
     #
     # Update build environment
     #
     - bash: |
-        rustup default $RUSTUP_TOOLCHAIN
-        rustup update $RUSTUP_TOOLCHAIN
+        rustup default stable
+        rustup update stable
       displayName: rustup update default toolchain
 
-    - script: rustup target install $(TARGET)
-      displayName: rustup install target
-      
-    - task: DotNetCoreCLI@2
-      displayName: Install AzureSignTool
+    - task: PowerShell@2
+      displayName: Install cargo make binary on Windows
       condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'))
       inputs:
-        command: 'custom'
-        custom: 'tool'
-        arguments: 'install --global azuresigntool'
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/build/scripts/Install-CargoMakeBinary.ps1'
 
     - bash: |
-        sudo apt install gcc make gcc-multilib
-      displayName: Install build tools for linux x86 cross build
-      condition: and(succeeded(), eq(variables['target'], 'i686-unknown-linux-gnu'))
+        chmod +x $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
+        $(Build.SourcesDirectory)/build/scripts/install-cargo-make-binary.sh
+      displayName: Install cargo make binary on Linux/MAC
+      condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
 
-    - bash: |
-        sudo apt install gcc make gcc$(GCC_SUFFIX) binutils$(GCC_SUFFIX)
-      displayName: Install build tools for linux
-      condition: and(succeeded(), ne(variables['gcc_suffix'], ''), ne(variables['target'], 'i686-unknown-linux-gnu'))
+    - script: cargo make install-build-tools -e BUILD_TARGET=$(TARGET)
+      displayName: Install build tools
+
+    - script: cargo make install-pack-tools
+      displayName: Install pack tools
 
     #
     # Update version files and scripts all source code for crate publishing
     #
     - bash: |
-        sed -i 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
-      displayName: Update crate version
-      condition: and(succeeded(), ne(variables['target'], 'x86_64-apple-darwin'))
-
-    - bash: |
         sed -i.bak 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
       displayName: Update crate version
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-apple-darwin'))
-
-    - task: ArchiveFiles@2
-      displayName: Pack source folder for crate publishing
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        rootFolderOrFile: '$(Build.SourcesDirectory)'
-        includeRootFolder: false
-        archiveType: '7z'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/crate/rnp.source.7z'
-
-    - task: CopyFiles@2
-      displayName: Copy code for source code publishing
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)'
-        targetFolder: '$(System.DefaultWorkingDirectory)/staging/crate'
-        cleanTargetFolder: true
-        overWrite: true
-
-    - task: DeleteFiles@1
-      displayName: Remove git info for source code publishing
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        sourceFolder: '$(System.DefaultWorkingDirectory)/staging/crate'
-        Contents: '.git'
-
-    - task: ArchiveFiles@2
-      displayName: Pack source as zip for source code publishing
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).zip'
-
-    - task: ArchiveFiles@2
-      displayName: Pack source as tar.gz for source publishing
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-unknown-linux-gnu'))
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/staging/crate'
-        includeRootFolder: false
-        archiveType: 'tar'
-        tarCompression: 'gz'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/source/rnp.source.$(build.tag).tar.gz'
-
-    #
-    # Running all tests
-    #
-    - bash: RUST_BACKTRACE=full cargo test --all --target $(TARGET)
-      displayName: Cargo test
-      condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
     #
     # Build
     #
-    - script: cargo build --release --all --target $(TARGET)
-      displayName: Cargo build
+    - script: cargo make build --profile production -e BUILD_TARGET=$(TARGET)
+      displayName: Cargo make build
+      env:
+        RNP_SIGNING_URL: $(RnpSigningURL)
+        RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
+        RNP_SIGNING_CLIENT_ID: $(RnpSigningClientId)
+        RNP_SIGNING_CLIENT_SECRET: $(RnpSigningClientSecret)
+        RNP_SIGNING_CERT_NAME: $(RnpSigningCertName)
 
-    - bash: |
-        $(GCC_PREFIX)objcopy --only-keep-debug rnp rnp.debug
-        $(GCC_PREFIX)strip --strip-debug --strip-unneeded -p rnp
-        $(GCC_PREFIX)objcopy --add-gnu-debuglink=rnp.debug rnp
-      displayName: Generate GCC symbol files
-      condition: and(succeeded(), startsWith(variables['target_short'], 'linux.'))
-      workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
+    #
+    # Running all tests
+    #
+    - bash: cargo make test --profile production -e BUILD_TARGET=$(TARGET)
+      displayName: Cargo make test
+      condition: and(succeeded(), eq(variables['is_cross_compile'], false))
 
-    - bash: |
-        brew install binutils
-        /usr/local/opt/binutils/bin/gobjcopy --only-keep-debug rnp rnp.debug
-        strip -S rnp
-        /usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=rnp.debug rnp
-      displayName: Generate GCC symbol files
-      condition: and(succeeded(), startsWith(variables['target_short'], 'macos.'))
-      workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
-    
-    - task: CmdLine@2
-      displayName: 'Sign files with AzureSignTool'
-      condition: and(succeeded(), startsWith(variables['target_short'], 'windows.'), ne(variables['Build.Reason'], 'PullRequest'))
-      inputs:
-        script: AzureSignTool sign -du "$(RnpSigningURL)" -kvu "$(RnpSigningVaultURL)" -kvi "$(RnpSigningClientId)" -kvs "$(RnpSigningClientSecret)" -kvc "$(RnpSigningCertName)" -v $(Build.SourcesDirectory)/target/$(TARGET)/release/rnp.exe"
+    #
+    # Pack
+    #
+    - script: cargo make pack --profile production -e BUILD_TARGET=$(TARGET)
+      displayName: Cargo make pack
+      env:
+        RNP_SIGNING_URL: $(RnpSigningURL)
+        RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
+        RNP_SIGNING_CLIENT_ID: $(RnpSigningClientId)
+        RNP_SIGNING_CLIENT_SECRET: $(RnpSigningClientSecret)
+        RNP_SIGNING_CERT_NAME: $(RnpSigningCertName)
 
     #
     # Publish files for release
     #
     - task: CopyFiles@2
-      displayName: Copy binary to output
+      displayName: Copy published artifacts to output
       inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
-        contents: |
-          rnp*
-          !rnp.pdb
-          !rnp.debug
-          !rnp.d
-        targetFolder: '$(Build.ArtifactStagingDirectory)/bin'
+        sourceFolder: '$(Build.SourcesDirectory)/publish/$(TARGET)'
+        targetFolder: '$(Build.ArtifactStagingDirectory)'
 
-    - task: CopyFiles@2
-      displayName: Copy docs to output
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)'
-        contents: |
-          README.md
-          LICENSE.txt
-        targetFolder: '$(Build.ArtifactStagingDirectory)/bin'
-
-    - task: CopyFiles@2
-      displayName: Copy assets to output
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/assets'
-        contents: |
-          *.png
-        targetFolder: '$(Build.ArtifactStagingDirectory)/assets'
-
-    - task: CopyFiles@2
-      displayName: Copy symbols to output
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/target/$(TARGET)/release'
-        contents: |
-          rnp.pdb
-          rnp.debug
-        targetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
-
-    - task: CopyFiles@2
-      displayName: Copy package template to output
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/build/templates'
-        targetFolder: '$(Build.ArtifactStagingDirectory)/templates'
-
-    - task: CopyFiles@2
-      displayName: Copy scripts to output
-      condition: and(succeeded(), eq(variables['target'], 'x86_64-pc-windows-msvc'))
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/build/scripts'
-        targetFolder: '$(Build.ArtifactStagingDirectory)/scripts'
-
-    - bash: |
-        deb_pkg_name=rnp_$(build.version)-1_$(DEB_ARCH)
-        echo "Creating deb package: $deb_pkg_name"
-
-        echo "Copy binaries to $deb_pkg_name/usr/local/bin"
-        mkdir -p $deb_pkg_name/usr/local/bin
-        cp rnp $deb_pkg_name/usr/local/bin/
-        echo ""
-
-        echo "Generating deb package control file: $deb_pkg_name"
-        mkdir -p $deb_pkg_name/DEBIAN
-        cat $(Build.SourcesDirectory)/build/templates/debian/control | sed -e 's/{version}/$(build.version)/g' -e 's/{deb_arch}/$(DEB_ARCH)/g' > $deb_pkg_name/DEBIAN/control
-        echo "Deb package control file generated: $deb_pkg_name/DEBIAN/control"
-        cat $deb_pkg_name/DEBIAN/control
-        echo ""
-
-        echo "Building deb package: $deb_pkg_name"
-        dpkg-deb --build --root-owner-group $deb_pkg_name
-        if [ $? -ne 0 ]; then
-          echo "Build deb package failed!"
-          exit 1
-        fi
-
-        mkdir -p $(Build.ArtifactStagingDirectory)/debian
-        cp $deb_pkg_name.deb $(Build.ArtifactStagingDirectory)/debian/
-      displayName: Build debian packages
-      condition: and(succeeded(), ne(variables['deb_arch'], ''))
-      workingDirectory: $(Build.SourcesDirectory)/target/$(TARGET)/release
-
-    #
-    # Publish all pipeline artifacts
-    #
     - task: PublishPipelineArtifact@1
       displayName: Publish pipeline artifact
       condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
@@ -400,49 +223,11 @@ stages:
         inputs:
           targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
-      - bash: |
-          BUILD_BRANCH_NAME="$(Build.SourceBranch)"
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
-          echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
-          echo "Updated build.branch_name to $BUILD_BRANCH_NAME"
-
-          BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
-          echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
-          echo "Updated build.version to $BUILD_VERSION"
-
-          BUILD_TAG=$BUILD_VERSION.$BUILD_BRANCH_NAME
-          echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
-          echo "Updated build.tag to $BUILD_TAG"
-        displayName: 'Set environment variables'
-
-      - task: DotNetCoreCLI@2
-        displayName: Install AzureSignTool
-        inputs:
-          command: 'custom'
-          custom: 'tool'
-          arguments: 'install --global azuresigntool'
-
       - task: PowerShell@2
         displayName: 'Generate all packages'
         inputs:
           targetType: 'filePath'
-          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/scripts/PackReleasePackages.ps1'
-          arguments:
-            -BuildBranchName $(build.branch_name)
-            -BuildTag $(build.tag)
-            -BuildNumber $(build.version)
-          workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
-
-      - task: PowerShell@2
-        displayName: 'Sign packages with AzureSignTool'
-        inputs:
-          targetType: inline
-          script: |
-            Get-ChildItem ".\Releases\GithubReleases\*.msix" | ForEach-Object {
-              AzureSignTool sign -du "$(RnpSigningURL)" -kvu "$(RnpSigningVaultURL)" -kvi "$(RnpSigningClientId)" -kvs "$(RnpSigningClientSecret)" -kvc "$(RnpSigningCertName)" -v $_
-            }
+          filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/scripts/New-RnpReleasePackages.ps1'
           workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
       - task: CopyFiles@2
@@ -495,27 +280,10 @@ stages:
         inputs:
           targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
           
-      - bash: |
-          BUILD_BRANCH_NAME="$(Build.SourceBranch)"
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/heads/}
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME#refs/tags/}
-          BUILD_BRANCH_NAME=${BUILD_BRANCH_NAME//\//_}
-          echo "##vso[task.setvariable variable=build.branch_name]$BUILD_BRANCH_NAME"
-          echo "Updated build.branch_name to $BUILD_BRANCH_NAME"
-
-          BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
-          echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
-          echo "Updated build.version to $BUILD_VERSION"
-
-          BUILD_TAG=$BUILD_VERSION.$BUILD_BRANCH_NAME
-          echo "##vso[task.setvariable variable=build.tag]$BUILD_TAG"
-          echo "Updated build.tag to $BUILD_TAG"
-        displayName: 'Set environment variables'
-        
       - task: ExtractFiles@1
         displayName: 'Extract packed source code'
         inputs:
-          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.$(build.tag).zip' 
+          archiveFilePatterns: '$(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases/rnp.source.*.zip'
           destinationFolder: $(System.DefaultWorkingDirectory)/Source
           cleanDestinationFolder: true 
         
@@ -530,7 +298,7 @@ stages:
           echo ""
 
           echo "Install rnp from debian package"
-          sudo dpkg -i ./rnp_$(build.version)-1_amd64.deb
+          sudo dpkg -i ./rnp_*-1_amd64.deb
           if [ $? -ne 0 ]; then
             echo "Failed to install rnp from debian package"
             exit 1
@@ -554,7 +322,7 @@ stages:
           echo ""
         displayName: 'Install Rnp from debian package'
         condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'))
-        workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/DebianPackages
+        workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases
 
       - task: PublishPipelineArtifact@1
         displayName: Publish pipeline artifact

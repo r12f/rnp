@@ -56,8 +56,9 @@ function Copy-RnpBuildOutputToRelease
 
         Copy-RnpBuildOutputToReleaseFolder "$root\symbols" "*" "$symbolStagingFolder\$flavor"
         Copy-RnpBuildOutputToReleaseFolder "$root\nuget" "*" $nugetPackageReleaseFolder
-        Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "rnp.crate.*" $crateReleaseFolder
-        Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "rnp.source.*" $githubReleasePackagesFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.crate.*" $crateReleaseFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.source.*" $githubReleasePackagesFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\nuget" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\deb" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\msix" "*" $githubReleasePackagesFolder
@@ -65,7 +66,7 @@ function Copy-RnpBuildOutputToRelease
     }
 }
 
-function Copy-RnpPackagesToReleaseFolder([string] $packageFolder, [string] $packageName, [string] $targetFolder)
+function Copy-RnpBuildOutputToReleaseFolder([string] $packageFolder, [string] $packageName, [string] $targetFolder)
 {
     $packagePath = "$packageFolder\$packageName"
 
@@ -75,21 +76,21 @@ function Copy-RnpPackagesToReleaseFolder([string] $packageFolder, [string] $pack
     }
 
     Write-Host "Build output folder is found, copying files with path: $packagePath"
-    New-Item -ItemType Directory -Path $targetFolder
+    New-Item -ItemType Directory -Path $targetFolder -Force
     Copy-Item -Path $packagePath $targetFolder -Verbose -Force
 }
 
 function New-RnpMultiArchPackageWithFilePath
 {
     $fileHashs = [pscustomobject]@{
-        "ZipX86" = (Get-FileHash ".\Releases\GithubReleases\rnp.*.windows.x86.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
-        "ZipX64" = (Get-FileHash ".\Releases\GithubReleases\rnp.*.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ZipX86" = (Get-FileHash "$githubReleasePackagesFolder\rnp.*.windows.x86.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ZipX64" = (Get-FileHash "$githubReleasePackagesFolder\rnp.*.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
         "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
-        "SourceTar" = (Get-FileHash ".\Releases\GithubReleases\rnp.source.*.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "SourceTar" = (Get-FileHash "$githubReleasePackagesFolder\rnp.source.*.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
     }
-    Write-Host "File hash: $fileHashs"
 
+    Write-Host "Start packing multi-arch packages with file hash: $fileHashs"
     New-RnpChocolateyPackage
 }
 
@@ -98,9 +99,9 @@ function New-RnpChocolateyPackage($fileHashs) {
     $chocoReleaseFolder = ".\Releases\Chocolatey"
     Write-Host "Creating chocolatey package: ReleaseFolder = $chocoReleaseFolder, StagingFolder = $chocoStagingFolder"
 
-    New-Item -ItemType Directory -Path $chocoReleaseFolder
-    New-Item -ItemType Directory -Path $chocoStagingFolder
-    New-Item -ItemType Directory -Path "$chocoStagingFolder\tools"
+    New-Item -ItemType Directory -Path $chocoReleaseFolder -Force
+    New-Item -ItemType Directory -Path $chocoStagingFolder -Force
+    New-Item -ItemType Directory -Path "$chocoStagingFolder\tools" -Force
 
     Expand-RnpPackageTemplateFileWithFileHash ".\Build.Build.windowsx64\choco\rnp.nuspec" "$chocoStagingFolder\rnp.nuspec" $fileHashs
     Expand-RnpPackageTemplateFileWithFileHash ".\Build.Build.windowsx64\choco\tools\chocolateyInstall.ps1" "$chocoStagingFolder\tools\chocolateyInstall.ps1" $fileHashs
@@ -111,7 +112,7 @@ function New-RnpChocolateyPackage($fileHashs) {
 }
 
 function Expand-RnpPackageTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs) {
-    $templateFileContent = Get-Content $templateFile;
+    $targetFileContent = Get-Content $templateFile
     $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64).Replace("{source_package_tar_hash}", $fileHashs.SourceTar);
     $utf8NoBom = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)

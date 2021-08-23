@@ -9,6 +9,7 @@ env_scripts = [
 #!@duckscript
 echo "Setting environment variables ..."
 git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
+git_branch = replace ${git_branch} " " "_"
 git_branch = replace ${git_branch} "/" "_"
 set_env BUILD_BRANCH ${git_branch}
 set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
@@ -16,18 +17,47 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 ]
 
 [env]
-# Directories
-BUILD_CONFIG = { source = "${PROFILE_NAME}", default_value = "debug", mapping = {"production" = "release" } }
-BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${CARGO_MAKE_RUST_TARGET_TRIPLE}/${BUILD_CONFIG}"
-PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${CARGO_MAKE_RUST_TARGET_TRIPLE}"
-
 # Build settings
-GCC_XCOMPILER_ID = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "", mapping = {"i686-unknown-linux-gnu" = "x86_64-linux-gnu", "arm-unknown-linux-gnueabi" = "arm-linux-gnueabi", "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu" } }
-BUILD_ARCH = { source = "${CARGO_MAKE_RUST_TARGET_ARCH}", default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}", mapping = {"x86_64" = "x64"} }
-BUILD_FLAVOR = "${CARGO_MAKE_RUST_TARGET_OS}.${BUILD_ARCH}"
 BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
-BUILD_TARGET = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
-RNP_FILE_NAME = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "rnp", mapping = {"windows" = "rnp.exe" } }
+BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
+BUILD_TARGET = { value = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", condition = { env_not_set = ["BUILD_TARGET"] } }
+
+# Cargo make doesn't support passing target as parameter yet, so we have to manually set these variables instead of reading from predefined ones.
+BUILD_ARCH.source = "${BUILD_TARGET}"
+BUILD_ARCH.default_value = "${CARGO_MAKE_RUST_TARGET_ARCH}"
+BUILD_ARCH.mapping.x86_64 = "x64"
+BUILD_ARCH.mapping.i686-pc-windows-msvc = "x86"
+BUILD_ARCH.mapping.x86_64-pc-windows-msvc = "x64"
+BUILD_ARCH.mapping.aarch64-pc-windows-msvc = "arm64"
+BUILD_ARCH.mapping.i686-unknown-linux-gnu = "x86"
+BUILD_ARCH.mapping.x86_64-unknown-linux-gnu = "x64"
+BUILD_ARCH.mapping.arm-unknown-linux-gnueabi = "arm"
+BUILD_ARCH.mapping.aarch64-unknown-linux-gnu = "arm64"
+BUILD_ARCH.mapping.x86_64-apple-darwin = "x64"
+
+BUILD_OS.source = "${BUILD_TARGET}"
+BUILD_OS.default_value = "${CARGO_MAKE_RUST_TARGET_OS}"
+BUILD_OS.mapping.i686-pc-windows-msvc = "windows"
+BUILD_OS.mapping.x86_64-pc-windows-msvc = "windows"
+BUILD_OS.mapping.aarch64-pc-windows-msvc = "windows"
+BUILD_OS.mapping.i686-unknown-linux-gnu = "linux"
+BUILD_OS.mapping.x86_64-unknown-linux-gnu = "linux"
+BUILD_OS.mapping.arm-unknown-linux-gnueabi = "linux"
+BUILD_OS.mapping.aarch64-unknown-linux-gnu = "linux"
+BUILD_OS.mapping.x86_64-apple-darwin = "macos"
+
+BUILD_FLAVOR = "${BUILD_OS}.${BUILD_ARCH}"
+
+GCC_XCOMPILER_ID.source = "${BUILD_TARGET}"
+GCC_XCOMPILER_ID.default_value = ""
+GCC_XCOMPILER_ID.mapping.i686-unknown-linux-gnu = "x86_64-linux-gnu"
+GCC_XCOMPILER_ID.mapping.arm-unknown-linux-gnueabi = "arm-linux-gnueabi"
+GCC_XCOMPILER_ID.mapping.aarch64-unknown-linux-gnu = "aarch64-linux-gnu"
+
+# File names and directories
+RNP_FILE_NAME = { source = "${BUILD_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
+BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${BUILD_TARGET}/${BUILD_CONFIG}"
+PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${BUILD_TARGET}"
 
 # Sign settings (Use RNP_SIGNING_URL as enablement key.)
 RNP_SIGNING_URL = { value = "${RNP_SIGNING_URL}", condition = { env_set = ["RNP_SIGNING_URL"] } }
@@ -35,6 +65,12 @@ RNP_SIGNING_VAULT_URL = { value = "", condition = { env_not_set = ["RNP_SIGNING_
 RNP_SIGNING_CLIENT_ID = { value = "", condition = { env_not_set = ["RNP_SIGNING_CLIENT_ID"] } }
 RNP_SIGNING_CLIENT_SECRET = { value = "", condition = { env_not_set = ["RNP_SIGNING_CLIENT_SECRET"] } }
 RNP_SIGNING_CERT_NAME = { value = "", condition = { env_not_set = ["RNP_SIGNING_CERT_NAME"] } }
+
+# Debug settings
+RUST_BACKTRACE = "full" # Enable full stack trace all the time.
+
+# Tools
+GNU_TAR = { source = "${BUILD_OS}", default_value = "tar", mapping = { "macos" = "gtar" } }
 
 ##############################################
 # Init development environment
@@ -53,12 +89,14 @@ script = '''
 @echo off
 
 :: Install toolchains for cross builds
-rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
+echo Installing rust target: %BUILD_TARGET%.
+rustup target install %BUILD_TARGET%
 
 :: Install AzureSignTool
 :: dotnet tool update is now the better (or more expected) way to install the tools. For details, please see the PR and issue below:
 :: - https://github.com/dotnet/cli/pull/10205
 :: - https://github.com/dotnet/sdk/issues/9500
+echo Installing AzureSignTool.
 dotnet tool update --global azuresigntool
 '''
 
@@ -70,9 +108,16 @@ script = '''
 sudo apt update
 
 # Install GCC and required libs/tools
+echo "Installing build tools and required libs."
 sudo apt install -y build-essential libssl-dev
 
-case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
+case "${BUILD_TARGET}" in
+    "i686-unknown-linux-gnu")
+        # For building x86 binary, we are using gcc-multilib.
+        # This package is conflicting with other gcc-* packages, but we don't know any better package to use.
+        # But sadly, this package is lacking of tools that we need to build ARM/ARM64, so we can only pick 1 to use - either support x86 or ARM/ARM64.
+        sudo apt install -y gcc-multilib
+        ;;
     "arm-unknown-linux-gnueabi")
         sudo apt install -y gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
         ;;
@@ -82,21 +127,23 @@ case "${CARGO_MAKE_RUST_TARGET_TRIPLE}" in
 esac
 
 # Install toolchains for cross builds
-rustup target install ${CARGO_MAKE_RUST_TARGET_TRIPLE}
+echo "Installing rust target: ${BUILD_TARGET}"
+rustup target install ${BUILD_TARGET}
 '''
 
 [tasks.install-build-tools-mac]
 description = "Install build tools on mac."
 script_runner="bash"
 script = '''
-# Install binutils for objcopy
-sudo brew install binutils
+echo "Installing build tools: binutils"
+brew install binutils
 '''
 
 # Install scripts tools
 [tasks.install-pack-tools]
 description = "Install pack tools."
 linux_alias = "install-pack-tools-linux"
+mac_alias = "install-pack-tools-mac"
 
 [tasks.install-pack-tools-linux]
 description = "Install pack tools on linux."
@@ -117,6 +164,14 @@ sudo apt install -y dotnet-sdk-5.0
 
 # Install required misc tools
 sudo apt install -y p7zip-full
+'''
+
+[tasks.install-pack-tools-mac]
+description = "Install pack tools on mac."
+script_runner="bash"
+script = '''
+echo "Installing pack tools: gnu-tar"
+brew install gnu-tar
 '''
 
 ##############################################
@@ -146,12 +201,12 @@ run_task = [
 [tasks.cargo-build-dev]
 description = "Run cargo build with dev profile."
 command = "cargo"
-args = ["build", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["build", "--target", "${BUILD_TARGET}"]
 
 [tasks.cargo-build-release]
 description = "Run cargo build with release profile."
 command = "cargo"
-args = ["build", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["build", "--release", "--target", "${BUILD_TARGET}"]
 
 # Make symbols
 [tasks.make-symbol]
@@ -169,15 +224,17 @@ echo "Windows builds generates PDB by default, so nothing to generate here."
 script_runner="bash"
 script = '''
 GCC_PREFIX=""
-if [[ "${GCC_XCOMPILER_ID}" -ne "" ]]; then GCC_PREFIX="${GCC_XCOMPILER_ID}-"; fi
+if [[ "${GCC_XCOMPILER_ID}" != "" ]]; then
+    GCC_PREFIX="${GCC_XCOMPILER_ID}-";
+fi
 
 echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
-echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
-${GCC_PREFIX}objcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
-${GCC_PREFIX}strip --strip-debug --strip-unneeded -p ${BUILD_DIR}/rnp
-${GCC_PREFIX}objcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+echo "Generating new symbol file (with GCC prefix \"${GCC_PREFIX}\"): ${BUILD_DIR}/rnp.debug"
+${GCC_PREFIX}objcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
+${GCC_PREFIX}strip --strip-debug --strip-unneeded -p "${BUILD_DIR}/rnp"
+${GCC_PREFIX}objcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
 '''
 
 [tasks.make-symbol-mac]
@@ -186,9 +243,9 @@ echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
 rm -f ${BUILD_DIR}/rnp.debug
 
 echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
-/usr/local/opt/binutils/bin/gobjcopy --only-keep-debug ${BUILD_DIR}/rnp ${BUILD_DIR}/rnp.debug
-strip -S ${BUILD_DIR}/rnp
-/usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink=${BUILD_DIR}/rnp.debug ${BUILD_DIR}/rnp
+/usr/local/opt/binutils/bin/gobjcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
+strip -S "${BUILD_DIR}/rnp"
+/usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
 '''
 
 # Sign
@@ -270,41 +327,41 @@ script = '''
 INT_DIR="${BUILD_DIR}/source"
 
 # Clean up
-if [ -d ${INT_DIR} ]; then
+if [ -d "${INT_DIR}" ]; then
     echo "Removing intermediate directory: ${INT_DIR}"
-    rm -rf ${INT_DIR}
+    rm -rf "${INT_DIR}"
 fi
 echo "Creating intermediate directory: ${INT_DIR}"
-mkdir ${INT_DIR}
+mkdir "${INT_DIR}"
 
 # Prepare the source package
 echo "Copying source code to ${INT_DIR}"
-cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` ${INT_DIR}/
-cd ${INT_DIR} && git clean -xfd && cd -
+cp -r `ls -a | grep -E -v '^(target|publish|log\..*|\.|\..)$'` "${INT_DIR}/"
+cd "${INT_DIR}" && git clean -xfd && cd -
 
 # Create source packages
 OUT_DIR="${PUBLISH_DIR}/source"
-if [ -d ${OUT_DIR} ]; then
+if [ -d "${OUT_DIR}" ]; then
     echo "Removing previous output directory: ${OUT_DIR}"
-    rm -rf ${OUT_DIR}
+    rm -rf "${OUT_DIR}"
 fi
 echo "Creating new output directory: ${OUT_DIR}"
-mkdir ${OUT_DIR}
+mkdir "${OUT_DIR}"
 
 CRATE_FILE_PATH="${OUT_DIR}/rnp.crate.7z"
 echo "Pack source code for crate publishing: ${CRATE_FILE_PATH}"
-cd ${INT_DIR} && 7z -t7z a ${CRATE_FILE_PATH} . && cd -
+cd "${INT_DIR}" && 7z -t7z a "${CRATE_FILE_PATH}" . && cd -
 
 echo "Cleanup git info in intermediate directory for source code publishing: ${INT_DIR}"
-rm -rf ${INT_DIR}/.git
+rm -rf "${INT_DIR}/.git"
 
 ZIP_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.zip"
 echo "Pack source code into zip: ${ZIP_FILE_PATH}"
-cd ${INT_DIR} && 7z -tzip a ${ZIP_FILE_PATH} . && cd -
+cd "${INT_DIR}" && 7z -tzip a "${ZIP_FILE_PATH}" . && cd -
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.source.${BUILD_TAG}.tar.gz"
 echo "Pack source code into tar: ${TAR_FILE_PATH}"
-cd ${INT_DIR} && tar --transform "s/^\.\///g" -zcvf ${TAR_FILE_PATH} . && cd -
+cd "${INT_DIR}" && ${GNU_TAR} --transform "s/^\.\///g" -zcvf "${TAR_FILE_PATH}" . && cd -
 '''
 
 [tasks.pack-zip]
@@ -329,23 +386,23 @@ description = "Pack tar package."
 script_runner = "bash"
 script = '''
 OUT_DIR="${PUBLISH_DIR}/zipped"
-if [ -d ${OUT_DIR} ]; then
+if [ -d "${OUT_DIR}" ]; then
     echo "Removing previous output directory: ${OUT_DIR}"
-    rm -rf ${OUT_DIR}
+    rm -rf "${OUT_DIR}"
 fi
 echo "Creating new output directory: ${OUT_DIR}"
-mkdir ${OUT_DIR}
+mkdir "${OUT_DIR}"
 
 TAR_FILE_PATH="${OUT_DIR}/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.tar.gz"
 echo "Pack binaries ${PUBLISH_DIR}/bin/* to ${TAR_FILE_PATH}"
-tar --transform "s/.*\///g" -zcvf ${TAR_FILE_PATH} ${PUBLISH_DIR}/bin/*
+${GNU_TAR} --transform "s/.*\///g" -zcvf "${TAR_FILE_PATH}" ${PUBLISH_DIR}/bin/*
 '''
 
 [tasks.pack-nuget]
 description = "Pack nuget package."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 INT_DIR = set "${BUILD_DIR}/nuget"
 
@@ -377,7 +434,7 @@ exec dotnet pack ${INT_DIR}/rnp_nupkg.csproj -o ${OUT_DIR}
 description = "Pack msix package."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 INT_DIR = set "${BUILD_DIR}/msix"
 
@@ -412,7 +469,7 @@ exec "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/makeappx.exe" 
 description = "Pack deb package."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 proc_version = readfile "/proc/version"
 echo "Read proc version for detecting WSL: ${proc_version}"
@@ -473,7 +530,7 @@ cp ${INT_DIR}/${DEB_PACKAGE_NAME}.deb ${OUT_DIR}/${DEB_PACKAGE_NAME}.deb
 description = "Pack chocolatecy package source."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/choco"
@@ -497,7 +554,7 @@ eval_build_template_file "${TEMPLATE_DIR}/tools/VERIFICATION.txt" ${OUT_DIR}/too
 description = "Pack homebrew package source."
 script_runner = "@duckscript"
 script = '''
-!include_files ./build/pack/pack_utils.ds
+!include_files ./build/scripts/pack_utils.ds
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/homebrew"
@@ -525,7 +582,7 @@ end
 echo "Creating new output directory: ${OUT_DIR}"
 mkdir ${OUT_DIR}
 
-RELEASE_SCRIPT_PATH = set "./build/pack/New-RnpReleasePackages.ps1"
+RELEASE_SCRIPT_PATH = set "./build/scripts/New-RnpReleasePackages.ps1"
 echo "Copying release script from ${RELEASE_SCRIPT_PATH} to ${OUT_DIR}"
 cp ${RELEASE_SCRIPT_PATH} "${OUT_DIR}/New-RnpReleasePackages.ps1"
 '''
@@ -552,12 +609,12 @@ run_task = [
 [tasks.test-dev]
 description = "Run all tests with dev profile."
 command = "cargo"
-args = ["test", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["test", "--target", "${BUILD_TARGET}"]
 
 [tasks.test-release]
 description = "Run all tests with release profile."
 command = "cargo"
-args = ["test", "--release", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["test", "--release", "--target", "${BUILD_TARGET}"]
 
 ##############################################
 # CI flow
