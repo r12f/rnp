@@ -33,7 +33,7 @@ variables:
 name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
 
 extends:
-  template: build/azure-pipeline/build-stages.yml
+  template: build-stages.yml
   parameters:
     buildVersionMajor: $(buildVersionMajor)
     buildVersionMinor: $(buildVersionMinor)
