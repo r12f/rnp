@@ -8,6 +8,9 @@ parameters:
   - name: buildVersionRevision
     type: string
     default: 0
+  - name: isPRWorkflow
+    type: boolean
+    default: false
 
 stages:
   - stage: Build
@@ -176,7 +179,7 @@ stages:
 
           - task: PublishPipelineArtifact@1
             displayName: Publish pipeline artifact
-            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+            condition: and(succeeded(), $(isPRWorkflow))
             inputs:
               targetPath: '$(Build.ArtifactStagingDirectory)'
 
@@ -222,7 +225,7 @@ stages:
   - stage: Validate
     jobs:
       - job: Validate
-        condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+        condition: and(succeeded(), $(isPRWorkflow))
 
         #
         # Flavors to validate
