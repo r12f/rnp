@@ -8,9 +8,13 @@ env_scripts = [
 '''
 #!@duckscript
 echo "Setting environment variables ..."
-git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
-git_branch = replace ${git_branch} " " "_"
-git_branch = replace ${git_branch} "/" "_"
+git_branch = get_env BUILD_BRANCH
+if is_empty ${git_branch}
+    git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
+    git_branch = replace ${git_branch} " " "_"
+    git_branch = replace ${git_branch} "/" "_"
+    git_branch = replace ${git_branch} "-" "_"
+end
 set_env BUILD_BRANCH ${git_branch}
 set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 '''
@@ -19,6 +23,7 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 [env]
 # Build settings
 BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
+BUILD_BRANCH = { value = "", condition = { env_not_set = ["BUILD_BRANCH"] } }
 BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
 BUILD_TARGET = { value = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", condition = { env_not_set = ["BUILD_TARGET"] } }
 
