@@ -179,7 +179,7 @@ stages:
 
           - task: PublishPipelineArtifact@1
             displayName: Publish pipeline artifact
-            condition: and(succeeded(), $(isPRWorkflow))
+            condition: and(succeeded(), variables['isPRWorkflow'])
             inputs:
               targetPath: '$(Build.ArtifactStagingDirectory)'
 
@@ -225,7 +225,7 @@ stages:
   - stage: Validate
     jobs:
       - job: Validate
-        condition: and(succeeded(), $(isPRWorkflow))
+          condition: and(succeeded(), variables['isPRWorkflow'])
 
         #
         # Flavors to validate
