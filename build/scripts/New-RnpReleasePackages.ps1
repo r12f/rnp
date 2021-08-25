@@ -1,3 +1,11 @@
+Param(
+    [Parameter(Mandatory = $true)]
+    [string] $BuildBranchName,
+
+    [Parameter(Mandatory = $true)]
+    [string] $BuildVersion
+)
+
 $githubReleasePackagesFolder = ".\Releases\GithubReleases"
 $nugetPackageReleaseFolder = ".\Releases\NugetPackages"
 $crateReleaseFolder = ".\Releases\Crate.io"
@@ -59,7 +67,6 @@ function Copy-RnpBuildOutputToRelease
         Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.crate.*" $crateReleaseFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.source.*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "*" $githubReleasePackagesFolder
-        Copy-RnpBuildOutputToReleaseFolder "$root\nuget" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\deb" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\msix" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\homebrew" "*" $homebrewReleaseFolder
@@ -91,7 +98,14 @@ function New-RnpMultiArchPackageWithFilePath
     }
 
     Write-Host "Start packing multi-arch packages with file hash: $fileHashs"
-    New-RnpChocolateyPackage
+    New-RnpSymbolsPackage
+    New-RnpChocolateyPackage $fileHashs
+}
+
+function New-RnpSymbolsPackage() {
+    Write-Host "Creating symbols package: ReleaseFolder = $githubReleasePackagesFolder, StagingFolder = $symbolStagingFolder"
+    
+    7z -tzip a $githubReleasePackagesFolder/rnp.symbols.$BuildVersion.$BuildBranchName.zip $symbolStagingFolder/*
 }
 
 function New-RnpChocolateyPackage($fileHashs) {

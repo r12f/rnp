@@ -36,4 +36,4 @@ extends:
     buildVersionMajor: $(buildVersionMajor)
     buildVersionMinor: $(buildVersionMinor)
     buildVersionRevision: $(buildVersionRevision)
-    isPRWorkflow: true
+    isPRWorkflow: false

@@ -91,8 +91,8 @@ stages:
           #
           - bash: |
               BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
-              echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
-              echo "Updated build.version to $BUILD_VERSION"
+              echo "##vso[task.setvariable variable=Build.Version]$BUILD_VERSION"
+              echo "Updated Build.Version to $BUILD_VERSION"
 
               BUILD_BRANCH="$(Build.SourceBranch)"
               BUILD_BRANCH=${BUILD_BRANCH#refs/heads/}
@@ -135,7 +135,7 @@ stages:
           # Update version files and scripts all source code for crate publishing
           #
           - bash: |
-              sed -i.bak 's/^version = "0.1.0"$/version = "$(build.version)"/' Cargo.toml
+              sed -i.bak 's/^version = "0.1.0"$/version = "$(Build.Version)"/' Cargo.toml
             displayName: Update crate version
 
           #
@@ -206,11 +206,29 @@ stages:
             inputs:
               targetPath: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
+          - bash: |
+              BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
+              echo "##vso[task.setvariable variable=Build.Version]$BUILD_VERSION"
+              echo "Updated build.version to $BUILD_VERSION"
+
+              BUILD_BRANCH="$(Build.SourceBranch)"
+              BUILD_BRANCH=${BUILD_BRANCH#refs/heads/}
+              BUILD_BRANCH=${BUILD_BRANCH#refs/tags/}
+              BUILD_BRANCH=${BUILD_BRANCH//\//_}
+              BUILD_BRANCH=${BUILD_BRANCH//-//_}
+              BUILD_BRANCH=${BUILD_BRANCH// //_}
+              echo "##vso[task.setvariable variable=Build.BranchName]$BUILD_BRANCH"
+              echo "Updated Build.BranchName to $BUILD_BRANCH"
+            displayName: Update build environment variables
+            
           - task: PowerShell@2
             displayName: 'Generate all packages'
             inputs:
               targetType: 'filePath'
               filePath: '$(System.DefaultWorkingDirectory)/r12f.rnp/Build.Build.windowsx64/scripts/New-RnpReleasePackages.ps1'
+              arguments:
+                -BuildBranchName $(Build.BranchName)
+                -BuildVersion $(Build.Version)
               workingDirectory: '$(System.DefaultWorkingDirectory)/r12f.rnp'
 
           - task: CopyFiles@2
