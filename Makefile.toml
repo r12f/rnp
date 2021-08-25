@@ -8,7 +8,7 @@ env_scripts = [
 '''
 #!@duckscript
 echo "Setting environment variables ..."
-git_branch = set "${CARGO_MAKE_GIT_BRANCH}"
+git_branch = get_env "BUILD_BRANCH"
 git_branch = replace ${git_branch} " " "_"
 git_branch = replace ${git_branch} "/" "_"
 set_env BUILD_BRANCH ${git_branch}
