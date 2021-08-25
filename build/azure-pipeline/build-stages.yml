@@ -98,6 +98,8 @@ stages:
               BUILD_BRANCH=${BUILD_BRANCH#refs/heads/}
               BUILD_BRANCH=${BUILD_BRANCH#refs/tags/}
               BUILD_BRANCH=${BUILD_BRANCH//\//_}
+              BUILD_BRANCH=${BUILD_BRANCH//-//_}
+              BUILD_BRANCH=${BUILD_BRANCH// //_}
               echo "##vso[task.setvariable variable=Build.BranchName]$BUILD_BRANCH"
               echo "Updated Build.BranchName to $BUILD_BRANCH"
             displayName: Update build environment variables
