@@ -90,6 +90,13 @@ stages:
               BUILD_VERSION=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)
               echo "##vso[task.setvariable variable=build.version]$BUILD_VERSION"
               echo "Updated build.version to $BUILD_VERSION"
+
+              BUILD_BRANCH="$(Build.SourceBranch)"
+              BUILD_BRANCH=${BUILD_BRANCH#refs/heads/}
+              BUILD_BRANCH=${BUILD_BRANCH#refs/tags/}
+              BUILD_BRANCH=${BUILD_BRANCH//\//_}
+              echo "##vso[task.setvariable variable=Build.BranchName]$BUILD_BRANCH"
+              echo "Updated Build.BranchName to $BUILD_BRANCH"
             displayName: Update build environment variables
 
           #
@@ -132,6 +139,7 @@ stages:
           - script: cargo make build --profile production -e BUILD_TARGET=$(TARGET)
             displayName: Cargo make build
             env:
+              BUILD_BRANCH: $(Builld.BranchName)
               RNP_SIGNING_URL: $(RnpSigningURL)
               RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
               RNP_SIGNING_CLIENT_ID: $(RnpSigningClientId)
