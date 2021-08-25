@@ -162,6 +162,7 @@ stages:
           - script: cargo make pack --profile production -e BUILD_TARGET=$(TARGET)
             displayName: Cargo make pack
             env:
+              BUILD_BRANCH: $(Builld.BranchName)
               RNP_SIGNING_URL: $(RnpSigningURL)
               RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
               RNP_SIGNING_CLIENT_ID: $(RnpSigningClientId)
