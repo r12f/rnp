@@ -33,7 +33,7 @@ variables:
 name: '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionRevision)'
 
 extends:
-  template: build-stages.yml
+  template: workflow-common.yml
   parameters:
     buildVersionMajor: $(buildVersionMajor)
     buildVersionMinor: $(buildVersionMinor)
