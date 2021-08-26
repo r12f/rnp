@@ -5,3 +5,4 @@ Cargo.lock
 tests_data
 publish/
 *.deb
+cobertura.xml
