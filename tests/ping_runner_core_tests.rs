@@ -1,9 +1,9 @@
-mod rnp_core_test_mocks;
+mod test_mocks;
 
 use futures_intrusive::sync::ManualResetEvent;
 use pretty_assertions::assert_eq;
 use rnp::*;
-use rnp_core_test_mocks::*;
+use test_mocks::*;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::runtime::Runtime;
