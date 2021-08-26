@@ -131,10 +131,6 @@ stages:
           - script: cargo make install-pack-tools
             displayName: Install pack tools
 
-          - script: cargo make install-test-coverage-tools
-            displayName: Install test coverage tools
-            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
-
           #
           # Update version files and scripts all source code for crate publishing
           #
@@ -187,9 +183,15 @@ stages:
           #
           # Run test coverage test
           #
-          - bash: |
-              cargo make test-coverage
+          - script: cargo make install-test-coverage-tools
+            displayName: Install test coverage tools
+            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
 
+          - script: cargo make test-coverage
+            displayName: Run test coverage
+            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
+
+          - bash: |
               echo "Downloading CodeCov uploader ..."
               curl -Os https://uploader.codecov.io/latest/linux/codecov
 
@@ -198,7 +200,7 @@ stages:
               ./codecov -t ${CODECOV_TOKEN}
 
               echo "Complated!"
-            displayName: Install test coverage tools
+            displayName: Upload test result.
             condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
             env:
               CODECOV_TOKEN: $(RnpCodeCovToken)
