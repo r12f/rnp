@@ -20,6 +20,7 @@ pr:
 #
 variables:
   - group: RnpCodeSign
+  - group: RnpCodeCov
   - name: buildVersionMajor
     value: 0
   - name: buildVersionMinor

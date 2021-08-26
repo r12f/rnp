@@ -172,7 +172,7 @@ stages:
               RNP_SIGNING_CERT_NAME: $(RnpSigningCertName)
 
           #
-          # Publish files for release
+          # Copy all files to publish folder
           #
           - task: CopyFiles@2
             displayName: Copy published artifacts to output
@@ -180,6 +180,34 @@ stages:
               sourceFolder: '$(Build.SourcesDirectory)/publish/$(TARGET)'
               targetFolder: '$(Build.ArtifactStagingDirectory)'
 
+          #
+          # Run test coverage test
+          #
+          - script: cargo make install-test-coverage-tools
+            displayName: Install test coverage tools
+            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
+
+          - script: cargo make test-coverage
+            displayName: Run test coverage
+            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
+
+          - bash: |
+              echo "Downloading CodeCov uploader ..."
+              curl -Os https://uploader.codecov.io/latest/linux/codecov
+
+              echo "Uploading test coverage result ..."
+              chmod +x codecov
+              ./codecov -t ${CODECOV_TOKEN}
+
+              echo "Complated!"
+            displayName: Upload test result.
+            condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
+            env:
+              CODECOV_TOKEN: $(RnpCodeCovToken)
+
+          #
+          # Publish artifacts
+          #
           - task: PublishPipelineArtifact@1
             displayName: Publish pipeline artifact
             condition: and(succeeded(), eq('${{ parameters.isPRWorkflow }}', 'false'))
