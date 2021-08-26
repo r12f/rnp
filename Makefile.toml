@@ -639,6 +639,10 @@ args = ["test", "--release", "--target", "${BUILD_TARGET}"]
 [tasks.test-coverage]
 description = "Check test coverage."
 linux_alias = "test-coverage-linux"
+script_runner = "@duckscript"
+script = '''
+echo "Test coverage is only supported on linux."
+'''
 
 [tasks.test-coverage-linux]
 description = "Check test coverage on linux."
