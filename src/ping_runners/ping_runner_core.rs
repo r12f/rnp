@@ -3,8 +3,8 @@ use futures_intrusive::sync::ManualResetEvent;
 use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task::JoinHandle};
 
-pub struct RnpCore {
-    config: RnpPingConfig,
+pub struct PingRunnerCore {
+    config: PingRunnerConfig,
 
     stop_event: Arc<ManualResetEvent>,
     worker_join_handles: Vec<JoinHandle<()>>,
@@ -13,7 +13,7 @@ pub struct RnpCore {
     result_sender: mpsc::Sender<PingResult>,
 }
 
-impl RnpCore {
+impl PingRunnerCore {
     /// Take the config and stop event and generate the RnpCore which runs all the pings.
     ///
     /// # Arguments
@@ -33,7 +33,7 @@ impl RnpCore {
     /// use futures_intrusive::sync::ManualResetEvent;
     /// use tokio::runtime::Runtime;
     ///
-    /// let config = RnpPingConfig {
+    /// let config = PingRunnerConfig {
     ///     worker_config: PingWorkerConfig {
     ///         protocol: RnpSupportedProtocol::TCP,
     ///         target: "10.0.0.1:443".parse().unwrap(),
@@ -77,12 +77,12 @@ impl RnpCore {
     /// let rt = Runtime::new().unwrap();
     /// rt.block_on(async {
     ///     let stop_event = Arc::new(ManualResetEvent::new(false));
-    ///     let core = RnpCore::new(config, stop_event);
+    ///     let core = PingRunnerCore::new(config, stop_event);
     /// });
     ///
     /// ```
     #[tracing::instrument(name = "Start running Rnp core", level = "debug", skip(stop_event))]
-    pub fn new(mut config: RnpPingConfig, stop_event: Arc<ManualResetEvent>) -> RnpCore {
+    pub fn new(mut config: PingRunnerConfig, stop_event: Arc<ManualResetEvent>) -> PingRunnerCore {
         // Move all extra ping result processors into another Vec for initializing result processing worker.
         // Otherwise RnpCoreConfig will be partially moved and results in compile error.
         let mut extra_ping_result_processors = Vec::new();
@@ -90,7 +90,7 @@ impl RnpCore {
 
         let ping_result_processor_stop_event = Arc::new(ManualResetEvent::new(false));
 
-        let (result_sender, ping_result_processor_join_handle) = RnpCore::create_ping_result_processing_worker(
+        let (result_sender, ping_result_processor_join_handle) = PingRunnerCore::create_ping_result_processing_worker(
             config.result_processor_config.clone(),
             extra_ping_result_processors,
             config.worker_scheduler_config.parallel_ping_count,
@@ -98,7 +98,7 @@ impl RnpCore {
             stop_event.clone(),
         );
 
-        let rnp_core = RnpCore {
+        let rnp_core = PingRunnerCore {
             config,
             stop_event,
             worker_join_handles: Vec::new(),

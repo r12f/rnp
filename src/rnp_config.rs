@@ -41,7 +41,7 @@ impl fmt::Display for RnpSupportedProtocol {
     }
 }
 
-pub struct RnpPingConfig {
+pub struct PingRunnerConfig {
     pub worker_config: PingWorkerConfig,
     pub worker_scheduler_config: PingWorkerSchedulerConfig,
     pub result_processor_config: PingResultProcessorConfig,
@@ -49,7 +49,7 @@ pub struct RnpPingConfig {
     pub extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
 }
 
-impl Debug for RnpPingConfig {
+impl Debug for PingRunnerConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("RnpCoreConfig")
             .field("worker_config", &self.worker_config)
@@ -64,8 +64,8 @@ impl Debug for RnpPingConfig {
     }
 }
 
-impl PartialEq for RnpPingConfig {
-    fn eq(&self, other: &RnpPingConfig) -> bool {
+impl PartialEq for PingRunnerConfig {
+    fn eq(&self, other: &PingRunnerConfig) -> bool {
         if self.worker_config != other.worker_config {
             return false;
         }
