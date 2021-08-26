@@ -144,7 +144,7 @@ echo "Installing build tools: binutils"
 brew install binutils
 '''
 
-# Install scripts tools
+# Install scripts for packing packages
 [tasks.install-pack-tools]
 description = "Install pack tools."
 linux_alias = "install-pack-tools-linux"
@@ -177,6 +177,18 @@ script_runner="bash"
 script = '''
 echo "Installing pack tools: gnu-tar"
 brew install gnu-tar
+'''
+
+# Install tools for checking test coverage.
+[tasks.install-test-coverage-tools]
+description = "Install test coverage tools."
+linux_alias = "install-test-coverage-tools-linux"
+
+[tasks.install-test-coverage-tools-linux]
+description = "Install test coverage tools on linux."
+script_runner="bash"
+script = '''
+cargo install cargo-tarpaulin
 '''
 
 ##############################################
@@ -620,6 +632,22 @@ args = ["test", "--target", "${BUILD_TARGET}"]
 description = "Run all tests with release profile."
 command = "cargo"
 args = ["test", "--release", "--target", "${BUILD_TARGET}"]
+
+##############################################
+# Test coverage
+#
+[tasks.test-coverage]
+description = "Check test coverage."
+linux_alias = "test-coverage-linux"
+script_runner = "@duckscript"
+script = '''
+echo "Test coverage is only supported on linux."
+'''
+
+[tasks.test-coverage-linux]
+description = "Check test coverage on linux."
+command = "cargo"
+args = ["tarpaulin", "-v", "-o", "Xml"]
 
 ##############################################
 # CI flow
