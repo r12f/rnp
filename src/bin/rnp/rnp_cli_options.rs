@@ -1,7 +1,7 @@
 use rand::Rng;
 use rnp::{
-    PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, PortRangeList,
-    RnpPingConfig, RnpSupportedProtocol,
+    PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingRunnerConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
+    PortRangeList, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
@@ -221,8 +221,8 @@ impl RnpCliOptions {
         }
     }
 
-    pub fn to_rnp_core_config(&self) -> RnpPingConfig {
-        let mut config = RnpPingConfig {
+    pub fn to_ping_runner_config(&self) -> PingRunnerConfig {
+        let mut config = PingRunnerConfig {
             worker_config: PingWorkerConfig {
                 protocol: self.common_options.protocol.clone(),
                 target: self.common_options.target,
@@ -314,7 +314,7 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use rnp::{
-        PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, RnpPingConfig,
+        PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingRunnerConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
         RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_NO_OUTPUT, RNP_QUIET_LEVEL_NO_PING_RESULT,
     };
     use std::path::PathBuf;
@@ -534,7 +534,7 @@ mod tests {
     #[test]
     fn new_from_cli_options_should_work() {
         assert_eq!(
-            RnpPingConfig {
+            PingRunnerConfig {
                 worker_config: PingWorkerConfig {
                     protocol: RnpSupportedProtocol::TCP,
                     target: "10.0.0.1:443".parse().unwrap(),
@@ -602,11 +602,11 @@ mod tests {
                     latency_buckets: None,
                 },
             }
-            .to_rnp_core_config()
+            .to_ping_runner_config()
         );
 
         assert_eq!(
-            RnpPingConfig {
+            PingRunnerConfig {
                 worker_config: PingWorkerConfig {
                     protocol: RnpSupportedProtocol::QUIC,
                     target: "10.0.0.1:443".parse().unwrap(),
@@ -674,7 +674,7 @@ mod tests {
                     latency_buckets: Some(vec![0.1, 0.5, 1.0, 10.0]),
                 },
             }
-            .to_rnp_core_config()
+            .to_ping_runner_config()
         );
     }
 

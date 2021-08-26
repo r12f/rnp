@@ -1,5 +1,5 @@
 use futures_intrusive::sync::ManualResetEvent;
-use rnp::{RnpCore, RNP_ABOUT, RNP_AUTHOR, RNP_NAME, RNP_QUIET_LEVEL_NO_OUTPUT};
+use rnp::{PingRunnerCore, RNP_ABOUT, RNP_AUTHOR, RNP_NAME, RNP_QUIET_LEVEL_NO_OUTPUT};
 use rnp_cli_options::RnpCliOptions;
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -16,13 +16,13 @@ fn main() {
     }
 
     opts.prepare_to_use();
-    let rnp_core_config = opts.to_rnp_core_config();
+    let runner_config = opts.to_ping_runner_config();
 
     let rt = Runtime::new().unwrap();
     let result = rt.block_on(async {
         let stop_event = Arc::new(ManualResetEvent::new(false));
-        let rnp_exit_failure_reason = rnp_core_config.result_processor_config.exit_failure_reason.clone();
-        let mut rp = RnpCore::new(rnp_core_config, stop_event.clone());
+        let rnp_exit_failure_reason = runner_config.result_processor_config.exit_failure_reason.clone();
+        let mut runner = PingRunnerCore::new(runner_config, stop_event.clone());
 
         ctrlc::set_handler(move || {
             tracing::debug!("Ctrl+C received. Stopping all ping workers.");
@@ -30,10 +30,10 @@ fn main() {
         })
         .expect("Error setting Ctrl-C handler");
 
-        rp.run_warmup_pings().await;
+        runner.run_warmup_pings().await;
 
-        rp.start_running_normal_pings();
-        rp.join().await;
+        runner.start_running_normal_pings();
+        runner.join().await;
 
         if let Some(rnp_exit_failure_reason) = rnp_exit_failure_reason {
             if rnp_exit_failure_reason.lock().unwrap().is_some() {

@@ -15,7 +15,7 @@ fn ping_with_rnp_core_should_work() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let stop_event = Arc::new(ManualResetEvent::new(false));
-        let mut rp = RnpCore::new(config, stop_event);
+        let mut rp = PingRunnerCore::new(config, stop_event);
         rp.run_warmup_pings().await;
         rp.start_running_normal_pings();
         rp.join().await;
@@ -45,7 +45,7 @@ fn ping_with_rnp_core_stress_should_work() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let stop_event = Arc::new(ManualResetEvent::new(false));
-        let mut rp = RnpCore::new(config, stop_event);
+        let mut rp = PingRunnerCore::new(config, stop_event);
         rp.run_warmup_pings().await;
         rp.start_running_normal_pings();
         rp.join().await;
@@ -64,7 +64,7 @@ fn ping_with_rnp_core_stop_event_should_work() {
         let stop_event = Arc::new(ManualResetEvent::new(false));
         let stop_event_clone = stop_event.clone();
 
-        let mut rp = RnpCore::new(config, stop_event);
+        let mut rp = PingRunnerCore::new(config, stop_event);
         rp.run_warmup_pings().await;
 
         rp.start_running_normal_pings();
@@ -86,7 +86,7 @@ fn ping_with_rnp_core_exit_on_fail_should_work() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let stop_event = Arc::new(ManualResetEvent::new(false));
-        let mut rp = RnpCore::new(config, stop_event);
+        let mut rp = PingRunnerCore::new(config, stop_event);
         rp.run_warmup_pings().await;
         rp.start_running_normal_pings();
         rp.join().await;
@@ -104,8 +104,8 @@ fn create_mock_rnp_config(
     ping_count: u32,
     warmup_count: u32,
     parallel_ping_count: u32,
-) -> RnpPingConfig {
-    RnpPingConfig {
+) -> PingRunnerConfig {
+    PingRunnerConfig {
         worker_config: PingWorkerConfig {
             protocol: RnpSupportedProtocol::TCP,
             target: "10.0.0.1:443".parse().unwrap(),
