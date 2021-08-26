@@ -8,12 +8,12 @@ pub use ping_result_processors::ping_result_processor::*;
 pub use ping_runners::ping_runner_core::PingRunnerCore;
 pub use ping_runners::*;
 pub use rnp_basic_types::*;
-pub use rnp_core_config::*;
+pub use rnp_config::*;
 pub use rnp_dto::*;
 
 mod ping_runners;
 mod rnp_basic_types;
-mod rnp_core_config;
+mod rnp_config;
 mod rnp_dto;
 mod rnp_utils;
 mod stub_servers;
