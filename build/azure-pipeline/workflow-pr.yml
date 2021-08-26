@@ -20,6 +20,7 @@ pr:
 #
 variables:
   - group: RnpCodeSign
+  - group: RnpCodeCov
   - name: buildVersionMajor
     value: 0
   - name: buildVersionMinor
@@ -36,4 +37,4 @@ extends:
     buildVersionMajor: $(buildVersionMajor)
     buildVersionMinor: $(buildVersionMinor)
     buildVersionRevision: $(buildVersionRevision)
-    isPRWorkflow: true
+    isPRWorkflow: false
