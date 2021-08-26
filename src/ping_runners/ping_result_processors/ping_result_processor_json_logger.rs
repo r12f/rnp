@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn ping_result_process_json_logger_should_work() {
-        let test_log_file_path = "tests_data\\test_log.json";
+        let test_log_file_path = "tests_data/ping_result_processor_json_logger_tests/test_log.json";
         let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorJsonLogger::new(
             Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }),
             &PathBuf::from(test_log_file_path),

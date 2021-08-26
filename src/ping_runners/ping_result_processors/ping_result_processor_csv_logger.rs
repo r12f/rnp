@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn ping_result_process_csv_logger_should_work() {
-        let test_log_file_path = "tests_data\\test_log.csv";
+        let test_log_file_path = "tests_data/ping_result_processor_csv_logger_tests/test_log.csv";
         let mut processor: Box<dyn PingResultProcessor + Send + Sync> = Box::new(PingResultProcessorCsvLogger::new(
             Arc::new(PingResultProcessorCommonConfig { quiet_level: RNP_QUIET_LEVEL_NO_OUTPUT }),
             &PathBuf::from(test_log_file_path),
