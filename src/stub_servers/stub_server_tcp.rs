@@ -27,8 +27,10 @@ impl StubServerTcp {
         server_started_event: Arc<ManualResetEvent>,
     ) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
         return tokio::spawn(async move {
-            let mut server = StubServerTcp::new(config, stop_event, server_started_event);
-            return server.run().await;
+            let mut server = StubServerTcp::new(config, stop_event, server_started_event.clone());
+            let result = server.run().await;
+            server_started_event.set();
+            return result;
         });
     }
 
@@ -39,9 +41,8 @@ impl StubServerTcp {
 
     #[tracing::instrument(name = "Running TCP stub server loop", level = "debug", skip(self))]
     async fn run(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let listen_result = TcpListener::bind(self.config.server_address).await;
+        let listener = TcpListener::bind(self.config.server_address).await?;
         self.server_started_event.set();
-        let listener = listen_result?;
 
         let mut next_report_time = Instant::now();
         loop {
