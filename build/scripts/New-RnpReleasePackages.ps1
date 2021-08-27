@@ -8,7 +8,7 @@ Param(
 
 $githubReleasePackagesFolder = ".\Releases\GithubReleases"
 $nugetPackageReleaseFolder = ".\Releases\NugetPackages"
-$debianPackageReleaseFolder = ".\Releases\Debian"
+$debianPackageReleaseFolder = ".\Releases\DebianPackages"
 $crateReleaseFolder = ".\Releases\Crate.io"
 $homebrewReleaseFolder = ".\Releases\Homebrew"
 $symbolStagingFolder = ".\Staging\Symbols"
