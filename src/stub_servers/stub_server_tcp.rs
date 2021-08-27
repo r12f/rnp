@@ -39,8 +39,9 @@ impl StubServerTcp {
 
     #[tracing::instrument(name = "Running TCP stub server loop", level = "debug", skip(self))]
     async fn run(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let listener = TcpListener::bind(self.config.server_address).await?;
+        let listen_result = TcpListener::bind(self.config.server_address).await;
         self.server_started_event.set();
+        let listener = listen_result?;
 
         let mut next_report_time = Instant::now();
         loop {
