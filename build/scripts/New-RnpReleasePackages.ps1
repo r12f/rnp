@@ -8,6 +8,7 @@ Param(
 
 $githubReleasePackagesFolder = ".\Releases\GithubReleases"
 $nugetPackageReleaseFolder = ".\Releases\NugetPackages"
+$debianPackageReleaseFolder = ".\Releases\Debian"
 $crateReleaseFolder = ".\Releases\Crate.io"
 $homebrewReleaseFolder = ".\Releases\Homebrew"
 $symbolStagingFolder = ".\Staging\Symbols"
@@ -67,7 +68,7 @@ function Copy-RnpBuildOutputToRelease
         Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.crate.*" $crateReleaseFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\source" "rnp.source.*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\zipped" "*" $githubReleasePackagesFolder
-        Copy-RnpBuildOutputToReleaseFolder "$root\deb" "*" $githubReleasePackagesFolder
+        Copy-RnpBuildOutputToReleaseFolder "$root\deb" "*" $debianPackageReleaseFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\msix" "*" $githubReleasePackagesFolder
         Copy-RnpBuildOutputToReleaseFolder "$root\homebrew" "*" $homebrewReleaseFolder
     }
