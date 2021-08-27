@@ -148,8 +148,19 @@ impl StubServerTcpConnection {
     }
 
     async fn run_loop(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut interest = Interest::READABLE;
+        if self.config.write_chunk_size != 0 {
+            interest = interest | Interest::WRITABLE;
+        }
+        tracing::debug!(
+            "Running TCP connection worker loop with interest, worker_id = {}, remote_address = {}, interest = {:?}",
+            self.id,
+            self.remote_address,
+            interest
+        );
+
         loop {
-            let ready = self.stream.ready(Interest::READABLE | Interest::WRITABLE).await?;
+            let ready = self.stream.ready(interest).await?;
 
             if ready.is_readable() {
                 self.on_connection_read().await?;
@@ -161,6 +172,7 @@ impl StubServerTcpConnection {
         }
     }
 
+    #[tracing::instrument(name = "TCP connection on read", level = "debug", skip(self), fields(id = %self.id, remote_address = %self.remote_address))]
     async fn on_connection_read(&mut self) -> Result<(), Box<dyn Error>> {
         match self.stream.try_read(&mut self.read_buf) {
             Ok(n) => {
@@ -176,6 +188,7 @@ impl StubServerTcpConnection {
         return Ok(());
     }
 
+    #[tracing::instrument(name = "TCP connection on write", level = "debug", skip(self), fields(id = %self.id, remote_address = %self.remote_address))]
     async fn on_connection_write(&mut self) -> Result<(), Box<dyn Error>> {
         // Update write count
         {
