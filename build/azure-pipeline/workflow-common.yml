@@ -351,7 +351,7 @@ stages:
               echo ""
             displayName: 'Install Rnp from debian package'
             condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'))
-            workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/GithubReleases
+            workingDirectory: $(System.DefaultWorkingDirectory)/r12f.rnp/Pack.Pack/Releases/DebianPackages
 
           - task: PublishPipelineArtifact@1
             displayName: Publish pipeline artifact
