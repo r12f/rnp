@@ -177,7 +177,19 @@ impl StubServerTcpConnection {
     }
 
     async fn on_connection_write(&mut self) -> Result<(), Box<dyn Error>> {
-        match self.stream.try_write(b"hello world") {
+        // Update write count
+        {
+            let mut conn_stats = self.conn_stats.lock().unwrap();
+            conn_stats.total_write_count += match self.config.write_count_limit {
+                Some(write_chunk_count) if conn_stats.total_write_count < write_chunk_count => 1,
+                Some(_) => 0,
+                None => 1,
+            };
+        }
+
+        // Write buffer
+        let write_buf = vec![0 as u8; self.config.write_chunk_size];
+        match self.stream.try_write(&write_buf) {
             Ok(n) => {
                 self.conn_stats.lock().unwrap().bytes_write += n;
             }
@@ -198,11 +210,18 @@ struct StubServerTcpConnectionStats {
     pub is_alive: bool,
     pub bytes_read: usize,
     pub bytes_write: usize,
+    pub total_write_count: usize,
 }
 
 impl StubServerTcpConnectionStats {
     pub fn new(remote_address: &SocketAddr) -> StubServerTcpConnectionStats {
-        return StubServerTcpConnectionStats { remote_address: remote_address.clone(), is_alive: true, bytes_read: 0, bytes_write: 0 };
+        return StubServerTcpConnectionStats {
+            remote_address: remote_address.clone(),
+            is_alive: true,
+            bytes_read: 0,
+            bytes_write: 0,
+            total_write_count: 0,
+        };
     }
 
     pub fn clone_and_clear_stats(&mut self) -> StubServerTcpConnectionStats {
