@@ -5,7 +5,7 @@ use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use tokio::io::Interest;
+use tokio::io::{AsyncWriteExt, Interest};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
@@ -83,6 +83,22 @@ impl StubServerTcp {
     async fn handle_new_connection(&mut self, stream: TcpStream, peer_addr: SocketAddr) {
         println!("New connection received: Remote = {}", peer_addr);
 
+        if self.config.close_on_accept {
+            self.close_connection_on_accept(stream, peer_addr).await;
+            return;
+        }
+
+        self.start_connection_worker(stream, peer_addr).await;
+    }
+
+    #[tracing::instrument(name = "Close connection on accept", level = "debug", skip(self))]
+    async fn close_connection_on_accept(&mut self, mut stream: TcpStream, peer_addr: SocketAddr) {
+        let _ = stream.shutdown().await;
+        println!("Connection closed on accept: Remote = {}", peer_addr);
+    }
+
+    #[tracing::instrument(name = "Starting new connection worker", level = "debug", skip(self))]
+    async fn start_connection_worker(&mut self, stream: TcpStream, peer_addr: SocketAddr) {
         let stream_config = self.config.clone();
         let stream_stop_event = self.stop_event.clone();
 

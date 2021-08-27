@@ -24,7 +24,7 @@ structopt = "0.3"
 ctrlc = "3.1.9"
 socket2 = "0.4.0"
 futures-intrusive = "0.4"
-tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "macros", "net", "io-util"] }
 contracts = "0.6.0"
 chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
 rand = "0.8"

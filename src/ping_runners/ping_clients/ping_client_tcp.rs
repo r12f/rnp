@@ -110,6 +110,7 @@ mod tests {
             let stub_server_config = RnpStubServerConfig {
                 protocol: RnpSupportedProtocol::TCP,
                 server_address: "127.0.0.1:11337".parse().unwrap(),
+                close_on_accept: false,
                 sleep_before_write: Duration::from_millis(0),
                 write_chunk_size: 1024,
                 write_count_limit: Some(0),
