@@ -28,8 +28,11 @@ impl StubServerTcp {
     ) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
         return tokio::spawn(async move {
             let mut server = StubServerTcp::new(config, stop_event, server_started_event.clone());
+
+            // In case server started failed, we always signal server started event here to keep it safe.
             let result = server.run().await;
             server_started_event.set();
+
             return result;
         });
     }
