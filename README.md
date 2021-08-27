@@ -3,6 +3,7 @@
 
 [![Documentation](https://docs.rs/rnp/badge.svg)](https://docs.rs/rnp/)
 [![Build Status](https://img.shields.io/azure-devops/build/riff/f012db2f-e386-47e8-acde-e33f18034044/5?style=flat)](https://riff.visualstudio.com/rnp/_build/latest?definitionId=5&branchName=main)
+[![codecov](https://codecov.io/gh/r12f/rnp/branch/main/graph/badge.svg?token=E9IDEW9Z6G)](https://codecov.io/gh/r12f/rnp)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
 | Release | Status |
