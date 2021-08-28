@@ -145,26 +145,6 @@ mod tests {
     use tokio::runtime::Runtime;
 
     #[test]
-    fn ping_client_quic_should_work() {
-        rnp_test_common::initialize();
-
-        let rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            let config = create_ping_client_quic_default_config();
-            let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::QUIC, &config, None);
-
-            // When connecting to a non existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
-            let expected_results = ExpectedPingClientTestResults {
-                timeout_min_time: Duration::from_millis(200),
-                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed("failed to set up UDP socket: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)"),
-            };
-
-            run_ping_client_tests(&mut ping_client, &"127.0.0.1:4433".parse().unwrap(), &expected_results).await;
-        });
-    }
-
-    #[test]
     fn ping_client_quic_should_fail_when_pinging_non_existing_host() {
         rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();

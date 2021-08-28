@@ -94,7 +94,7 @@ impl PingClient for PingClientTcp {
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
     use crate::stub_servers::stub_server_factory;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpStubServerConfig, RnpSupportedProtocol, rnp_test_common};
+    use crate::{ping_clients::ping_client_factory, rnp_test_common, PingClientConfig, RnpStubServerConfig, RnpSupportedProtocol};
     use futures_intrusive::sync::ManualResetEvent;
     use std::net::SocketAddr;
     use std::sync::Arc;
@@ -102,7 +102,7 @@ mod tests {
     use tokio::runtime::Runtime;
 
     #[test]
-    fn ping_client_tcp_should_work() {
+    fn ping_client_tcp_should_work_when_pinging_good_host() {
         rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
@@ -113,16 +113,27 @@ mod tests {
         rt.block_on(async move {
             let config = create_ping_client_tcp_default_config();
             let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+            ping_client_should_work_when_pinging_good_host(&mut ping_client, &server_address, &ExpectedTestCaseResult::Ok).await;
+        });
+    }
 
-            // When connecting to a non-existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
-            let expected_results = ExpectedPingClientTestResults {
-                timeout_min_time: Duration::from_millis(200),
-                binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed(
-                    "Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)",
-                ),
-            };
+    #[test]
+    fn ping_client_tcp_should_fail_when_binding_unavailable_source_port() {
+        rnp_test_common::initialize();
+        let rt = Runtime::new().unwrap();
 
-            run_ping_client_tests(&mut ping_client, &server_address, &expected_results).await;
+        let server_address = "127.0.0.1:11338".parse::<SocketAddr>().unwrap();
+        let server_config = create_tcp_stub_server_default_config(&server_address);
+        start_run_tcp_stub_server(&rt, server_config);
+
+        rt.block_on(async move {
+            let config = create_ping_client_tcp_default_config();
+            let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+
+            let expected_result = ExpectedTestCaseResult::Failed(
+                "Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)",
+            );
+            ping_client_should_fail_when_binding_unavailable_source_port(&mut ping_client, &server_address, &expected_result).await;
         });
     }
 

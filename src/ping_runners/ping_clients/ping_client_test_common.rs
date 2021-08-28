@@ -11,7 +11,6 @@ pub enum ExpectedTestCaseResult {
 
 pub struct ExpectedPingClientTestResults {
     pub timeout_min_time: Duration,
-    pub binding_unavailable_source_port_result: ExpectedTestCaseResult,
 }
 
 pub async fn run_ping_client_tests(
@@ -22,18 +21,14 @@ pub async fn run_ping_client_tests(
     if ping_client.protocol() != "QUIC" {
         ping_client_should_work_when_pinging_good_host(ping_client, mock_server_addr, expected_results).await;
     }
-
-    if ping_client.protocol() != "QUIC" {
-        ping_client_should_fail_when_binding_unavailable_source_port(ping_client, mock_server_addr, expected_results).await;
-    }
 }
 
-async fn ping_client_should_work_when_pinging_good_host(
+pub async fn ping_client_should_work_when_pinging_good_host(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    mock_server_addr: &SocketAddr,
-    expected_results: &ExpectedPingClientTestResults,
+    server_address: &SocketAddr,
+    expected_result: &ExpectedTestCaseResult,
 ) {
-    let target = mock_server_addr.clone();
+    let target = server_address.clone();
     if target.port() == 0 {
         return;
     }
@@ -42,48 +37,40 @@ async fn ping_client_should_work_when_pinging_good_host(
     ping_client_result_should_be_expected(ping_client, &source, &target, expected_results.timeout_min_time, &ExpectedTestCaseResult::Ok).await;
 }
 
-async fn ping_client_should_fail_when_binding_unavailable_source_port(
+pub async fn ping_client_should_fail_when_binding_unavailable_source_port(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    mock_server_addr: &SocketAddr,
-    expected_results: &ExpectedPingClientTestResults,
+    source: &SocketAddr,
+    expected_result: &ExpectedTestCaseResult,
 ) {
-    let source = mock_server_addr.clone();
     let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
-    ping_client_result_should_be_expected(
-        ping_client,
-        &source,
-        &target,
-        expected_results.timeout_min_time,
-        &expected_results.binding_unavailable_source_port_result,
-    )
-    .await;
+    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), &expected_result).await;
 }
 
 pub async fn ping_client_should_fail_when_pinging_non_existing_host(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    expected_results: &ExpectedTestCaseResult,
+    expected_result: &ExpectedTestCaseResult,
 ) {
     let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
     let target = "1.1.1.1:11111".parse::<SocketAddr>().unwrap();
-    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), expected_results).await;
+    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), expected_result).await;
 }
 
 pub async fn ping_client_should_fail_when_pinging_non_existing_port(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    expected_results: &ExpectedTestCaseResult,
+    expected_result: &ExpectedTestCaseResult,
 ) {
     let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
     let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
-    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), expected_results).await;
+    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), expected_result).await;
 }
 
 pub async fn ping_client_should_fail_when_binding_invalid_source_ip(
     ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    expected_results: &ExpectedTestCaseResult,
+    expected_result: &ExpectedTestCaseResult,
 ) {
     let source = "1.1.1.1:1111".parse::<SocketAddr>().unwrap();
     let target = "127.0.0.1:56789".parse::<SocketAddr>().unwrap();
-    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), expected_results).await;
+    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), expected_result).await;
 }
 
 pub async fn ping_client_result_should_be_expected(
@@ -91,13 +78,13 @@ pub async fn ping_client_result_should_be_expected(
     source: &SocketAddr,
     target: &SocketAddr,
     timeout_min_time: Duration,
-    expected_error: &ExpectedTestCaseResult,
+    expected_result: &ExpectedTestCaseResult,
 ) {
     let actual_result = ping_client.ping(source, target).await;
     let ping_result_string = format!("Ping result: {:?}", actual_result);
     tracing::info!("{}", ping_result_string);
 
-    match expected_error {
+    match expected_result {
         ExpectedTestCaseResult::Ok => {
             assert!(actual_result.is_ok());
             assert!(!(actual_result.as_ref().ok().unwrap().is_timeout));
