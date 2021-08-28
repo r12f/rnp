@@ -96,10 +96,10 @@ mod tests {
     use crate::stub_servers::stub_server_factory;
     use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpStubServerConfig, RnpSupportedProtocol};
     use futures_intrusive::sync::ManualResetEvent;
+    use std::net::SocketAddr;
     use std::sync::Arc;
     use std::time::Duration;
     use tokio::runtime::Runtime;
-    use std::net::SocketAddr;
 
     #[test]
     fn ping_client_tcp_should_work() {
@@ -110,35 +110,55 @@ mod tests {
         start_run_tcp_stub_server(&rt, server_config);
 
         rt.block_on(async move {
-            let config = PingClientConfig {
-                wait_timeout: Duration::from_millis(300),
-                time_to_live: None,
-                check_disconnect: false,
-                server_name: None,
-                log_tls_key: false,
-                alpn_protocol: None,
-                use_timer_rtt: false,
-            };
+            let config = create_ping_client_tcp_default_config();
             let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
 
             // When connecting to a non-existing port, on windows, it will timeout, but on other *nix OS, it will reject the connection.
             let expected_results = ExpectedPingClientTestResults {
                 timeout_min_time: Duration::from_millis(200),
-                ping_non_existing_host_result: ExpectedTestCaseResult::Timeout,
-                ping_non_existing_port_result: if cfg!(windows) {
-                    ExpectedTestCaseResult::Timeout
-                } else {
-                    ExpectedTestCaseResult::Failed("connection refused")
-                },
-                binding_invalid_source_ip_result: ExpectedTestCaseResult::Failed(
-                    "The requested address is not valid in its context. (os error 10049)",
-                ),
                 binding_unavailable_source_port_result: ExpectedTestCaseResult::Failed(
                     "Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)",
                 ),
             };
 
             run_ping_client_tests(&mut ping_client, &server_address, &expected_results).await;
+        });
+    }
+
+    #[test]
+    fn ping_client_tcp_should_fail_when_pinging_non_existing_host() {
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(async move {
+            let config = create_ping_client_tcp_default_config();
+            let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+            ping_client_should_fail_when_pinging_non_existing_host(&mut ping_client, &ExpectedTestCaseResult::Timeout).await;
+        });
+    }
+
+    #[test]
+    fn ping_client_tcp_should_fail_when_pinging_non_existing_port() {
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(async move {
+            let config = create_ping_client_tcp_default_config();
+            let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+
+            let expected_result = if cfg!(windows) { ExpectedTestCaseResult::Timeout } else { ExpectedTestCaseResult::Failed("connection refused") };
+            ping_client_should_fail_when_pinging_non_existing_port(&mut ping_client, &expected_result).await;
+        });
+    }
+
+    #[test]
+    fn ping_client_tcp_should_fail_when_binding_invalid_source_ip() {
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(async move {
+            let config = create_ping_client_tcp_default_config();
+            let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+
+            let expected_result = ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)");
+            ping_client_should_fail_when_binding_invalid_source_ip(&mut ping_client, &expected_result).await;
         });
     }
 
@@ -161,5 +181,17 @@ mod tests {
             stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone).await;
         });
         rt.block_on(ready_event.wait());
+    }
+
+    fn create_ping_client_tcp_default_config() -> PingClientConfig {
+        return PingClientConfig {
+            wait_timeout: Duration::from_millis(300),
+            time_to_live: None,
+            check_disconnect: false,
+            server_name: None,
+            log_tls_key: false,
+            alpn_protocol: None,
+            use_timer_rtt: false,
+        };
     }
 }
