@@ -94,7 +94,7 @@ impl PingClient for PingClientTcp {
 mod tests {
     use crate::ping_clients::ping_client_test_common::*;
     use crate::stub_servers::stub_server_factory;
-    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpStubServerConfig, RnpSupportedProtocol};
+    use crate::{ping_clients::ping_client_factory, PingClientConfig, RnpStubServerConfig, RnpSupportedProtocol, rnp_test_common};
     use futures_intrusive::sync::ManualResetEvent;
     use std::net::SocketAddr;
     use std::sync::Arc;
@@ -103,6 +103,7 @@ mod tests {
 
     #[test]
     fn ping_client_tcp_should_work() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         let server_address = "127.0.0.1:11337".parse::<SocketAddr>().unwrap();
@@ -127,6 +128,7 @@ mod tests {
 
     #[test]
     fn ping_client_tcp_should_fail_when_pinging_non_existing_host() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         rt.block_on(async move {
@@ -138,6 +140,7 @@ mod tests {
 
     #[test]
     fn ping_client_tcp_should_fail_when_pinging_non_existing_port() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         rt.block_on(async move {
@@ -151,6 +154,7 @@ mod tests {
 
     #[test]
     fn ping_client_tcp_should_fail_when_binding_invalid_source_ip() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         rt.block_on(async move {

@@ -166,6 +166,7 @@ mod tests {
 
     #[test]
     fn ping_client_quic_should_fail_when_pinging_non_existing_host() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         rt.block_on(async move {
@@ -177,6 +178,7 @@ mod tests {
 
     #[test]
     fn ping_client_quic_should_fail_when_pinging_non_existing_port() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         rt.block_on(async move {
@@ -188,6 +190,7 @@ mod tests {
 
     #[test]
     fn ping_client_quic_should_fail_when_binding_invalid_source_ip() {
+        rnp_test_common::initialize();
         let rt = Runtime::new().unwrap();
 
         rt.block_on(async move {
