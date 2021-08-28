@@ -61,6 +61,7 @@ fn ping_client_tcp_should_work_when_pinging_good_host_with_check_disconnect() {
     });
 }
 
+/*
 #[test]
 fn ping_client_tcp_should_fail_when_server_closes_connection_before_disconnect() {
     rnp_test_common::initialize();
@@ -82,6 +83,7 @@ fn ping_client_tcp_should_fail_when_server_closes_connection_before_disconnect()
         ping_client_result_should_be_expected(&mut ping_client, &source, &server_address, Duration::from_millis(200), &expected_result).await;
     });
 }
+*/
 
 #[test]
 fn ping_client_tcp_should_fail_when_pinging_non_existing_host() {

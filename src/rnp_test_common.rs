@@ -8,8 +8,7 @@ static INIT: Once = Once::new();
 
 pub fn initialize() {
     INIT.call_once(|| {
-        // initialization code here
-        let _ = env_logger::builder().is_test(true).try_init();
+        let _ = env_logger::builder().format_timestamp_micros().is_test(true).try_init();
     });
 }
 
