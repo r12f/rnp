@@ -52,6 +52,7 @@ mod tests {
             wait_timeout: Duration::from_millis(100),
             time_to_live: Some(128),
             check_disconnect: false,
+            wait_before_disconnect: Duration::ZERO,
             server_name: None,
             log_tls_key: false,
             alpn_protocol: None,

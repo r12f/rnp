@@ -99,7 +99,7 @@ fn start_run_tcp_stub_server(rt: &Runtime, stub_server_config: RnpStubServerConf
     let ready_event = Arc::new(ManualResetEvent::new(false));
     let ready_event_clone = ready_event.clone();
     rt.spawn(async move {
-        stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone).await;
+        let _ = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone).await;
     });
     rt.block_on(ready_event.wait());
 }
@@ -109,6 +109,7 @@ fn create_ping_client_tcp_default_config() -> PingClientConfig {
         wait_timeout: Duration::from_millis(300),
         time_to_live: None,
         check_disconnect: false,
+        wait_before_disconnect: Duration::ZERO,
         server_name: None,
         log_tls_key: false,
         alpn_protocol: None,

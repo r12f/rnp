@@ -99,6 +99,7 @@ pub struct PingClientConfig {
     pub wait_timeout: Duration,
     pub time_to_live: Option<u32>,
     pub check_disconnect: bool,
+    pub wait_before_disconnect: Duration,
     pub server_name: Option<String>,
     pub log_tls_key: bool,
     pub alpn_protocol: Option<String>,
