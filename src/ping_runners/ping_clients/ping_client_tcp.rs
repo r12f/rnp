@@ -111,7 +111,7 @@ mod tests {
                 protocol: RnpSupportedProtocol::TCP,
                 server_address: "127.0.0.1:11337".parse().unwrap(),
                 close_on_accept: false,
-                sleep_before_write: Duration::from_millis(0),
+                sleep_before_write: Some(Duration::from_millis(0)),
                 write_chunk_size: 1024,
                 write_count_limit: Some(0),
                 report_interval: Duration::from_secs(1),
