@@ -73,7 +73,7 @@ pub struct RnpCliPingCommonOptions {
     pub check_disconnect: bool,
 
     #[structopt(
-        long = "disconnect-delay",
+        long = "wait-before-disconnect",
         default_value = "0",
         help = "Wait before disconnect in milliseconds. Only works when check-disconnect is enabled."
     )]
@@ -518,7 +518,7 @@ mod tests {
                 "--ttl",
                 "128",
                 "--check-disconnect",
-                "--disconnect-delay",
+                "--wait-before-disconnect",
                 "3000",
                 "--parallel",
                 "10",
