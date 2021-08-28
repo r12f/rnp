@@ -44,6 +44,48 @@ fn ping_client_tcp_should_fail_when_binding_unavailable_source_port() {
 }
 
 #[test]
+fn ping_client_tcp_should_work_when_pinging_good_host_with_check_disconnect() {
+    rnp_test_common::initialize();
+    let rt = Runtime::new().unwrap();
+
+    let server_address = "127.0.0.1:11339".parse::<SocketAddr>().unwrap();
+    let server_config = create_tcp_stub_server_default_config(&server_address);
+    start_run_tcp_stub_server(&rt, server_config);
+
+    rt.block_on(async move {
+        let mut config = create_ping_client_tcp_default_config();
+        config.check_disconnect = true;
+
+        let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+        ping_client_should_work_when_pinging_good_host(&mut ping_client, &server_address).await;
+    });
+}
+
+/*
+#[test]
+fn ping_client_tcp_should_fail_when_server_closes_connection_before_disconnect() {
+    rnp_test_common::initialize();
+    let rt = Runtime::new().unwrap();
+
+    let server_address = "127.0.0.1:11340".parse::<SocketAddr>().unwrap();
+    let mut server_config = create_tcp_stub_server_default_config(&server_address);
+    server_config.close_on_accept = true;
+    start_run_tcp_stub_server(&rt, server_config);
+
+    rt.block_on(async move {
+        let mut config = create_ping_client_tcp_default_config();
+        config.check_disconnect = true;
+        config.wait_before_disconnect = Duration::from_millis(1000);
+
+        let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+        let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
+        let expected_result = ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)");
+        ping_client_result_should_be_expected(&mut ping_client, &source, &server_address, Duration::from_millis(200), &expected_result).await;
+    });
+}
+*/
+
+#[test]
 fn ping_client_tcp_should_fail_when_pinging_non_existing_host() {
     rnp_test_common::initialize();
     let rt = Runtime::new().unwrap();
@@ -99,7 +141,7 @@ fn start_run_tcp_stub_server(rt: &Runtime, stub_server_config: RnpStubServerConf
     let ready_event = Arc::new(ManualResetEvent::new(false));
     let ready_event_clone = ready_event.clone();
     rt.spawn(async move {
-        stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone).await;
+        let _ = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone).await;
     });
     rt.block_on(ready_event.wait());
 }
@@ -109,6 +151,7 @@ fn create_ping_client_tcp_default_config() -> PingClientConfig {
         wait_timeout: Duration::from_millis(300),
         time_to_live: None,
         check_disconnect: false,
+        wait_before_disconnect: Duration::ZERO,
         server_name: None,
         log_tls_key: false,
         alpn_protocol: None,

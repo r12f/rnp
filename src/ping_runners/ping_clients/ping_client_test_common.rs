@@ -9,10 +9,6 @@ pub enum ExpectedTestCaseResult {
     Failed(&'static str),
 }
 
-pub struct ExpectedPingClientTestResults {
-    pub timeout_min_time: Duration,
-}
-
 pub async fn ping_client_should_work_when_pinging_good_host(ping_client: &mut Box<dyn PingClient + Send + Sync>, server_address: &SocketAddr) {
     let target = server_address.clone();
     if target.port() == 0 {
