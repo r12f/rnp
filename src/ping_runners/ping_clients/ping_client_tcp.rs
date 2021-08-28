@@ -99,29 +99,17 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
     use tokio::runtime::Runtime;
+    use std::net::SocketAddr;
 
     #[test]
     fn ping_client_tcp_should_work() {
         let rt = Runtime::new().unwrap();
 
-        let ready_event = Arc::new(ManualResetEvent::new(false));
-        let ready_event_clone = ready_event.clone();
-        let _server = rt.spawn(async move {
-            let stub_server_config = RnpStubServerConfig {
-                protocol: RnpSupportedProtocol::TCP,
-                server_address: "127.0.0.1:11337".parse().unwrap(),
-                close_on_accept: false,
-                sleep_before_write: Some(Duration::from_millis(0)),
-                write_chunk_size: 1024,
-                write_count_limit: Some(0),
-                report_interval: Duration::from_secs(1),
-            };
-            let stub_server = stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone);
-            return stub_server.await;
-        });
-        rt.block_on(ready_event.wait());
+        let server_address = "127.0.0.1:11337".parse::<SocketAddr>().unwrap();
+        let server_config = create_tcp_stub_server_default_config(&server_address);
+        start_run_tcp_stub_server(&rt, server_config);
 
-        rt.block_on(async {
+        rt.block_on(async move {
             let config = PingClientConfig {
                 wait_timeout: Duration::from_millis(300),
                 time_to_live: None,
@@ -150,7 +138,28 @@ mod tests {
                 ),
             };
 
-            run_ping_client_tests(&mut ping_client, &"127.0.0.1:11337".parse().unwrap(), &expected_results).await;
+            run_ping_client_tests(&mut ping_client, &server_address, &expected_results).await;
         });
+    }
+
+    fn create_tcp_stub_server_default_config(server_address: &SocketAddr) -> RnpStubServerConfig {
+        return RnpStubServerConfig {
+            protocol: RnpSupportedProtocol::TCP,
+            server_address: server_address.clone(),
+            close_on_accept: false,
+            sleep_before_write: Some(Duration::from_millis(0)),
+            write_chunk_size: 1024,
+            write_count_limit: Some(0),
+            report_interval: Duration::from_secs(1),
+        };
+    }
+
+    fn start_run_tcp_stub_server(rt: &Runtime, stub_server_config: RnpStubServerConfig) {
+        let ready_event = Arc::new(ManualResetEvent::new(false));
+        let ready_event_clone = ready_event.clone();
+        rt.spawn(async move {
+            stub_server_factory::run(&stub_server_config, Arc::new(ManualResetEvent::new(false)), ready_event_clone).await;
+        });
+        rt.block_on(ready_event.wait());
     }
 }
