@@ -28,11 +28,11 @@ pub struct RnpCliOptions {
 
 #[derive(Debug, StructOpt, PartialEq)]
 pub struct RnpCliCommonOptions {
-    #[structopt(parse(try_from_str = parse_ping_target), help = "Target endpoint. For IPv6, please use [] to wrap the address, such as [::1]:80.")]
-    pub target: SocketAddr,
-
     #[structopt(short = "m", long = "mode", default_value = "TCP", help = "Specify protocol to use.")]
     pub protocol: RnpSupportedProtocol,
+
+    #[structopt(parse(try_from_str = parse_ping_target), help = "Target endpoint. For IPv6, please use [] to wrap the address, such as [::1]:80.")]
+    pub target: SocketAddr,
 }
 
 #[derive(Debug, StructOpt, PartialEq)]

@@ -211,6 +211,10 @@ impl StubServerTcpConnection {
 
     #[tracing::instrument(name = "TCP connection on write", level = "debug", skip(self), fields(id = %self.id, remote_address = %self.remote_address))]
     async fn on_connection_write(&mut self) -> Result<(), Box<dyn Error>> {
+        if let Some(sleep_before_write) = self.config.sleep_before_write {
+            tokio::time::sleep(sleep_before_write).await;
+        }
+
         // Update write count
         {
             let mut conn_stats = self.conn_stats.lock().unwrap();
