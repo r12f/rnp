@@ -9,3 +9,9 @@ mod ping_client_quic;
 
 #[cfg(test)]
 mod ping_client_test_common;
+
+#[cfg(test)]
+mod ping_client_tcp_tests;
+
+#[cfg(test)]
+mod ping_client_quic_tests;
