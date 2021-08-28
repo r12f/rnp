@@ -113,7 +113,7 @@ mod tests {
         rt.block_on(async move {
             let config = create_ping_client_tcp_default_config();
             let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
-            ping_client_should_work_when_pinging_good_host(&mut ping_client, &server_address, &ExpectedTestCaseResult::Ok).await;
+            ping_client_should_work_when_pinging_good_host(&mut ping_client, &server_address).await;
         });
     }
 

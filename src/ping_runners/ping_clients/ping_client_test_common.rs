@@ -13,28 +13,14 @@ pub struct ExpectedPingClientTestResults {
     pub timeout_min_time: Duration,
 }
 
-pub async fn run_ping_client_tests(
-    ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    mock_server_addr: &SocketAddr,
-    expected_results: &ExpectedPingClientTestResults,
-) {
-    if ping_client.protocol() != "QUIC" {
-        ping_client_should_work_when_pinging_good_host(ping_client, mock_server_addr, expected_results).await;
-    }
-}
-
-pub async fn ping_client_should_work_when_pinging_good_host(
-    ping_client: &mut Box<dyn PingClient + Send + Sync>,
-    server_address: &SocketAddr,
-    expected_result: &ExpectedTestCaseResult,
-) {
+pub async fn ping_client_should_work_when_pinging_good_host(ping_client: &mut Box<dyn PingClient + Send + Sync>, server_address: &SocketAddr) {
     let target = server_address.clone();
     if target.port() == 0 {
         return;
     }
 
     let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
-    ping_client_result_should_be_expected(ping_client, &source, &target, expected_results.timeout_min_time, &ExpectedTestCaseResult::Ok).await;
+    ping_client_result_should_be_expected(ping_client, &source, &target, Duration::from_millis(200), &ExpectedTestCaseResult::Ok).await;
 }
 
 pub async fn ping_client_should_fail_when_binding_unavailable_source_port(
