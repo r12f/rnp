@@ -33,7 +33,7 @@ impl PingClientTcp {
         // Check closing connection as well as opening connection
         let mut warning: Option<PingClientWarning> = None;
         if self.config.check_disconnect {
-            warning = match self.shutdown_connection(socket).await {
+            warning = match self.shutdown_connection(socket, &target).await {
                 Err(e) => Some(PingClientWarning::DisconnectFailed(Box::new(e))),
                 Ok(_) => None,
             }
@@ -47,6 +47,7 @@ impl PingClientTcp {
         };
     }
 
+    #[tracing::instrument(name = "Creating socket for ping", level = "debug", skip(self))]
     fn prepare_socket_for_ping(&self, source: &SocketAddr) -> io::Result<Socket> {
         let socket_domain = if source.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
@@ -62,14 +63,18 @@ impl PingClientTcp {
         return Ok(socket);
     }
 
-    async fn shutdown_connection(&self, socket: Socket) -> io::Result<()> {
+    #[tracing::instrument(name = "Shutdown connection after ping", level = "debug", skip(self))]
+    async fn shutdown_connection(&self, socket: Socket, target: &SocketAddr) -> io::Result<()> {
         if !self.config.wait_before_disconnect.is_zero() {
+            tracing::debug!("Waiting {:?} before disconnect; target = {}", self.config.wait_before_disconnect, target);
             tokio::time::sleep(self.config.wait_before_disconnect).await;
         }
 
+        tracing::debug!("Shutdown connection write; target = {}", target);
         socket.shutdown(Shutdown::Write)?;
 
         // Try to read until recv returns nothing, which indicates shutdown is succeeded.
+        tracing::debug!("Wait until shutdown completes; target = {}", target);
         let mut buf: [MaybeUninit<u8>; 128] = unsafe { MaybeUninit::uninit().assume_init() };
         while socket.recv(&mut buf)? > 0 {
             continue;

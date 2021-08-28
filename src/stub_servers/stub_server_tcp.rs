@@ -129,7 +129,7 @@ impl StubServerTcp {
             let read_bps = conn_stats.bytes_read * 8 * 1000 / (self.config.report_interval.as_millis() as usize);
             let write_bps = conn_stats.bytes_write * 8 * 1000 / (self.config.report_interval.as_millis() as usize);
             println!(
-                "[{}] {} => Read = {} bytes ({} bps), Write = {} ({} bps)",
+                "[{}] {} => Read = {} bytes ({} bps), Write = {} bytes ({} bps)",
                 id, conn_stats.remote_address, read_bps, conn_stats.bytes_read, write_bps, conn_stats.bytes_write
             );
         }
@@ -197,6 +197,11 @@ impl StubServerTcpConnection {
     async fn on_connection_read(&mut self) -> Result<(), Box<dyn Error>> {
         match self.stream.try_read(&mut self.read_buf) {
             Ok(n) => {
+                if n == 0 {
+                    let error_message = format!("Connection write is closed on remote. Closing connection: Remote = {}", self.remote_address);
+                    println!("{}", error_message);
+                    return Err(io::Error::new(io::ErrorKind::ConnectionAborted, error_message).into());
+                }
                 self.conn_stats.lock().unwrap().bytes_read += n;
             }
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => (),
