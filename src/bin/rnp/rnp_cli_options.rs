@@ -1,7 +1,7 @@
 use rand::Rng;
 use rnp::{
-    PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingRunnerConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    PortRangeList, RnpSupportedProtocol,
+    PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig, PortRangeList,
+    RnpPingRunnerConfig, RnpSupportedProtocol,
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
@@ -17,6 +17,9 @@ pub struct RnpCliOptions {
     pub common_options: RnpCliCommonOptions,
 
     #[structopt(flatten)]
+    pub ping_common_options: RnpCliPingCommonOptions,
+
+    #[structopt(flatten)]
     pub output_options: RnpCliOutputOptions,
 
     #[structopt(flatten)]
@@ -25,15 +28,15 @@ pub struct RnpCliOptions {
 
 #[derive(Debug, StructOpt, PartialEq)]
 pub struct RnpCliCommonOptions {
-    #[structopt(
-        parse(try_from_str = parse_ping_target),
-        help = "Target endpoint. For IPv6, please use [] to wrap the address, such as [::1]:80."
-    )]
+    #[structopt(parse(try_from_str = parse_ping_target), help = "Target endpoint. For IPv6, please use [] to wrap the address, such as [::1]:80.")]
     pub target: SocketAddr,
 
     #[structopt(short = "m", long = "mode", default_value = "TCP", help = "Specify protocol to use.")]
     pub protocol: RnpSupportedProtocol,
+}
 
+#[derive(Debug, StructOpt, PartialEq)]
+pub struct RnpCliPingCommonOptions {
     #[structopt(short = "s", long = "src-ip", default_value = "0.0.0.0", help = "Source IP address.")]
     pub source_ip: IpAddr,
 
@@ -211,7 +214,7 @@ fn parse_ping_target(input: &str) -> Result<SocketAddr, String> {
 
 impl RnpCliOptions {
     pub fn prepare_to_use(&mut self) {
-        self.common_options.prepare_to_use();
+        self.ping_common_options.prepare_to_use(&self.common_options.target);
 
         if let Some(latency_buckets) = &mut self.output_options.latency_buckets {
             tracing::debug!("Latency bucket set to 0. Use default one.");
@@ -221,17 +224,17 @@ impl RnpCliOptions {
         }
     }
 
-    pub fn to_ping_runner_config(&self) -> PingRunnerConfig {
-        let mut config = PingRunnerConfig {
+    pub fn to_ping_runner_config(&self) -> RnpPingRunnerConfig {
+        let mut config = RnpPingRunnerConfig {
             worker_config: PingWorkerConfig {
                 protocol: self.common_options.protocol.clone(),
                 target: self.common_options.target,
-                source_ip: self.common_options.source_ip,
-                ping_interval: Duration::from_millis(self.common_options.ping_interval_in_ms.into()),
+                source_ip: self.ping_common_options.source_ip,
+                ping_interval: Duration::from_millis(self.ping_common_options.ping_interval_in_ms.into()),
                 ping_client_config: PingClientConfig {
-                    wait_timeout: Duration::from_millis(self.common_options.wait_timeout_in_ms.into()),
-                    time_to_live: self.common_options.time_to_live,
-                    check_disconnect: self.common_options.check_disconnect,
+                    wait_timeout: Duration::from_millis(self.ping_common_options.wait_timeout_in_ms.into()),
+                    time_to_live: self.ping_common_options.time_to_live,
+                    check_disconnect: self.ping_common_options.check_disconnect,
                     server_name: self.quic_options.server_name.as_ref().and_then(|s| Some(s.to_string())),
                     log_tls_key: self.quic_options.log_tls_key,
                     alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase() != String::from("NONE") {
@@ -243,15 +246,15 @@ impl RnpCliOptions {
                 },
             },
             worker_scheduler_config: PingWorkerSchedulerConfig {
-                source_ports: self.common_options.source_ports.as_ref().unwrap().clone(),
+                source_ports: self.ping_common_options.source_ports.as_ref().unwrap().clone(),
                 ping_count: None,
-                warmup_count: self.common_options.warmup_count,
-                parallel_ping_count: self.common_options.parallel_ping_count,
+                warmup_count: self.ping_common_options.warmup_count,
+                parallel_ping_count: self.ping_common_options.parallel_ping_count,
             },
             result_processor_config: PingResultProcessorConfig {
                 common_config: PingResultProcessorCommonConfig { quiet_level: self.output_options.quiet_level },
-                exit_on_fail: self.common_options.exit_on_fail,
-                exit_failure_reason: if self.common_options.exit_on_fail { Some(Arc::new(Mutex::new(None))) } else { None },
+                exit_on_fail: self.ping_common_options.exit_on_fail,
+                exit_failure_reason: if self.ping_common_options.exit_on_fail { Some(Arc::new(Mutex::new(None))) } else { None },
                 csv_log_path: self.output_options.csv_log_path.clone(),
                 json_log_path: self.output_options.json_log_path.clone(),
                 text_log_path: self.output_options.text_log_path.clone(),
@@ -263,17 +266,17 @@ impl RnpCliOptions {
             extra_ping_result_processors: vec![],
         };
 
-        if !self.common_options.ping_until_stopped {
-            config.worker_scheduler_config.ping_count = Some(self.common_options.ping_count);
+        if !self.ping_common_options.ping_until_stopped {
+            config.worker_scheduler_config.ping_count = Some(self.ping_common_options.ping_count);
         }
 
         return config;
     }
 }
 
-impl RnpCliCommonOptions {
-    pub fn prepare_to_use(&mut self) {
-        if self.target.is_ipv4() != self.source_ip.is_ipv4() {
+impl RnpCliPingCommonOptions {
+    pub fn prepare_to_use(&mut self, target: &SocketAddr) {
+        if target.is_ipv4() != self.source_ip.is_ipv4() {
             match &self.source_ip {
                 IpAddr::V4(source_ip_v4) if *source_ip_v4 == Ipv4Addr::UNSPECIFIED => self.source_ip = IpAddr::V6(Ipv6Addr::UNSPECIFIED),
                 IpAddr::V6(source_ip_v6) if *source_ip_v6 == Ipv6Addr::UNSPECIFIED => self.source_ip = IpAddr::V4(Ipv4Addr::UNSPECIFIED),
@@ -314,8 +317,8 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use rnp::{
-        PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingRunnerConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-        RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_NO_OUTPUT, RNP_QUIET_LEVEL_NO_PING_RESULT,
+        PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
+        RnpPingRunnerConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_NO_OUTPUT, RNP_QUIET_LEVEL_NO_PING_RESULT,
     };
     use std::path::PathBuf;
     use std::time::Duration;
@@ -348,9 +351,8 @@ mod tests {
     fn parsing_default_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                common_options: RnpCliCommonOptions {
-                    target: "10.0.0.1:443".parse().unwrap(),
-                    protocol: RnpSupportedProtocol::TCP,
+                common_options: RnpCliCommonOptions { target: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },
+                ping_common_options: RnpCliPingCommonOptions {
                     source_ip: "0.0.0.0".parse().unwrap(),
                     source_ports: None,
                     ping_count: 4,
@@ -387,9 +389,8 @@ mod tests {
     fn parsing_short_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                common_options: RnpCliCommonOptions {
-                    target: "10.0.0.1:443".parse().unwrap(),
-                    protocol: RnpSupportedProtocol::TCP,
+                common_options: RnpCliCommonOptions { target: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },
+                ping_common_options: RnpCliPingCommonOptions {
                     source_ip: "10.0.0.2".parse().unwrap(),
                     source_ports: Some(PortRangeList { ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)] }),
                     ping_count: 10,
@@ -456,9 +457,8 @@ mod tests {
     fn parsing_long_options_should_work() {
         assert_eq!(
             RnpCliOptions {
-                common_options: RnpCliCommonOptions {
-                    target: "10.0.0.1:443".parse().unwrap(),
-                    protocol: RnpSupportedProtocol::QUIC,
+                common_options: RnpCliCommonOptions { target: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::QUIC },
+                ping_common_options: RnpCliPingCommonOptions {
                     source_ip: "10.0.0.2".parse().unwrap(),
                     source_ports: Some(PortRangeList { ranges: vec![(1024..=2048), (3096..=3096), (3097..=3097)] }),
                     ping_count: 10,
@@ -534,7 +534,7 @@ mod tests {
     #[test]
     fn new_from_cli_options_should_work() {
         assert_eq!(
-            PingRunnerConfig {
+            RnpPingRunnerConfig {
                 worker_config: PingWorkerConfig {
                     protocol: RnpSupportedProtocol::TCP,
                     target: "10.0.0.1:443".parse().unwrap(),
@@ -571,9 +571,8 @@ mod tests {
                 extra_ping_result_processors: vec![],
             },
             RnpCliOptions {
-                common_options: RnpCliCommonOptions {
-                    target: "10.0.0.1:443".parse().unwrap(),
-                    protocol: RnpSupportedProtocol::TCP,
+                common_options: RnpCliCommonOptions { target: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },
+                ping_common_options: RnpCliPingCommonOptions {
                     ping_count: 4,
                     ping_until_stopped: false,
                     warmup_count: 1,
@@ -606,7 +605,7 @@ mod tests {
         );
 
         assert_eq!(
-            PingRunnerConfig {
+            RnpPingRunnerConfig {
                 worker_config: PingWorkerConfig {
                     protocol: RnpSupportedProtocol::QUIC,
                     target: "10.0.0.1:443".parse().unwrap(),
@@ -643,9 +642,8 @@ mod tests {
                 extra_ping_result_processors: vec![],
             },
             RnpCliOptions {
-                common_options: RnpCliCommonOptions {
-                    target: "10.0.0.1:443".parse().unwrap(),
-                    protocol: RnpSupportedProtocol::QUIC,
+                common_options: RnpCliCommonOptions { target: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::QUIC },
+                ping_common_options: RnpCliPingCommonOptions {
                     ping_count: 4,
                     ping_until_stopped: true,
                     warmup_count: 3,
@@ -683,36 +681,37 @@ mod tests {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
         opts.prepare_to_use();
 
-        assert!(opts.common_options.source_ports.is_some());
-        assert_eq!(1, opts.common_options.source_ports.as_ref().unwrap().ranges.len());
+        assert!(opts.ping_common_options.source_ports.is_some());
+        assert_eq!(1, opts.ping_common_options.source_ports.as_ref().unwrap().ranges.len());
         assert_eq!(
             2000,
-            opts.common_options.source_ports.as_ref().unwrap().ranges[0].end() - opts.common_options.source_ports.as_ref().unwrap().ranges[0].start()
+            opts.ping_common_options.source_ports.as_ref().unwrap().ranges[0].end()
+                - opts.ping_common_options.source_ports.as_ref().unwrap().ranges[0].start()
         );
     }
 
     #[test]
     fn invalid_options_for_ipv4_should_be_fixed() {
         let mut opts = RnpCliOptions::from_iter(&["rnp.exe", "10.0.0.1:443"]);
-        opts.common_options.source_ports = None;
-        opts.common_options.ping_count = 0;
-        opts.common_options.parallel_ping_count = 0;
+        opts.ping_common_options.source_ports = None;
+        opts.ping_common_options.ping_count = 0;
+        opts.ping_common_options.parallel_ping_count = 0;
         opts.output_options.latency_buckets = Some(vec![0.0]);
         opts.prepare_to_use();
 
-        assert_eq!(1, opts.common_options.ping_count);
-        assert_eq!(1, opts.common_options.parallel_ping_count);
+        assert_eq!(1, opts.ping_common_options.ping_count);
+        assert_eq!(1, opts.ping_common_options.parallel_ping_count);
         assert_eq!(Some(vec![0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 500.0]), opts.output_options.latency_buckets);
 
-        opts.common_options.source_ports = Some(PortRangeList { ranges: vec![(1024..=1047)] });
-        opts.common_options.parallel_ping_count = 100;
+        opts.ping_common_options.source_ports = Some(PortRangeList { ranges: vec![(1024..=1047)] });
+        opts.ping_common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
-        assert_eq!(24, opts.common_options.parallel_ping_count);
+        assert_eq!(24, opts.ping_common_options.parallel_ping_count);
 
-        opts.common_options.source_ports = Some(PortRangeList { ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)] });
-        opts.common_options.parallel_ping_count = 100;
+        opts.ping_common_options.source_ports = Some(PortRangeList { ranges: vec![(1024..=1024), (1025..=1025), (1026..=1026)] });
+        opts.ping_common_options.parallel_ping_count = 100;
         opts.prepare_to_use();
-        assert_eq!(3, opts.common_options.parallel_ping_count);
+        assert_eq!(3, opts.ping_common_options.parallel_ping_count);
     }
 
     #[test]
@@ -721,7 +720,7 @@ mod tests {
         opts.prepare_to_use();
 
         // If source ip is not set (unspecified/any), we update the IP accordingly to match our target.
-        assert!(opts.common_options.source_ip.is_ipv6());
-        assert_eq!(Ipv6Addr::UNSPECIFIED, opts.common_options.source_ip);
+        assert!(opts.ping_common_options.source_ip.is_ipv6());
+        assert_eq!(Ipv6Addr::UNSPECIFIED, opts.ping_common_options.source_ip);
     }
 }

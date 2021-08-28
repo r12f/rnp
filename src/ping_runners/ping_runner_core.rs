@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task::JoinHandle};
 
 pub struct PingRunnerCore {
-    config: PingRunnerConfig,
+    config: RnpPingRunnerConfig,
 
     stop_event: Arc<ManualResetEvent>,
     worker_join_handles: Vec<JoinHandle<()>>,
@@ -33,7 +33,7 @@ impl PingRunnerCore {
     /// use futures_intrusive::sync::ManualResetEvent;
     /// use tokio::runtime::Runtime;
     ///
-    /// let config = PingRunnerConfig {
+    /// let config = RnpPingRunnerConfig {
     ///     worker_config: PingWorkerConfig {
     ///         protocol: RnpSupportedProtocol::TCP,
     ///         target: "10.0.0.1:443".parse().unwrap(),
@@ -82,7 +82,7 @@ impl PingRunnerCore {
     ///
     /// ```
     #[tracing::instrument(name = "Start running Rnp core", level = "debug", skip(stop_event))]
-    pub fn new(mut config: PingRunnerConfig, stop_event: Arc<ManualResetEvent>) -> PingRunnerCore {
+    pub fn new(mut config: RnpPingRunnerConfig, stop_event: Arc<ManualResetEvent>) -> PingRunnerCore {
         // Move all extra ping result processors into another Vec for initializing result processing worker.
         // Otherwise RnpCoreConfig will be partially moved and results in compile error.
         let mut extra_ping_result_processors = Vec::new();
