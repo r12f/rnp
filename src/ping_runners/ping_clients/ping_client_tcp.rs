@@ -2,11 +2,10 @@ use crate::*;
 use async_trait::async_trait;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
-use std::mem::MaybeUninit;
-use std::net::{Shutdown, SocketAddr};
+use std::net::SocketAddr;
 use std::time::{Duration, Instant};
-use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt, Interest};
-use tokio::net::{TcpSocket, TcpStream};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, Interest};
+use tokio::net::TcpStream;
 
 pub struct PingClientTcp {
     config: PingClientConfig,
