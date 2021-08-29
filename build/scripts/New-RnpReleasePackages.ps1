@@ -95,6 +95,8 @@ function New-RnpMultiArchPackageWithFilePath
         "ZipX64" = (Get-FileHash "$githubReleasePackagesFolder\rnp.*.windows.x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant();
         "BinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
         "BinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ServerBinX86" = (Get-FileHash ".\Build.Build.windowsx86\bin\rnp_server.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
+        "ServerBinX64" = (Get-FileHash ".\Build.Build.windowsx64\bin\rnp_server.exe" -Algorithm SHA256).Hash.ToLowerInvariant();
         "SourceTar" = (Get-FileHash "$githubReleasePackagesFolder\rnp.source.*.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant();
     }
 
@@ -128,7 +130,7 @@ function New-RnpChocolateyPackage($fileHashs) {
 
 function Expand-RnpPackageTemplateFileWithFileHash($templateFile, $targetFile, $fileHashs) {
     $targetFileContent = Get-Content $templateFile
-    $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64).Replace("{source_package_tar_hash}", $fileHashs.SourceTar);
+    $targetFileContent = $targetFileContent.Replace("{rnp_bin_hash_x86}", $fileHashs.BinX86).Replace("{rnp_bin_hash_x64}", $fileHashs.BinX64).Replace("{rnp_server_bin_hash_x86}", $fileHashs.ServerBinX86).Replace("{rnp_server_bin_hash_x64}", $fileHashs.ServerBinX64).Replace("{package_zip_hash_x86}", $fileHashs.ZipX86).Replace("{package_zip_hash_x64}", $fileHashs.ZipX64).Replace("{source_package_tar_hash}", $fileHashs.SourceTar);
     $utf8NoBom = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($targetFile, $targetFileContent, $utf8NoBom)
 }

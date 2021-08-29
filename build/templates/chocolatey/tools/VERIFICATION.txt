@@ -6,6 +6,10 @@ To validate the checksum, we can us Get-FileHash command in powershell.
 
     Get-FileHash .\Path\To\rnp -Algorithm SHA256
 
-And the known filehashs for version {version} are:
-- x86: {rnp_bin_hash_x86}
-- x64: {rnp_bin_hash_x64}
+And the known file hash for version {version} are:
+- rnp:
+  - x86: {rnp_bin_hash_x86}
+  - x64: {rnp_bin_hash_x64}
+- rnp_server:
+  - x86: {rnp_server_bin_hash_x86}
+  - x64: {rnp_server_bin_hash_x64}
