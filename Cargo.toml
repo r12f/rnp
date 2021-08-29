@@ -20,7 +20,7 @@ LegalCopyright = "Copyright (c) 2021"
 log = "0.4"
 tracing = { version = "0.1", features = ["log"] }
 env_logger = "0.8"
-structopt = "0.3"
+structopt = { version = "0.3", features = ["color", "suggestions", "wrap_help"] }
 ctrlc = "3.1.9"
 socket2 = "0.4.0"
 futures-intrusive = "0.4"
