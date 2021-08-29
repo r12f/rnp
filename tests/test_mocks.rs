@@ -113,14 +113,6 @@ impl PingResultProcessor for MockPingResultProcessor {
             return;
         }
 
-        if let Some(warning) = ping_result.warning() {
-            match warning {
-                PingClientWarning::AppHandshakeFailed(_) => results.push(MockPingClientResult::AppHandshakeFailed(ping_result.round_trip_time())),
-                PingClientWarning::DisconnectFailed(_) => results.push(MockPingClientResult::DisconnectFailed(ping_result.round_trip_time())),
-            }
-            return;
-        }
-
         if let Some(error) = ping_result.error() {
             match error {
                 PingClientError::PreparationFailed(_) => results.push(MockPingClientResult::PreparationFailed),
@@ -129,9 +121,21 @@ impl PingResultProcessor for MockPingResultProcessor {
             return;
         }
 
-        if ping_result.is_succeeded() {
-            results.push(MockPingClientResult::Success(ping_result.round_trip_time()));
+        assert!(ping_result.is_succeeded());
+
+        if let Some(warning) = ping_result.warning() {
+            match warning {
+                PingClientWarning::AppHandshakeFailed(_) => results.push(MockPingClientResult::AppHandshakeFailed(ping_result.round_trip_time())),
+                PingClientWarning::DisconnectFailed(_) => results.push(MockPingClientResult::DisconnectFailed(ping_result.round_trip_time())),
+            }
             return;
         }
+
+        results.push(MockPingClientResult::Success(ping_result.round_trip_time()));
+    }
+
+    fn rundown(&mut self) {
+        let results = self.results.lock().unwrap();
+        println!("Ping runner shutting down. {} result received!", results.len());
     }
 }

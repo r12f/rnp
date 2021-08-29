@@ -10,7 +10,7 @@ pub struct PingRunnerCore {
     worker_join_handles: Vec<JoinHandle<()>>,
     ping_result_processor_stop_event: Arc<ManualResetEvent>,
     ping_result_processor_join_handle: Option<JoinHandle<()>>,
-    result_sender: mpsc::Sender<PingResult>,
+    result_sender: mpsc::UnboundedSender<PingResult>,
 }
 
 impl PingRunnerCore {
@@ -120,13 +120,8 @@ impl PingRunnerCore {
         parallel_ping_count: u32,
         stop_event: Arc<ManualResetEvent>,
         ping_stop_event: Arc<ManualResetEvent>,
-    ) -> (mpsc::Sender<PingResult>, JoinHandle<()>) {
-        let mut ping_result_channel_size = parallel_ping_count * 2;
-        if ping_result_channel_size < 128 {
-            ping_result_channel_size = 128;
-        }
-
-        let (ping_result_sender, ping_result_receiver) = mpsc::channel(ping_result_channel_size as usize);
+    ) -> (mpsc::UnboundedSender<PingResult>, JoinHandle<()>) {
+        let (ping_result_sender, ping_result_receiver) = mpsc::unbounded_channel();
         let ping_result_processor_join_handle = PingResultProcessingWorker::run(
             Arc::new(result_processor_config),
             extra_ping_result_processors,
@@ -238,15 +233,16 @@ impl PingRunnerCore {
             join_handle.await.unwrap();
         }
         self.worker_join_handles.clear();
-        tracing::debug!("All workers are stopped.");
 
         // If all the ping jobs are finished, the workers will stop automatically.
         // In this case, the stop events won't be set, and we set it here to be safe.
         if !self.stop_event.is_set() {
+            tracing::debug!("All ping jobs are completed, hence all workers are stopped. Signal result processor to exit.");
             self.stop_event.set();
+        } else {
+            tracing::debug!("All workers are stopped. Signal result processor to exit.");
         }
 
-        tracing::debug!("All ping jobs are completed and all workers are stopped. Signal result processor to exit.");
         self.ping_result_processor_stop_event.set();
 
         tracing::debug!("Waiting for result processor to be stopped.");
