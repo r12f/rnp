@@ -1,10 +1,12 @@
 use crate::stub_servers::stub_server_tcp::StubServerTcp;
 use crate::*;
+use contracts::requires;
 use futures_intrusive::sync::ManualResetEvent;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
+#[requires(config.report_interval.as_millis() > 0)]
 #[tracing::instrument(name = "Start running stub server", level = "debug", skip(stop_event))]
 pub fn run(
     config: &RnpStubServerConfig,

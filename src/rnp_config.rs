@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::{path::PathBuf, time::Duration};
 
 pub const RNP_NAME: &str = "rnp";
+pub const RNP_SERVER_NAME: &str = "rnp-server";
 pub const RNP_AUTHOR: &str = "r12f (r12f.com, github.com/r12f)";
 pub const RNP_ABOUT: &str = "A simple layer 4 ping tool for cloud.";
 
