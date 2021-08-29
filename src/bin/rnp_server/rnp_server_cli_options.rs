@@ -82,7 +82,7 @@ mod tests {
                 sleep_before_write: None,
                 write_chunk_size: 0,
                 write_count_limit: None,
-                report_interval: Default::default()
+                report_interval: Duration::from_millis(1000),
             },
             RnpServerCliOptions {
                 common_options: RnpServerCliCommonOptions { server_address: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },

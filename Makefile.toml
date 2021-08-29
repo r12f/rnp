@@ -61,6 +61,7 @@ GCC_XCOMPILER_ID.mapping.aarch64-unknown-linux-gnu = "aarch64-linux-gnu"
 
 # File names and directories
 RNP_FILE_NAME = { source = "${BUILD_OS}", default_value = "rnp", mapping = { "windows" = "rnp.exe" } }
+RNP_SERVER_FILE_NAME = { source = "${BUILD_OS}", default_value = "rnp_server", mapping = { "windows" = "rnp_server.exe" } }
 BUILD_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${BUILD_TARGET}/${BUILD_CONFIG}"
 PUBLISH_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/publish/${BUILD_TARGET}"
 
@@ -245,32 +246,45 @@ if [[ "${GCC_XCOMPILER_ID}" != "" ]]; then
     GCC_PREFIX="${GCC_XCOMPILER_ID}-";
 fi
 
-echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
-rm -f ${BUILD_DIR}/rnp.debug
+declare -a BIN_FILES=("rnp", "rnp_server")
+for BIN_FILE in "${BIN_FILES[@]}"; do
+    echo "Removing existing symbol file: ${BUILD_DIR}/${BIN_FILE}.debug"
+    rm -f ${BUILD_DIR}/${BIN_FILE}.debug
 
-echo "Generating new symbol file (with GCC prefix \"${GCC_PREFIX}\"): ${BUILD_DIR}/rnp.debug"
-${GCC_PREFIX}objcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
-${GCC_PREFIX}strip --strip-debug --strip-unneeded -p "${BUILD_DIR}/rnp"
-${GCC_PREFIX}objcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
+    echo "Generating new symbol file (with GCC prefix \"${GCC_PREFIX}\"): ${BUILD_DIR}/${BIN_FILE}.debug"
+    ${GCC_PREFIX}objcopy --only-keep-debug "${BUILD_DIR}/${BIN_FILE}" "${BUILD_DIR}/${BIN_FILE}.debug"
+    ${GCC_PREFIX}strip --strip-debug --strip-unneeded -p "${BUILD_DIR}/${BIN_FILE}"
+    ${GCC_PREFIX}objcopy --add-gnu-debuglink="${BUILD_DIR}/${BIN_FILE}.debug" "${BUILD_DIR}/${BIN_FILE}"
+done
 '''
 
 [tasks.make-symbol-mac]
 script = '''
-echo "Removing existing symbol file: ${BUILD_DIR}/rnp.debug"
-rm -f ${BUILD_DIR}/rnp.debug
+declare -a BIN_FILES=("rnp", "rnp_server")
+for BIN_FILE in "${BIN_FILES[@]}"; do
+    echo "Removing existing symbol file: ${BUILD_DIR}/${BIN_FILE}.debug"
+    rm -f ${BUILD_DIR}/${BIN_FILE}.debug
 
-echo "Generating new symbol file: ${BUILD_DIR}/rnp.debug"
-/usr/local/opt/binutils/bin/gobjcopy --only-keep-debug "${BUILD_DIR}/rnp" "${BUILD_DIR}/rnp.debug"
-strip -S "${BUILD_DIR}/rnp"
-/usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink="${BUILD_DIR}/rnp.debug" "${BUILD_DIR}/rnp"
+    echo "Generating new symbol file: ${BUILD_DIR}/${BIN_FILE}.debug"
+    /usr/local/opt/binutils/bin/gobjcopy --only-keep-debug "${BUILD_DIR}/${BIN_FILE}" "${BUILD_DIR}/${BIN_FILE}.debug"
+    strip -S "${BUILD_DIR}/${BIN_FILE}"
+    /usr/local/opt/binutils/bin/gobjcopy --add-gnu-debuglink="${BUILD_DIR}/${BIN_FILE}.debug" "${BUILD_DIR}/${BIN_FILE}"
+done
 '''
 
 # Sign
 [tasks.sign-binary]
 description = "Run AzureSignTool to sign the binaries."
 condition = { platforms = ["windows"], env_set = [ "RNP_SIGNING_URL" ] }
-command = "AzureSignTool"
-args = ["sign", "-du", "${RNP_SIGNING_URL}", "-kvu", "${RNP_SIGNING_VAULT_URL}", "-kvi", "${RNP_SIGNING_CLIENT_ID}", "-kvs", "${RNP_SIGNING_CLIENT_SECRET}", "-kvc", "${RNP_SIGNING_CERT_NAME}", "-v", "${BUILD_DIR}/rnp.exe"]
+script_runner = "@duckscript"
+script = '''
+BIN_FILES = array "rnp.exe" "rnp_server.exe"
+for BIN_FILE in ${BIN_FILES}
+    BIN_FILE_PATH = set "${BUILD_DIR}/${BIN_FILE}"
+    echo "Sign binary: ${BIN_FILE_PATH}"
+    exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${BIN_FILE_PATH}"
+end
+'''
 
 ##############################################
 # Pack packages
@@ -310,6 +324,7 @@ mkdir ${OUT_DIR}
 
 echo "Copying binaries from build output: ${BUILD_DIR}"
 cp ${BUILD_DIR}/${RNP_FILE_NAME} ${OUT_DIR}/${RNP_FILE_NAME}
+cp ${BUILD_DIR}/${RNP_SERVER_FILE_NAME} ${OUT_DIR}/${RNP_SERVER_FILE_NAME}
 
 echo "Copying key documents from source code"
 cp README.md ${OUT_DIR}/README.md
@@ -328,12 +343,15 @@ end
 echo "Creating new output directory: ${OUT_DIR}"
 mkdir ${OUT_DIR}
 
-if is_path_exists ${BUILD_DIR}/rnp.pdb
-    cp ${BUILD_DIR}/rnp.pdb ${OUT_DIR}/rnp.pdb
-end
+BIN_FILES = array "rnp" "rnp_server"
+for BIN_FILE in ${BIN_FILES}
+    if is_path_exists ${BUILD_DIR}/${BIN_FILE}.pdb
+        cp ${BUILD_DIR}/${BIN_FILE}.pdb ${OUT_DIR}/${BIN_FILE}.pdb
+    end
 
-if is_path_exists ${BUILD_DIR}/rnp.debug
-    cp ${BUILD_DIR}/rnp.debug ${OUT_DIR}/rnp.debug
+    if is_path_exists ${BUILD_DIR}/${BIN_FILE}.debug
+        cp ${BUILD_DIR}/${BIN_FILE}.debug ${OUT_DIR}/${BIN_FILE}.debug
+    end
 end
 '''
 
