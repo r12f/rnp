@@ -538,6 +538,7 @@ mkdir ${INT_DEB_BIN_DIR}
 
 echo "Copy binaries to deb package: ${INT_DEB_BIN_DIR}"
 cp ${PUBLISH_DIR}/bin/rnp ${INT_DEB_BIN_DIR}/rnp
+cp ${PUBLISH_DIR}/bin/rnp_server ${INT_DEB_BIN_DIR}/rnp_server
 
 INT_DEB_CONTROL_DIR = set "${INT_DIR}/${DEB_PACKAGE_NAME}/DEBIAN"
 echo "Creating intermediate directory for debain control: ${INT_DEB_CONTROL_DIR}"
