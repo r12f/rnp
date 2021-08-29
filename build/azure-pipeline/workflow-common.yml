@@ -159,6 +159,7 @@ stages:
             condition: and(succeeded(), eq(variables['is_cross_compile'], false))
             env:
               RUST_LOG: rnp=debug
+              RUST_BACKTRACE: full
 
           #
           # Pack
