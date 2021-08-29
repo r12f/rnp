@@ -5,6 +5,8 @@ use std::io;
 use std::mem::MaybeUninit;
 use std::net::{Shutdown, SocketAddr};
 use std::time::{Duration, Instant};
+use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt, Interest};
+use tokio::net::{TcpSocket, TcpStream};
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -37,6 +39,8 @@ impl PingClientTcp {
                 Err(e) => Some(PingClientWarning::DisconnectFailed(Box::new(e))),
                 Ok(_) => None,
             }
+        } else {
+            drop(socket);
         }
 
         // If getting local address failed, we ignore it.
@@ -51,7 +55,7 @@ impl PingClientTcp {
     fn prepare_socket_for_ping(&self, source: &SocketAddr) -> io::Result<Socket> {
         let socket_domain = if source.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
         let socket = Socket::new(socket_domain, Type::STREAM, None)?;
-        socket.bind(&SockAddr::from(source.clone()))?;
+
         socket.set_read_timeout(Some(self.config.wait_timeout))?;
         if !self.config.check_disconnect {
             socket.set_linger(Some(Duration::from_secs(0)))?;
@@ -59,6 +63,8 @@ impl PingClientTcp {
         if let Some(ttl) = self.config.time_to_live {
             socket.set_ttl(ttl)?;
         }
+
+        socket.bind(&SockAddr::from(source.clone()))?;
 
         return Ok(socket);
     }
@@ -70,13 +76,30 @@ impl PingClientTcp {
             tokio::time::sleep(self.config.wait_before_disconnect).await;
         }
 
+        // Convert into TcpStream in tokio, so it is easier to work with it.
+        let mut connection = TcpStream::from_std(socket.into())?;
+        let mut read_buffer = vec![0 as u8; 128];
+
+        // Before disconnect, we need to check if the connection is still alive or not.
+        // To confirm so, we first try to read until the socket is not readable or returns 0.
+        // If read returns 0, it means the remote side has shutdown the writes, hence the disconnect is not initiated by us,
+        // and in this case, we should throw a warning as connection aborted.
+        tracing::debug!("Checking if connection is already closed; target = {}", target);
+
+        let ready = connection.ready(Interest::READABLE).await?;
+        tracing::debug!("Connection ready; target = {}, ready_state = {:?}", target, ready);
+
+        if ready.is_read_closed() {
+            return Err(io::Error::new(io::ErrorKind::ConnectionAborted, "Connection shutdown already initiated by remote side."));
+        }
+
+        // Start shutdown
         tracing::debug!("Shutdown connection write; target = {}", target);
-        socket.shutdown(Shutdown::Write)?;
+        connection.shutdown().await?;
 
         // Try to read until recv returns nothing, which indicates shutdown is succeeded.
         tracing::debug!("Wait until shutdown completes; target = {}", target);
-        let mut buf: [MaybeUninit<u8>; 128] = unsafe { MaybeUninit::uninit().assume_init() };
-        while socket.recv(&mut buf)? > 0 {
+        while connection.read(&mut read_buffer[..]).await? > 0 {
             continue;
         }
 
