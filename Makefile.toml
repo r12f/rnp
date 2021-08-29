@@ -626,12 +626,12 @@ run_task = [
 [tasks.test-dev]
 description = "Run all tests with dev profile."
 command = "cargo"
-args = ["test", "--target", "${BUILD_TARGET}"]
+args = ["test", "--target", "${BUILD_TARGET}", "--", "--nocapture"]
 
 [tasks.test-release]
 description = "Run all tests with release profile."
 command = "cargo"
-args = ["test", "--release", "--target", "${BUILD_TARGET}"]
+args = ["test", "--release", "--target", "${BUILD_TARGET}", "--", "--nocapture"]
 
 ##############################################
 # Test coverage

@@ -157,6 +157,8 @@ stages:
           - bash: cargo make test --profile production -e BUILD_TARGET=$(TARGET)
             displayName: Cargo make test
             condition: and(succeeded(), eq(variables['is_cross_compile'], false))
+            env:
+              RUST_LOG: rnp=debug
 
           #
           # Pack
