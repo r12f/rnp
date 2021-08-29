@@ -246,7 +246,7 @@ if [[ "${GCC_XCOMPILER_ID}" != "" ]]; then
     GCC_PREFIX="${GCC_XCOMPILER_ID}-";
 fi
 
-declare -a BIN_FILES=("rnp", "rnp_server")
+declare -a BIN_FILES=("rnp" "rnp_server")
 for BIN_FILE in "${BIN_FILES[@]}"; do
     echo "Removing existing symbol file: ${BUILD_DIR}/${BIN_FILE}.debug"
     rm -f ${BUILD_DIR}/${BIN_FILE}.debug
@@ -260,7 +260,7 @@ done
 
 [tasks.make-symbol-mac]
 script = '''
-declare -a BIN_FILES=("rnp", "rnp_server")
+declare -a BIN_FILES=("rnp" "rnp_server")
 for BIN_FILE in "${BIN_FILES[@]}"; do
     echo "Removing existing symbol file: ${BUILD_DIR}/${BIN_FILE}.debug"
     rm -f ${BUILD_DIR}/${BIN_FILE}.debug
