@@ -1,12 +1,5 @@
-use rand::Rng;
-use rnp::{
-    parse_ping_target, PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-    PortRangeList, RnpPingRunnerConfig, RnpStubServerConfig, RnpSupportedProtocol,
-};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use rnp::{parse_ping_target, RnpStubServerConfig, RnpSupportedProtocol};
+use std::net::SocketAddr;
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -37,7 +30,7 @@ impl RnpServerCliOptions {
             sleep_before_write: None,
             write_chunk_size: 0,
             write_count_limit: None,
-            report_interval: Duration::ZERO,
+            report_interval: Duration::from_millis(1000),
         };
     }
 }
@@ -46,12 +39,7 @@ impl RnpServerCliOptions {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use rnp::{
-        PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-        RnpPingRunnerConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_NO_OUTPUT, RNP_QUIET_LEVEL_NO_PING_RESULT,
-    };
-    use std::path::PathBuf;
-    use std::time::Duration;
+    use rnp::{RnpStubServerConfig, RnpSupportedProtocol};
     use structopt::StructOpt;
 
     #[test]
@@ -60,7 +48,7 @@ mod tests {
             RnpServerCliOptions {
                 common_options: RnpServerCliCommonOptions { server_address: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },
             },
-            RnpCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443"])
+            RnpServerCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443"])
         );
     }
 
@@ -70,7 +58,7 @@ mod tests {
             RnpServerCliOptions {
                 common_options: RnpServerCliCommonOptions { server_address: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },
             },
-            RnpCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443", "-m", "tcp",])
+            RnpServerCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443", "-m", "tcp",])
         );
     }
 
@@ -80,7 +68,7 @@ mod tests {
             RnpServerCliOptions {
                 common_options: RnpServerCliCommonOptions { server_address: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::QUIC },
             },
-            RnpCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443", "--mode", "quic",])
+            RnpServerCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443", "--mode", "quic",])
         );
     }
 
@@ -99,7 +87,7 @@ mod tests {
             RnpServerCliOptions {
                 common_options: RnpServerCliCommonOptions { server_address: "10.0.0.1:443".parse().unwrap(), protocol: RnpSupportedProtocol::TCP },
             }
-            .to_ping_runner_config()
+            .to_stub_server_config()
         );
     }
 }

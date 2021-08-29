@@ -5,7 +5,7 @@ use rnp::{
 };
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
-use std::str::FromStr;
+
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use structopt::StructOpt;

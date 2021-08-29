@@ -97,13 +97,6 @@ pub fn parse_ping_target(input: &str) -> Result<SocketAddr, String> {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use rnp::{
-        PingClientConfig, PingResultProcessorCommonConfig, PingResultProcessorConfig, PingWorkerConfig, PingWorkerSchedulerConfig,
-        RnpPingRunnerConfig, RnpSupportedProtocol, RNP_QUIET_LEVEL_NONE, RNP_QUIET_LEVEL_NO_OUTPUT, RNP_QUIET_LEVEL_NO_PING_RESULT,
-    };
-    use std::path::PathBuf;
-    use std::time::Duration;
-    use structopt::StructOpt;
 
     #[test]
     fn parsing_ping_target_should_work() {

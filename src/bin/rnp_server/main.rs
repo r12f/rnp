@@ -1,6 +1,7 @@
 use futures_intrusive::sync::ManualResetEvent;
-use rnp::{PingRunnerCore, RNP_ABOUT, RNP_AUTHOR, RNP_NAME, RNP_QUIET_LEVEL_NO_OUTPUT, RNP_SERVER_NAME};
+use rnp::{RNP_ABOUT, RNP_AUTHOR, RNP_SERVER_NAME};
 use rnp_server_cli_options::RnpServerCliOptions;
+use std::error::Error;
 use std::sync::Arc;
 use structopt::StructOpt;
 use tokio::runtime::Runtime;
@@ -17,7 +18,7 @@ fn main() {
     let config = opts.to_stub_server_config();
 
     let rt = Runtime::new().unwrap();
-    rt.block_on(async move {
+    let result: Result<(), Box<dyn Error + Send + Sync>> = rt.block_on(async move {
         let stop_event = Arc::new(ManualResetEvent::new(false));
         let server_started_event = Arc::new(ManualResetEvent::new(false));
 
@@ -28,6 +29,14 @@ fn main() {
         })
         .expect("Error setting Ctrl-C handler");
 
-        rnp::stub_server_factory::run(&config, stop_event, server_started_event).await;
+        rnp::stub_server_factory::run(&config, stop_event, server_started_event).await??;
+
+        return Ok(());
     });
+
+    // In order to have better control over the console output, we don't return the result from main function directly.
+    if let Err(e) = result {
+        println!("Stub server failed to run: Error = {}", e);
+        std::process::exit(1);
+    }
 }
