@@ -7,7 +7,7 @@ use tokio::{sync::mpsc, task, task::JoinHandle};
 pub struct PingResultProcessingWorker {
     stop_event: Arc<ManualResetEvent>,
 
-    receiver: mpsc::Receiver<PingResult>,
+    receiver: mpsc::UnboundedReceiver<PingResult>,
     processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
 }
 
@@ -18,7 +18,7 @@ impl PingResultProcessingWorker {
         extra_ping_result_processors: Vec<Box<dyn PingResultProcessor + Send + Sync>>,
         stop_event: Arc<ManualResetEvent>,
         ping_stop_event: Arc<ManualResetEvent>,
-        receiver: mpsc::Receiver<PingResult>,
+        receiver: mpsc::UnboundedReceiver<PingResult>,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
             let processors = ping_result_processor_factory::new(&config, extra_ping_result_processors, ping_stop_event);
@@ -52,7 +52,8 @@ impl PingResultProcessingWorker {
                 }
 
                 _ = self.stop_event.wait() => {
-                    tracing::debug!("Stop event received, stopping ping result processing worker");
+                    tracing::debug!("Stop event received, stopping receiver to avoid future message and drain till completed.");
+                    self.receiver.close();
                     break;
                 }
 
@@ -62,6 +63,12 @@ impl PingResultProcessingWorker {
                 }
             }
         }
+
+        while let Some(ping_result) = self.receiver.recv().await {
+            self.process_ping_result(&ping_result);
+        }
+
+        tracing::debug!("All pending ping results are processed, exiting ping result processing worker loop.");
     }
 
     #[tracing::instrument(name = "Processing ping result", level = "debug", skip(self), fields(processor_count = %self.processors.len()))]

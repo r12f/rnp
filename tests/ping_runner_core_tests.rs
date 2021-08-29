@@ -1,3 +1,4 @@
+mod test_common;
 mod test_mocks;
 
 use futures_intrusive::sync::ManualResetEvent;
@@ -10,6 +11,8 @@ use tokio::runtime::Runtime;
 
 #[test]
 fn ping_with_rnp_core_should_work() {
+    test_common::initialize();
+
     let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
     let config = create_mock_rnp_config(actual_ping_results.clone(), 6, 3, 1);
     let rt = Runtime::new().unwrap();
@@ -40,10 +43,12 @@ fn ping_with_rnp_core_should_work() {
 
 #[test]
 fn ping_with_rnp_core_stress_should_work() {
+    test_common::initialize();
+
     let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
     let config = create_mock_rnp_config(actual_ping_results.clone(), 1000, 0, 10);
     let rt = Runtime::new().unwrap();
-    rt.block_on(async {
+    rt.block_on(async move {
         let stop_event = Arc::new(ManualResetEvent::new(false));
         let mut rp = PingRunnerCore::new(config, stop_event);
         rp.run_warmup_pings().await;
@@ -57,6 +62,8 @@ fn ping_with_rnp_core_stress_should_work() {
 
 #[test]
 fn ping_with_rnp_core_stop_event_should_work() {
+    test_common::initialize();
+
     let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
     let config = create_mock_rnp_config(actual_ping_results.clone(), 1000, 0, 10);
     let rt = Runtime::new().unwrap();
@@ -76,6 +83,8 @@ fn ping_with_rnp_core_stop_event_should_work() {
 
 #[test]
 fn ping_with_rnp_core_exit_on_fail_should_work() {
+    test_common::initialize();
+
     let actual_ping_results = Arc::new(Mutex::new(Vec::<MockPingClientResult>::new()));
     let exit_reason = Arc::new(Mutex::new(None));
 

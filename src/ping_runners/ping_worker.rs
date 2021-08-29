@@ -12,7 +12,7 @@ pub struct PingWorker {
     stop_event: Arc<ManualResetEvent>,
     port_picker: Arc<Mutex<PingPortPicker>>,
     ping_client: Box<dyn PingClient + Send + Sync>,
-    result_sender: mpsc::Sender<PingResult>,
+    result_sender: mpsc::UnboundedSender<PingResult>,
     is_warmup_worker: bool,
 }
 
@@ -28,7 +28,7 @@ impl PingWorker {
         external_ping_client_factory: Option<PingClientFactory>,
         port_picker: Arc<Mutex<PingPortPicker>>,
         stop_event: Arc<ManualResetEvent>,
-        result_sender: mpsc::Sender<PingResult>,
+        result_sender: mpsc::UnboundedSender<PingResult>,
         is_warmup_worker: bool,
     ) -> JoinHandle<()> {
         let join_handle = task::spawn(async move {
@@ -103,7 +103,7 @@ impl PingWorker {
             None,
         );
 
-        self.result_sender.send(result).await.unwrap();
+        self.result_sender.send(result).unwrap();
     }
 
     #[tracing::instrument(name = "Processing ping client single ping error", level = "debug", skip(self), fields(worker_id = %self.id))]
@@ -124,7 +124,7 @@ impl PingWorker {
             Some(error),
         );
 
-        self.result_sender.send(result).await.unwrap();
+        self.result_sender.send(result).unwrap();
     }
 
     #[tracing::instrument(name = "Waiting for next schedule", level = "debug", skip(self), fields(worker_id = %self.id))]
