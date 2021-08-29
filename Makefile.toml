@@ -484,7 +484,7 @@ echo "Copying bin output as intermediate directory: ${INT_DIR}"
 cp ${PUBLISH_DIR}/bin ${INT_DIR}
 cp ./assets ${INT_DIR}
 eval_build_template_file "./build/templates/msix/appxmanifest.xml" ${INT_DIR}/appxmanifest.xml
-eval_build_template_file "./build/templates/msix/appxmappings-make.txt" ${INT_DIR}/appxmappings.txt
+eval_build_template_file "./build/templates/msix/appxmappings.txt" ${INT_DIR}/appxmappings.txt
 
 # Build to output folder
 OUT_DIR = set "${PUBLISH_DIR}/msix"
