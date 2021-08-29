@@ -8,6 +8,7 @@ use tokio::runtime::Runtime;
 
 mod rnp_server_cli_options;
 
+#[cfg(not(tarpaulin_include))]
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
