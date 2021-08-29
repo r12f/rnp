@@ -37,5 +37,21 @@
                 </uap3:Extension>
             </Extensions>
         </Application>
+
+        <Application Id="Rnp.Server" Executable="rnp_server.exe" EntryPoint="Windows.FullTrustApplication">
+            <uap:VisualElements
+                    DisplayName="Rnp Server"
+                    Description="A simple layer 4 ping tool for cloud."
+                    BackgroundColor="antiqueWhite"
+                    Square150x150Logo="images\logo-150.png"
+                    Square44x44Logo="images\logo-44.png" />
+            <Extensions>
+                <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication">
+                    <uap3:AppExecutionAlias>
+                        <desktop:ExecutionAlias Alias="rnp_server.exe" />
+                    </uap3:AppExecutionAlias>
+                </uap3:Extension>
+            </Extensions>
+        </Application>
     </Applications>
 </Package>

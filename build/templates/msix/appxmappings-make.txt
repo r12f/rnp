@@ -1,5 +1,6 @@
 [Files]
 "{build_dir}\msix\bin\rnp.exe" "rnp.exe"
+"{build_dir}\msix\bin\rnp_server.exe" "rnp_server.exe"
 "{build_dir}\msix\bin\README.md" "README.md"
 "{build_dir}\msix\bin\LICENSE.txt" "LICENSE.txt"
 "{build_dir}\msix\assets\logo.png" "images\logo.png"

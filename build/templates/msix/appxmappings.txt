@@ -1,7 +1,0 @@
-[Files]
-".\Staging\MsixPackages\{target_short}\rnp.exe" "rnp.exe"
-".\Staging\MsixPackages\{target_short}\README.md" "README.md"
-".\Staging\MsixPackages\{target_short}\LICENSE.txt" "LICENSE.txt"
-".\Staging\MsixPackages\{target_short}\images\logo.png" "images\logo.png"
-".\Staging\MsixPackages\{target_short}\images\logo-150.png" "images\logo-150.png"
-".\Staging\MsixPackages\{target_short}\images\logo-44.png" "images\logo-44.png"
