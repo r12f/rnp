@@ -10,6 +10,8 @@ pub use ping_runners::*;
 pub use rnp_basic_types::*;
 pub use rnp_config::*;
 pub use rnp_dto::*;
+pub use rnp_utils::parse_ping_target;
+pub use stub_servers::stub_server_factory;
 
 mod ping_runners;
 mod rnp_basic_types;

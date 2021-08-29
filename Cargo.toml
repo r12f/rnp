@@ -58,3 +58,6 @@ panic = 'abort'             # Avoid generating stack unwind code.
 
 [[bin]]
 name = "rnp"
+
+[[bin]]
+name = "rnp_server"
