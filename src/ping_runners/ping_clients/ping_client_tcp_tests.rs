@@ -61,9 +61,8 @@ fn ping_client_tcp_should_work_when_pinging_good_host_with_check_disconnect() {
     });
 }
 
-/*
 #[test]
-fn ping_client_tcp_should_fail_when_server_closes_connection_before_disconnect() {
+fn ping_client_tcp_should_warn_when_server_closes_connection_before_disconnect() {
     rnp_test_common::initialize();
     let rt = Runtime::new().unwrap();
 
@@ -79,11 +78,10 @@ fn ping_client_tcp_should_fail_when_server_closes_connection_before_disconnect()
 
         let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
         let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
-        let expected_result = ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)");
+        let expected_result = ExpectedTestCaseResult::Warning("Connection shutdown already initiated by remote side.");
         ping_client_result_should_be_expected(&mut ping_client, &source, &server_address, Duration::from_millis(200), &expected_result).await;
     });
 }
-*/
 
 #[test]
 fn ping_client_tcp_should_fail_when_pinging_non_existing_host() {

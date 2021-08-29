@@ -7,6 +7,7 @@ pub enum ExpectedTestCaseResult {
     Ok,
     Timeout,
     Failed(&'static str),
+    Warning(&'static str),
 }
 
 pub async fn ping_client_should_work_when_pinging_good_host(ping_client: &mut Box<dyn PingClient + Send + Sync>, server_address: &SocketAddr) {
@@ -87,6 +88,17 @@ pub async fn ping_client_result_should_be_expected(
             if cfg!(windows) {
                 let actual_error: &str = &actual_result.as_ref().err().unwrap().to_string();
                 assert_eq!(*e, actual_error);
+            }
+        }
+
+        ExpectedTestCaseResult::Warning(e) => {
+            assert!(actual_result.is_ok());
+            assert!(actual_result.as_ref().ok().unwrap().warning.is_some());
+
+            // On windows, we will check the detailed failure.
+            if cfg!(windows) {
+                let actual_warning: &str = &actual_result.as_ref().ok().unwrap().warning.as_ref().unwrap().to_string();
+                assert_eq!(*e, actual_warning);
             }
         }
     }
