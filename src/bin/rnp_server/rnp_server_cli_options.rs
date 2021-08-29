@@ -4,7 +4,7 @@ use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, PartialEq)]
-#[structopt(name = rnp::RNP_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
+#[structopt(name = rnp::RNP_SERVER_NAME, author = rnp::RNP_AUTHOR, about = rnp::RNP_ABOUT)]
 pub struct RnpServerCliOptions {
     #[structopt(flatten)]
     pub common_options: RnpServerCliCommonOptions,

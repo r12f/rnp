@@ -1,7 +1,0 @@
-[Files]
-"{build_dir}\msix\bin\rnp.exe" "rnp.exe"
-"{build_dir}\msix\bin\README.md" "README.md"
-"{build_dir}\msix\bin\LICENSE.txt" "LICENSE.txt"
-"{build_dir}\msix\assets\logo.png" "images\logo.png"
-"{build_dir}\msix\assets\logo-150.png" "images\logo-150.png"
-"{build_dir}\msix\assets\logo-44.png" "images\logo-44.png"
