@@ -84,12 +84,17 @@ impl PingClientTcp {
         // If read returns 0, it means the remote side has shutdown the writes, hence the disconnect is not initiated by us,
         // and in this case, we should throw a warning as connection aborted.
         tracing::debug!("Checking if connection is already closed; target = {}", target);
-
-        let ready = connection.ready(Interest::READABLE).await?;
-        tracing::debug!("Connection ready; target = {}, ready_state = {:?}", target, ready);
-
-        if ready.is_read_closed() {
-            return Err(io::Error::new(io::ErrorKind::ConnectionAborted, "Connection shutdown already initiated by remote side."));
+        loop {
+            match connection.try_read(&mut read_buffer) {
+                Ok(0) => {
+                    return Err(io::Error::new(io::ErrorKind::ConnectionAborted, "Connection is already half shutdown by remote side."));
+                }
+                Ok(_) => (),
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                Err(e) => {
+                    return Err(e.into());
+                }
+            }
         }
 
         // Start shutdown

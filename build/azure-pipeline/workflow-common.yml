@@ -203,7 +203,7 @@ stages:
               ./codecov -t ${CODECOV_TOKEN}
 
               echo "Complated!"
-            displayName: Upload test result.
+            displayName: Upload test result
             condition: and(succeeded(), eq(variables['target_short'], 'linux.x64'), eq('${{ parameters.isPRWorkflow }}', 'false'))
             env:
               CODECOV_TOKEN: $(RnpCodeCovToken)

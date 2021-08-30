@@ -13,6 +13,8 @@ pub fn run(
     stop_event: Arc<ManualResetEvent>,
     server_started_event: Arc<ManualResetEvent>,
 ) -> JoinHandle<Result<(), Box<dyn Error + Send + Sync>>> {
+    println!("Starting rnp {} server at {} ...", config.protocol, config.server_address);
+
     match config.protocol {
         RnpSupportedProtocol::TCP => return StubServerTcp::run_new(config.clone(), stop_event, server_started_event),
         _ => panic!("Protocol {} is not supported!", config.protocol),

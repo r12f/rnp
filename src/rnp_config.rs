@@ -175,9 +175,9 @@ impl PartialEq for PingResultProcessorConfig {
 pub struct RnpStubServerConfig {
     pub protocol: RnpSupportedProtocol,
     pub server_address: SocketAddr,
-    pub close_on_accept: bool,
-    pub sleep_before_write: Option<Duration>,
-    pub write_chunk_size: usize,
-    pub write_count_limit: Option<usize>,
     pub report_interval: Duration,
+    pub close_on_accept: bool,
+    pub write_chunk_size: usize,
+    pub write_count_limit: u32,
+    pub sleep_before_write: Duration,
 }

@@ -47,6 +47,8 @@ impl StubServerTcp {
         let listener = TcpListener::bind(self.config.server_address).await?;
         self.server_started_event.set();
 
+        println!("Rnp {} server started successfully at {}.", self.config.protocol, self.config.server_address);
+
         let mut next_report_time = Instant::now();
         loop {
             tokio::select! {
@@ -183,6 +185,12 @@ impl StubServerTcpConnection {
         loop {
             let ready = self.stream.ready(interest).await?;
 
+            if ready.is_read_closed() {
+                let error_message = format!("Connection is half shutdown by remote side. Closing connection: Remote = {}", self.remote_address);
+                println!("{}", error_message);
+                return Err(io::Error::new(io::ErrorKind::ConnectionAborted, error_message).into());
+            }
+
             if ready.is_readable() {
                 self.on_connection_read().await?;
             }
@@ -198,7 +206,7 @@ impl StubServerTcpConnection {
         match self.stream.try_read(&mut self.read_buf) {
             Ok(n) => {
                 if n == 0 {
-                    let error_message = format!("Connection write is closed on remote. Closing connection: Remote = {}", self.remote_address);
+                    let error_message = format!("Connection is half shutdown by remote side. Closing connection: Remote = {}", self.remote_address);
                     println!("{}", error_message);
                     return Err(io::Error::new(io::ErrorKind::ConnectionAborted, error_message).into());
                 }
@@ -216,18 +224,17 @@ impl StubServerTcpConnection {
 
     #[tracing::instrument(name = "TCP connection on write", level = "debug", skip(self), fields(id = %self.id, remote_address = %self.remote_address))]
     async fn on_connection_write(&mut self) -> Result<(), Box<dyn Error>> {
-        if let Some(sleep_before_write) = self.config.sleep_before_write {
-            tokio::time::sleep(sleep_before_write).await;
+        if !self.config.sleep_before_write.is_zero() {
+            tokio::time::sleep(self.config.sleep_before_write).await;
         }
 
         // Update write count
         {
             let mut conn_stats = self.conn_stats.lock().unwrap();
-            conn_stats.total_write_count += match self.config.write_count_limit {
-                Some(write_chunk_count) if conn_stats.total_write_count < write_chunk_count => 1,
-                Some(_) => 0,
-                None => 1,
+            if self.config.write_count_limit != 0 && conn_stats.total_write_count >= self.config.write_count_limit {
+                return Ok(());
             };
+            conn_stats.total_write_count += 1;
         }
 
         // Write buffer
@@ -253,7 +260,7 @@ struct StubServerTcpConnectionStats {
     pub is_alive: bool,
     pub bytes_read: usize,
     pub bytes_write: usize,
-    pub total_write_count: usize,
+    pub total_write_count: u32,
 }
 
 impl StubServerTcpConnectionStats {
