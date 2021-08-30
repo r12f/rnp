@@ -47,6 +47,8 @@ impl StubServerTcp {
         let listener = TcpListener::bind(self.config.server_address).await?;
         self.server_started_event.set();
 
+        println!("Rnp {} server started successfully at {}.", self.config.protocol, self.config.server_address);
+
         let mut next_report_time = Instant::now();
         loop {
             tokio::select! {

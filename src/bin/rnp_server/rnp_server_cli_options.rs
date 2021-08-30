@@ -15,7 +15,7 @@ pub struct RnpServerCliCommonOptions {
     #[structopt(short = "m", long = "mode", default_value = "TCP", help = "Specify protocol to use.")]
     pub protocol: RnpSupportedProtocol,
 
-    #[structopt(parse(try_from_str = parse_ping_target), help = "Server address.")]
+    #[structopt(parse(try_from_str = parse_ping_target), default_value = "0.0.0.0:20821", help = "Server address.")]
     pub server_address: SocketAddr,
 
     #[structopt(short = "r", long = "report-interval", default_value = "1000", help = "The interval between each status report in milliseconds.")]

@@ -143,7 +143,7 @@ impl PingRunnerCore {
             None => "".to_string(),
         };
 
-        println!("Start testing {} {:?}{}:", self.config.worker_config.protocol, self.config.worker_config.target, ttl_message,);
+        println!("Start testing {} {:?}{}:", self.config.worker_config.protocol, self.config.worker_config.target, ttl_message);
     }
 
     /// Run all warm up pings one by one and wait until they are all completed.
