@@ -21,20 +21,20 @@ pub struct RnpServerCliCommonOptions {
     #[structopt(short = "r", long = "report-interval", default_value = "1000", help = "The interval between each status report in milliseconds.")]
     pub report_interval_in_ms: u64,
 
-    #[structopt(long, alias = "coa", help = "Close connection as soon as accepting it.")]
+    #[structopt(long, alias = "coa", help = "Close connection as soon as accepting it. [alias: --coa]")]
     pub close_on_accept: bool,
 
     #[structopt(short = "w", long, default_value = "0", help = "If not 0, after connection is established, write to connection.")]
     pub write_chunk_size: usize,
 
-    #[structopt(long, alias = "wc", default_value = "1", help = "How many writes to perform, after connection is established.")]
+    #[structopt(long, alias = "wc", default_value = "1", help = "How many writes to perform, after connection is established. [alias: --wc]")]
     pub write_count_limit: u32,
 
     #[structopt(
         long = "write-delay",
         alias = "wd",
         default_value = "0",
-        help = "When write back is enabled, sleep in milliseconds before write back."
+        help = "When write back is enabled, sleep in milliseconds before write back. [alias: --wd]"
     )]
     pub sleep_before_write_in_ms: u64,
 }
