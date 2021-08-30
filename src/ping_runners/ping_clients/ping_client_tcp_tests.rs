@@ -128,9 +128,9 @@ fn create_tcp_stub_server_default_config(server_address: &SocketAddr) -> RnpStub
         protocol: RnpSupportedProtocol::TCP,
         server_address: server_address.clone(),
         close_on_accept: false,
-        sleep_before_write: Some(Duration::from_millis(0)),
+        sleep_before_write: Duration::ZERO,
         write_chunk_size: 1024,
-        write_count_limit: Some(0),
+        write_count_limit: 0,
         report_interval: Duration::from_secs(1),
     };
 }

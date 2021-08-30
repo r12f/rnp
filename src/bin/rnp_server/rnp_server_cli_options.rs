@@ -30,7 +30,12 @@ pub struct RnpServerCliCommonOptions {
     #[structopt(long, alias = "wc", default_value = "1", help = "How many writes to perform, after connection is established.")]
     pub write_count_limit: u32,
 
-    #[structopt(long = "write-delay", alias = "wd", help = "When write back is enabled, sleep in milliseconds before write back.")]
+    #[structopt(
+        long = "write-delay",
+        alias = "wd",
+        default_value = "0",
+        help = "When write back is enabled, sleep in milliseconds before write back."
+    )]
     pub sleep_before_write_in_ms: u64,
 }
 
@@ -64,10 +69,10 @@ mod tests {
                 common_options: RnpServerCliCommonOptions {
                     protocol: RnpSupportedProtocol::TCP,
                     server_address: "10.0.0.1:443".parse().unwrap(),
-                    report_interval_in_ms: 0,
+                    report_interval_in_ms: 1000,
                     close_on_accept: false,
                     write_chunk_size: 0,
-                    write_count_limit: 0,
+                    write_count_limit: 1,
                     sleep_before_write_in_ms: 0
                 },
             },
@@ -114,18 +119,6 @@ mod tests {
                 common_options: RnpServerCliCommonOptions {
                     protocol: RnpSupportedProtocol::QUIC,
                     server_address: "10.0.0.1:443".parse().unwrap(),
-                    report_interval_in_ms: 0,
-                    close_on_accept: false,
-                    write_chunk_size: 0,
-                    write_count_limit: 0,
-                    sleep_before_write_in_ms: 0
-                },
-            },
-            RnpServerCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443", "--mode", "quic",])
-            RnpServerCliOptions {
-                common_options: RnpServerCliCommonOptions {
-                    protocol: RnpSupportedProtocol::TCP,
-                    server_address: "10.0.0.1:443".parse().unwrap(),
                     report_interval_in_ms: 3000,
                     close_on_accept: true,
                     write_chunk_size: 2048,
@@ -142,7 +135,7 @@ mod tests {
                 "3000",
                 "--close-on-accept",
                 "--write-chunk-size",
-                "2046",
+                "2048",
                 "--write-count-limit",
                 "20",
                 "--write-delay",
