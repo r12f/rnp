@@ -25,7 +25,7 @@ fn main() {
 
         let stop_event_clone = stop_event.clone();
         ctrlc::set_handler(move || {
-            tracing::debug!("Ctrl+C received. Stopping all ping workers.");
+            tracing::debug!("Ctrl+C received. Stopping server.");
             stop_event_clone.set();
         })
         .expect("Error setting Ctrl-C handler");
