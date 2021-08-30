@@ -223,7 +223,7 @@ impl StubServerTcpConnection {
         // Update write count
         {
             let mut conn_stats = self.conn_stats.lock().unwrap();
-            if self.config.write_count_limit < conn_stats.total_write_count {
+            if self.config.write_count_limit != 0 && conn_stats.total_write_count >= self.config.write_count_limit {
                 return Ok(());
             };
             conn_stats.total_write_count += 1;
