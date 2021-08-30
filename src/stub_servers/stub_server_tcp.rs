@@ -216,18 +216,17 @@ impl StubServerTcpConnection {
 
     #[tracing::instrument(name = "TCP connection on write", level = "debug", skip(self), fields(id = %self.id, remote_address = %self.remote_address))]
     async fn on_connection_write(&mut self) -> Result<(), Box<dyn Error>> {
-        if let Some(sleep_before_write) = self.config.sleep_before_write {
-            tokio::time::sleep(sleep_before_write).await;
+        if !self.config.sleep_before_write.is_zero() {
+            tokio::time::sleep(self.config.sleep_before_write).await;
         }
 
         // Update write count
         {
             let mut conn_stats = self.conn_stats.lock().unwrap();
-            conn_stats.total_write_count += match self.config.write_count_limit {
-                Some(write_chunk_count) if conn_stats.total_write_count < write_chunk_count => 1,
-                Some(_) => 0,
-                None => 1,
+            if self.config.write_count_limit < conn_stats.total_write_count {
+                return Ok(());
             };
+            conn_stats.total_write_count += 1;
         }
 
         // Write buffer
@@ -253,7 +252,7 @@ struct StubServerTcpConnectionStats {
     pub is_alive: bool,
     pub bytes_read: usize,
     pub bytes_write: usize,
-    pub total_write_count: usize,
+    pub total_write_count: u32,
 }
 
 impl StubServerTcpConnectionStats {
