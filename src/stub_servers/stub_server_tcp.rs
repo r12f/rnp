@@ -185,6 +185,12 @@ impl StubServerTcpConnection {
         loop {
             let ready = self.stream.ready(interest).await?;
 
+            if ready.is_read_closed() {
+                let error_message = format!("Connection is half shutdown by remote side. Closing connection: Remote = {}", self.remote_address);
+                println!("{}", error_message);
+                return Err(io::Error::new(io::ErrorKind::ConnectionAborted, error_message).into());
+            }
+
             if ready.is_readable() {
                 self.on_connection_read().await?;
             }
@@ -200,7 +206,7 @@ impl StubServerTcpConnection {
         match self.stream.try_read(&mut self.read_buf) {
             Ok(n) => {
                 if n == 0 {
-                    let error_message = format!("Connection write is closed on remote. Closing connection: Remote = {}", self.remote_address);
+                    let error_message = format!("Connection is half shutdown by remote side. Closing connection: Remote = {}", self.remote_address);
                     println!("{}", error_message);
                     return Err(io::Error::new(io::ErrorKind::ConnectionAborted, error_message).into());
                 }

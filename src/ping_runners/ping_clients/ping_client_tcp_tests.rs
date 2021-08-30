@@ -78,7 +78,7 @@ fn ping_client_tcp_should_warn_when_server_closes_connection_before_disconnect()
 
         let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
         let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
-        let expected_result = ExpectedTestCaseResult::Warning("Connection shutdown already initiated by remote side.");
+        let expected_result = ExpectedTestCaseResult::Warning("Connection is already half shutdown by remote side.");
         ping_client_result_should_be_expected(&mut ping_client, &source, &server_address, Duration::from_millis(200), &expected_result).await;
     });
 }
