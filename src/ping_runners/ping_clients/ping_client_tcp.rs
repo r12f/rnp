@@ -3,9 +3,10 @@ use async_trait::async_trait;
 use socket2::{Domain, SockAddr, Socket, Type};
 use std::io;
 use std::net::SocketAddr;
-use std::time::{Duration, Instant};
-use tokio::io::{AsyncReadExt, AsyncWriteExt, Interest};
+use std::time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use tokio::time::Instant;
 
 pub struct PingClientTcp {
     config: PingClientConfig,
@@ -71,7 +72,7 @@ impl PingClientTcp {
     #[tracing::instrument(name = "Shutdown connection after ping", level = "debug", skip(self))]
     async fn shutdown_connection(&self, socket: Socket, target: &SocketAddr) -> io::Result<()> {
         if !self.config.wait_before_disconnect.is_zero() {
-            tracing::debug!("Waiting {:?} before disconnect; target = {}", self.config.wait_before_disconnect, target);
+            tracing::debug!("Waiting {:?} before disconnect; target={}", self.config.wait_before_disconnect, target);
             tokio::time::sleep(self.config.wait_before_disconnect).await;
         }
 
@@ -83,7 +84,7 @@ impl PingClientTcp {
         // To confirm so, we first try to read until the socket is not readable or returns 0.
         // If read returns 0, it means the remote side has shutdown the writes, hence the disconnect is not initiated by us,
         // and in this case, we should throw a warning as connection aborted.
-        tracing::debug!("Checking if connection is already closed; target = {}", target);
+        tracing::debug!("Checking if connection is already closed; target={}", target);
         loop {
             match connection.try_read(&mut read_buffer) {
                 Ok(0) => {
@@ -98,11 +99,32 @@ impl PingClientTcp {
         }
 
         // Start shutdown
-        tracing::debug!("Shutdown connection write; target = {}", target);
+        tracing::debug!("Shutdown connection write; target={}", target);
         connection.shutdown().await?;
 
         // Try to read until recv returns nothing, which indicates shutdown is succeeded.
-        tracing::debug!("Wait until shutdown completes; target = {}", target);
+        tracing::debug!("Wait until shutdown completes; timeout={:?}, target={}", self.config.disconnect_timeout, target);
+        if self.config.disconnect_timeout.is_zero() {
+            self.wait_for_connection_shutdown(&mut connection, &mut read_buffer).await?;
+        } else {
+            let disconnect_deadline = Instant::now() + self.config.disconnect_timeout;
+            tokio::select! {
+                wait_result = self.wait_for_connection_shutdown(&mut connection, &mut read_buffer) => {
+                    if wait_result.is_err() {
+                        return wait_result;
+                    }
+                }
+
+                _ = tokio::time::sleep_until(disconnect_deadline.clone()) => {
+                    return Err(io::Error::new(io::ErrorKind::TimedOut, "Disconnect timed out."));
+                }
+            }
+        }
+
+        return Ok(());
+    }
+
+    async fn wait_for_connection_shutdown(&self, connection: &mut TcpStream, read_buffer: &mut Vec<u8>) -> io::Result<()> {
         while connection.read(&mut read_buffer[..]).await? > 0 {
             continue;
         }
