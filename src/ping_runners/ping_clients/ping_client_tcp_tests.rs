@@ -132,6 +132,7 @@ fn create_tcp_stub_server_default_config(server_address: &SocketAddr) -> RnpStub
         write_chunk_size: 0,
         write_count_limit: 0,
         report_interval: Duration::from_secs(1),
+        wait_before_disconnect: Duration::ZERO,
     };
 }
 

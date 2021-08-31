@@ -180,4 +180,5 @@ pub struct RnpStubServerConfig {
     pub write_chunk_size: usize,
     pub write_count_limit: u32,
     pub sleep_before_write: Duration,
+    pub wait_before_disconnect: Duration,
 }

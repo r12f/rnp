@@ -37,6 +37,14 @@ pub struct RnpServerCliCommonOptions {
         help = "When write back is enabled, sleep in milliseconds before write back. [alias: --wd]"
     )]
     pub sleep_before_write_in_ms: u64,
+
+    #[structopt(
+        long = "disconnect-delay",
+        alias = "dd",
+        default_value = "0",
+        help = "When half shutdown is detected, wait specified milliseconds before fully shutdown the connection. [alias: --dd]"
+    )]
+    pub wait_before_disconnect_in_ms: u64,
 }
 
 impl RnpServerCliOptions {
@@ -51,6 +59,7 @@ impl RnpServerCliOptions {
             write_chunk_size: self.common_options.write_chunk_size,
             write_count_limit: self.common_options.write_count_limit,
             report_interval: Duration::from_millis(self.common_options.report_interval_in_ms),
+            wait_before_disconnect: Duration::from_millis(self.common_options.wait_before_disconnect_in_ms),
         };
     }
 }
@@ -73,7 +82,8 @@ mod tests {
                     close_on_accept: false,
                     write_chunk_size: 0,
                     write_count_limit: 1,
-                    sleep_before_write_in_ms: 0
+                    sleep_before_write_in_ms: 0,
+                    wait_before_disconnect_in_ms: 0,
                 },
             },
             RnpServerCliOptions::from_iter(&["rnp_server.exe", "10.0.0.1:443"])
@@ -92,6 +102,7 @@ mod tests {
                     write_chunk_size: 1024,
                     write_count_limit: 10,
                     sleep_before_write_in_ms: 1000,
+                    wait_before_disconnect_in_ms: 3000,
                 },
             },
             RnpServerCliOptions::from_iter(&[
@@ -107,7 +118,9 @@ mod tests {
                 "--wc",
                 "10",
                 "--wd",
-                "1000"
+                "1000",
+                "--dd",
+                "3000",
             ])
         );
     }
@@ -124,6 +137,7 @@ mod tests {
                     write_chunk_size: 2048,
                     write_count_limit: 20,
                     sleep_before_write_in_ms: 2000,
+                    wait_before_disconnect_in_ms: 3000
                 },
             },
             RnpServerCliOptions::from_iter(&[
@@ -139,7 +153,9 @@ mod tests {
                 "--write-count-limit",
                 "20",
                 "--write-delay",
-                "2000"
+                "2000",
+                "--disconnect-delay",
+                "3000",
             ])
         );
     }
@@ -155,6 +171,7 @@ mod tests {
                 write_chunk_size: 2000,
                 write_count_limit: 3000,
                 sleep_before_write: Duration::from_millis(4000),
+                wait_before_disconnect: Duration::from_millis(5000),
             },
             RnpServerCliOptions {
                 common_options: RnpServerCliCommonOptions {
@@ -165,6 +182,7 @@ mod tests {
                     write_chunk_size: 2000,
                     write_count_limit: 3000,
                     sleep_before_write_in_ms: 4000,
+                    wait_before_disconnect_in_ms: 5000,
                 },
             }
             .to_stub_server_config()

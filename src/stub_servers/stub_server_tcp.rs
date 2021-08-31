@@ -200,8 +200,17 @@ impl StubServerTcpConnection {
         match self.stream.try_read(&mut self.read_buf) {
             Ok(n) => {
                 if n == 0 {
+                    if !self.config.wait_before_disconnect.is_zero() {
+                        println!(
+                            "Connection is half shutdown by remote side. Wait for {:?} before disconnect the connection: Remote = {}",
+                            self.config.wait_before_disconnect, self.remote_address
+                        );
+                        tokio::time::sleep(self.config.wait_before_disconnect).await;
+                    }
+
                     let error_message = format!("Connection is half shutdown by remote side. Closing connection: Remote = {}", self.remote_address);
                     println!("{}", error_message);
+
                     return Err(io::Error::new(io::ErrorKind::ConnectionAborted, error_message).into());
                 }
                 self.conn_stats.lock().unwrap().bytes_read += n;
