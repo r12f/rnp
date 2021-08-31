@@ -48,6 +48,7 @@ fn create_ping_client_quic_default_config() -> PingClientConfig {
         time_to_live: None,
         check_disconnect: false,
         wait_before_disconnect: Duration::ZERO,
+        disconnect_timeout: Duration::ZERO,
         server_name: Some("localhost".to_string()),
         log_tls_key: false,
         alpn_protocol: Some("hq-29".to_string()),

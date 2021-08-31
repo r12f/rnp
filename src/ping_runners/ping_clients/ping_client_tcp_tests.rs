@@ -84,6 +84,28 @@ fn ping_client_tcp_should_work_when_pinging_good_host_with_check_disconnect() {
 // }
 
 #[test]
+fn ping_client_tcp_should_warn_when_disconnect_timed_out() {
+    rnp_test_common::initialize();
+    let rt = Runtime::new().unwrap();
+
+    let server_address = "127.0.0.1:11340".parse::<SocketAddr>().unwrap();
+    let mut server_config = create_tcp_stub_server_default_config(&server_address);
+    server_config.wait_before_disconnect = Duration::from_millis(2000);
+    start_run_tcp_stub_server(&rt, server_config);
+
+    rt.block_on(async move {
+        let mut config = create_ping_client_tcp_default_config();
+        config.check_disconnect = true;
+        config.disconnect_timeout = Duration::from_millis(100);
+
+        let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
+        let source = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
+        let expected_result = ExpectedTestCaseResult::Warning("Disconnect timed out.");
+        ping_client_result_should_be_expected(&mut ping_client, &source, &server_address, Duration::from_millis(200), &expected_result).await;
+    });
+}
+
+#[test]
 fn ping_client_tcp_should_fail_when_pinging_non_existing_host() {
     rnp_test_common::initialize();
     let rt = Runtime::new().unwrap();
@@ -151,6 +173,7 @@ fn create_ping_client_tcp_default_config() -> PingClientConfig {
         time_to_live: None,
         check_disconnect: false,
         wait_before_disconnect: Duration::ZERO,
+        disconnect_timeout: Duration::ZERO,
         server_name: None,
         log_tls_key: false,
         alpn_protocol: None,

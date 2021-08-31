@@ -44,6 +44,7 @@ impl PingRunnerCore {
     ///             time_to_live: Some(128),
     ///             check_disconnect: false,
     ///             wait_before_disconnect: Duration::ZERO,
+    ///             disconnect_timeout: Duration::from_millis(2000),
     ///             server_name: None,
     ///             log_tls_key: false,
     ///             alpn_protocol: None,

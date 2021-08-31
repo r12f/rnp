@@ -79,6 +79,14 @@ pub struct RnpCliPingCommonOptions {
     )]
     pub wait_before_disconnect_in_ms: u64,
 
+    #[structopt(
+        long = "disconnect-timeout",
+        alias = "dt",
+        default_value = "2000",
+        help = "After initiate disconnect, wait for specified milliseconds to check if disconnect can be successfully completed. [alias: --dt]"
+    )]
+    pub disconnect_timeout_in_ms: u64,
+
     #[structopt(short = "p", long = "parallel", default_value = "1", help = "Count of pings running in parallel.")]
     pub parallel_ping_count: u32,
 
@@ -168,6 +176,7 @@ impl RnpCliOptions {
                     time_to_live: self.ping_common_options.time_to_live,
                     check_disconnect: self.ping_common_options.check_disconnect,
                     wait_before_disconnect: Duration::from_millis(self.ping_common_options.wait_before_disconnect_in_ms),
+                    disconnect_timeout: Duration::from_millis(self.ping_common_options.disconnect_timeout_in_ms),
                     server_name: self.quic_options.server_name.as_ref().and_then(|s| Some(s.to_string())),
                     log_tls_key: self.quic_options.log_tls_key,
                     alpn_protocol: if self.quic_options.alpn_protocol.to_uppercase() != String::from("NONE") {
@@ -273,6 +282,7 @@ mod tests {
                     time_to_live: None,
                     check_disconnect: false,
                     wait_before_disconnect_in_ms: 0,
+                    disconnect_timeout_in_ms: 2000,
                     parallel_ping_count: 1,
                     exit_on_fail: false,
                 },
@@ -312,6 +322,7 @@ mod tests {
                     time_to_live: None,
                     check_disconnect: true,
                     wait_before_disconnect_in_ms: 0,
+                    disconnect_timeout_in_ms: 1000,
                     parallel_ping_count: 10,
                     exit_on_fail: false,
                 },
@@ -348,6 +359,8 @@ mod tests {
                 "-i",
                 "1500",
                 "-d",
+                "--dt",
+                "1000",
                 "-p",
                 "10",
                 "-q",
@@ -381,6 +394,7 @@ mod tests {
                     time_to_live: Some(128),
                     check_disconnect: true,
                     wait_before_disconnect_in_ms: 3000,
+                    disconnect_timeout_in_ms: 4000,
                     parallel_ping_count: 10,
                     exit_on_fail: true,
                 },
@@ -422,6 +436,8 @@ mod tests {
                 "--check-disconnect",
                 "--wait-before-disconnect",
                 "3000",
+                "--disconnect-timeout",
+                "4000",
                 "--parallel",
                 "10",
                 "--exit-on-fail",
@@ -460,6 +476,7 @@ mod tests {
                         time_to_live: Some(128),
                         check_disconnect: false,
                         wait_before_disconnect: Duration::from_millis(2000),
+                        disconnect_timeout: Duration::from_millis(3000),
                         server_name: None,
                         log_tls_key: false,
                         alpn_protocol: None,
@@ -499,6 +516,7 @@ mod tests {
                     time_to_live: Some(128),
                     check_disconnect: false,
                     wait_before_disconnect_in_ms: 2000,
+                    disconnect_timeout_in_ms: 3000,
                     parallel_ping_count: 1,
                     exit_on_fail: false,
                 },
@@ -533,6 +551,7 @@ mod tests {
                         time_to_live: Some(128),
                         check_disconnect: true,
                         wait_before_disconnect: Duration::from_millis(3000),
+                        disconnect_timeout: Duration::from_millis(4000),
                         server_name: Some(String::from("localhost")),
                         log_tls_key: true,
                         alpn_protocol: Some(String::from("h3")),
@@ -572,6 +591,7 @@ mod tests {
                     time_to_live: Some(128),
                     check_disconnect: true,
                     wait_before_disconnect_in_ms: 3000,
+                    disconnect_timeout_in_ms: 4000,
                     parallel_ping_count: 1,
                     exit_on_fail: true,
                 },
