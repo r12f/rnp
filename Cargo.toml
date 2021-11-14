@@ -35,8 +35,8 @@ num = "0.4.0"
 
 [target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
 quinn = "0.7.2"
-rustls = { version = "0.20.0", features = ["dangerous_configuration", "quic"] }
-webpki = "0.22.0"
+rustls = { version = "0.19.1", features = ["dangerous_configuration", "quic"] }
+webpki = "0.21"
 
 [build-dependencies]
 winres = "0.1.12"
