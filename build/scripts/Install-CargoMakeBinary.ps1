@@ -1,6 +1,6 @@
 function Install-CargoMakeBinary
 {
-    $cargoMakeUrl = "https://github.com/sagiegurari/cargo-make/releases/download/0.35.0/cargo-make-v0.35.0-x86_64-pc-windows-msvc.zip"
+    $cargoMakeUrl = "https://github.com/sagiegurari/cargo-make/releases/download/0.35.6/cargo-make-v0.35.6-x86_64-pc-windows-msvc.zip"
     $cargoMakeLocalPackage = "${env:TEMP}\cargo-make.zip"
 
     Write-Host "Downloading cargo-make windows binary package from $cargoMakeUrl to $cargoMakeLocalPackage"
