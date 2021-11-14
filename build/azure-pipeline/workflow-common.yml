@@ -125,8 +125,10 @@ stages:
             displayName: Install cargo make binary on Linux/MAC
             condition: and(succeeded(), not(startsWith(variables['target_short'], 'windows.')))
 
-          - script: cargo make install-build-tools -e BUILD_TARGET=$(TARGET)
+          - script: cargo make install-build-tools
             displayName: Install build tools
+            env:
+              BUILD_TARGET: $(TARGET)
 
           - script: cargo make install-pack-tools
             displayName: Install pack tools
@@ -144,6 +146,7 @@ stages:
           - script: cargo make build --profile production -e BUILD_TARGET=$(TARGET)
             displayName: Cargo make build
             env:
+              BUILD_TARGET: $(TARGET)
               BUILD_BRANCH: $(Build.BranchName)
               RNP_SIGNING_URL: $(RnpSigningURL)
               RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
@@ -167,6 +170,7 @@ stages:
           - script: cargo make pack --profile production -e BUILD_TARGET=$(TARGET)
             displayName: Cargo make pack
             env:
+              BUILD_TARGET: $(TARGET)
               BUILD_BRANCH: $(Build.BranchName)
               RNP_SIGNING_URL: $(RnpSigningURL)
               RNP_SIGNING_VAULT_URL: $(RnpSigningVaultURL)
