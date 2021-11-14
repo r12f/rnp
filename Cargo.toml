@@ -17,20 +17,20 @@ CompanyName = "r12f"
 LegalCopyright = "Copyright (c) 2021"
 
 [dependencies]
-log = "0.4"
-tracing = { version = "0.1", features = ["log"] }
-env_logger = "0.8"
-structopt = { version = "0.3", features = ["color", "suggestions", "wrap_help"] }
-ctrlc = "3.1.9"
-socket2 = "0.4.0"
-futures-intrusive = "0.4"
-tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "macros", "net", "io-util"] }
-contracts = "0.6.0"
-chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
-rand = "0.8"
-thiserror = "1.0.26"
-async-trait = "0.1.50"
-serde = { version = "1.0", features = ["derive"] }
+log = "0.4.14"
+tracing = { version = "0.1.29", features = ["log"] }
+env_logger = "0.9.0"
+structopt = { version = "0.3.25", features = ["color", "suggestions", "wrap_help"] }
+ctrlc = "3.2.1"
+socket2 = "0.4.2"
+futures-intrusive = "0.4.0"
+tokio = { version = "1.13.0", features = ["rt-multi-thread", "time", "sync", "macros", "net", "io-util"] }
+contracts = "0.6.2"
+chrono = { version = "0.4.19", features = ["serde", "rustc-serialize"] }
+rand = "0.8.4"
+thiserror = "1.0.30"
+async-trait = "0.1.51"
+serde = { version = "1.0.130", features = ["derive"] }
 num = "0.4.0"
 
 [target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
@@ -39,13 +39,13 @@ rustls = { version = "0.19.1", features = ["dangerous_configuration", "quic"] }
 webpki = "0.21"
 
 [build-dependencies]
-winres = "0.1.11"
+winres = "0.1.12"
 
 [dev-dependencies]
-async-std = "1.9.0"
-pretty_assertions = "0.7.2"
-serde_json = "1.0"
-csv = "1.1"
+async-std = "1.10.0"
+pretty_assertions = "1.0.0"
+serde_json = "1.0.70"
+csv = "1.1.6"
 
 [profile.dev]
 panic = "abort"             # Abort on panic to make it more friendly for debugger
