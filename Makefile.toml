@@ -24,7 +24,7 @@ set_env BUILD_TAG "${BUILD_VERSION}.${git_branch}"
 # Build settings
 BUILD_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
 BUILD_BRANCH = { value = "", condition = { env_not_set = ["BUILD_BRANCH"] } }
-BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = {"production" = "release" } }
+BUILD_CONFIG = { source = "${CARGO_MAKE_PROFILE}", default_value = "debug", mapping = { "production" = "release" } }
 BUILD_TARGET = { value = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", condition = { env_not_set = ["BUILD_TARGET"] } }
 
 # Cargo make doesn't support passing target as parameter yet, so we have to manually set these variables instead of reading from predefined ones.
@@ -198,7 +198,22 @@ cargo install cargo-tarpaulin
 [tasks.build]
 description = "Build the program."
 clear = true
-dependencies = ["format", "cargo-build", "make-symbol", "sign-binary"]
+dependencies = ["dump-env", "format", "cargo-build", "make-symbol", "sign-binary"]
+
+[tasks.dump-env]
+description = "Dump environment variables."
+script_runner = "@duckscript"
+script = '''
+echo "PROFILE = ${CARGO_MAKE_PROFILE}"
+echo "BUILD_VERSION = ${BUILD_VERSION}"
+echo "BUILD_BRANCH = ${BUILD_BRANCH}"
+echo "BUILD_CONFIG = ${BUILD_CONFIG}"
+echo "BUILD_TARGET = ${BUILD_TARGET}"
+echo "BUILD_ARCH = ${BUILD_ARCH}"
+echo "BUILD_OS = ${BUILD_OS}"
+echo "BUILD_FLAVOR = ${BUILD_FLAVOR}"
+echo "GCC_XCOMPILER_ID = ${GCC_XCOMPILER_ID}"
+'''
 
 # Format the code in dev profile.
 [tasks.format]
