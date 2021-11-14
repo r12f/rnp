@@ -143,7 +143,7 @@ stages:
           #
           # Build
           #
-          - script: cargo make build --profile production -e BUILD_TARGET=$(TARGET)
+          - script: cargo make build --profile production
             displayName: Cargo make build
             env:
               BUILD_TARGET: $(TARGET)
@@ -157,17 +157,18 @@ stages:
           #
           # Running all tests
           #
-          - bash: cargo make test --profile production -e BUILD_TARGET=$(TARGET)
+          - bash: cargo make test --profile production
             displayName: Cargo make test
             condition: and(succeeded(), eq(variables['is_cross_compile'], false))
             env:
+              BUILD_TARGET: $(TARGET)
               RUST_LOG: rnp=debug
               RUST_BACKTRACE: full
 
           #
           # Pack
           #
-          - script: cargo make pack --profile production -e BUILD_TARGET=$(TARGET)
+          - script: cargo make pack --profile production
             displayName: Cargo make pack
             env:
               BUILD_TARGET: $(TARGET)
