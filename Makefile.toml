@@ -297,7 +297,7 @@ BIN_FILES = array "rnp.exe" "rnp_server.exe"
 for BIN_FILE in ${BIN_FILES}
     BIN_FILE_PATH = set "${BUILD_DIR}/${BIN_FILE}"
     echo "Sign binary: ${BIN_FILE_PATH}"
-    exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${BIN_FILE_PATH}"
+    exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvt ${RNP_SIGNING_TENANT_ID} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${BIN_FILE_PATH}"
 end
 '''
 
@@ -643,7 +643,7 @@ description = "Run AzureSignTool to sign the packages."
 condition = { env_set = [ "RNP_SIGNING_URL" ] }
 script_runner = "@duckscript"
 script = '''
-exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${PUBLISH_DIR}/msix/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
+exec AzureSignTool sign -du ${RNP_SIGNING_URL} -kvu ${RNP_SIGNING_VAULT_URL} -kvt ${RNP_SIGNING_TENANT_ID} -kvi ${RNP_SIGNING_CLIENT_ID} -kvs ${RNP_SIGNING_CLIENT_SECRET} -kvc ${RNP_SIGNING_CERT_NAME} -v "${PUBLISH_DIR}/msix/rnp.${BUILD_TAG}.${BUILD_FLAVOR}.msix"
 '''
 
 ##############################################
