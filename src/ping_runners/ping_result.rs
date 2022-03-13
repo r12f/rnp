@@ -140,7 +140,7 @@ impl PingResult {
             source_port: self.source().port(),
             is_warmup: self.is_warmup(),
             is_succeeded: self.is_succeeded(),
-            rtt_in_ms: self.round_trip_time().as_millis() as f64,
+            rtt_in_ms: self.round_trip_time().as_micros() as f64 / 1000.0,
             is_timed_out: self.is_timed_out(),
             preparation_error,
             ping_error,

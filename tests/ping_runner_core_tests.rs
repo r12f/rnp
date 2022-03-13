@@ -27,15 +27,15 @@ fn ping_with_rnp_core_should_work() {
     let results = actual_ping_results.lock().unwrap();
     assert_eq!(
         vec![
-            MockPingClientResult::Success(Duration::from_millis(10)),
+            MockPingClientResult::Success(Duration::from_micros(12345)),
             MockPingClientResult::Timeout,
             MockPingClientResult::PreparationFailed,
-            MockPingClientResult::Success(Duration::from_millis(10)),
+            MockPingClientResult::Success(Duration::from_micros(12345)),
             MockPingClientResult::Timeout,
             MockPingClientResult::PreparationFailed,
             MockPingClientResult::PingFailed,
-            MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
-            MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
+            MockPingClientResult::AppHandshakeFailed(Duration::from_micros(23456)),
+            MockPingClientResult::DisconnectFailed(Duration::from_micros(34567)),
         ],
         *results
     );
@@ -153,12 +153,12 @@ fn create_mock_rnp_config(
             Some(Box::new(MockPingClient::new(
                 config,
                 vec![
-                    MockPingClientResult::Success(Duration::from_millis(10)),
+                    MockPingClientResult::Success(Duration::from_micros(12345)),
                     MockPingClientResult::Timeout,
                     MockPingClientResult::PreparationFailed,
                     MockPingClientResult::PingFailed,
-                    MockPingClientResult::AppHandshakeFailed(Duration::from_millis(20)),
-                    MockPingClientResult::DisconnectFailed(Duration::from_millis(30)),
+                    MockPingClientResult::AppHandshakeFailed(Duration::from_micros(23456)),
+                    MockPingClientResult::DisconnectFailed(Duration::from_micros(34567)),
                 ],
             )))
         }),
