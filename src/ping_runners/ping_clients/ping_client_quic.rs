@@ -1,10 +1,13 @@
 use crate::*;
 use async_trait::async_trait;
-use quinn::{ClientConfig, ClientConfigBuilder, ConnectionError, Endpoint, EndpointError};
-use rustls::ServerCertVerified;
+use quinn::{ClientConfig, ConnectionError, Endpoint, EndpointConfig, TransportConfig};
+use rustls::client::{ServerCertVerified, ServerCertVerifier};
+use rustls::{Certificate, Error, ServerName};
+use std::convert::TryInto;
+use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 pub struct PingClientQuic {
     config: PingClientConfig,
@@ -25,48 +28,45 @@ impl PingClientQuic {
         return ping_result;
     }
 
-    fn create_local_endpoint(&self, source: &SocketAddr) -> Result<Endpoint, EndpointError> {
+    fn create_local_endpoint(&self, source: &SocketAddr) -> io::Result<Endpoint> {
         let client_config = self.create_client_config();
 
-        let mut endpoint_builder = Endpoint::builder();
-        endpoint_builder.default_client_config(client_config);
-
-        let socket = std::net::UdpSocket::bind(source).map_err(EndpointError::Socket)?;
+        let socket = std::net::UdpSocket::bind(source)?;
         if let Some(ttl) = self.config.time_to_live {
-            socket.set_ttl(ttl).map_err(EndpointError::Socket)?;
+            socket.set_ttl(ttl)?;
         }
 
-        let (endpoint, _) = endpoint_builder.with_socket(socket)?;
+        let endpoint_config = EndpointConfig::default();
+        let runtime = quinn::TokioRuntime {};
+        let mut endpoint = Endpoint::new(endpoint_config, None, socket, runtime)?;
+        endpoint.set_default_client_config(client_config);
         return Ok(endpoint);
     }
 
     fn create_client_config(&self) -> ClientConfig {
-        let mut client_config_builder = ClientConfigBuilder::default();
+        let roots = rustls::RootCertStore::empty();
+
+        let mut client_crypto = rustls::ClientConfig::builder().with_safe_defaults().with_root_certificates(roots).with_no_client_auth();
 
         // Setup ALPN protocol if specified.
         if let Some(alpn_protocol) = &self.config.alpn_protocol {
-            let protocols: &[&[u8]] = &[alpn_protocol.as_bytes()];
-            client_config_builder.protocols(protocols);
+            let protocols = vec![alpn_protocol.as_bytes().to_vec()];
+            client_crypto.alpn_protocols = protocols;
         }
 
+        // Key logger
         if self.config.log_tls_key {
-            client_config_builder.enable_keylog();
+            client_crypto.key_log = Arc::new(rustls::KeyLogFile::new());
         }
 
-        let mut client_config = client_config_builder.build();
-        {
-            let tls_cfg: &mut rustls::ClientConfig =
-                Arc::get_mut(&mut client_config.crypto).expect("Failed to get QUIC client crypto config, which should never happen.");
+        // Our main goal is to check network reachability, so we are not validating cert here.
+        client_crypto.dangerous().set_certificate_verifier(Arc::new(SkipCertificationVerification));
 
-            tls_cfg.dangerous().set_certificate_verifier(Arc::new(SkipCertificationVerification));
+        let mut transport_config = TransportConfig::default();
+        transport_config.max_idle_timeout(Some(self.config.wait_timeout.try_into().unwrap()));
 
-            let transport_config =
-                Arc::get_mut(&mut client_config.transport).expect("Failed to get QUIC client transport config, which should never happen.");
-
-            transport_config
-                .max_idle_timeout(Some(self.config.wait_timeout))
-                .expect("Failed to set QUIC client max idle timeout, which should never happen.");
-        }
+        let mut client_config = quinn::ClientConfig::new(Arc::new(client_crypto));
+        client_config.transport_config(Arc::new(transport_config));
 
         return client_config;
     }
@@ -80,7 +80,7 @@ impl PingClientQuic {
     ) -> PingClientResult<PingClientPingResultDetails> {
         let start_time = Instant::now();
 
-        let connecting = endpoint.connect(target, &server_name).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
+        let connecting = endpoint.connect(target.clone(), &server_name).map_err(|e| PingClientError::PingFailed(Box::new(e)))?;
         let connecting_result = connecting.await;
         let mut rtt = Instant::now().duration_since(start_time);
 
@@ -100,9 +100,9 @@ impl PingClientQuic {
             },
         }?;
 
-        let local_ip = connection.connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
+        let local_ip = connection.local_ip().map_or(None, |addr| Some(SocketAddr::new(addr, source.port())));
         if !use_timer_rtt {
-            rtt = connection.connection.rtt();
+            rtt = connection.rtt();
         }
         return Ok(PingClientPingResultDetails::new(local_ip, rtt, false, None));
     }
@@ -125,14 +125,16 @@ impl PingClient for PingClientQuic {
 
 struct SkipCertificationVerification;
 
-impl rustls::ServerCertVerifier for SkipCertificationVerification {
+impl ServerCertVerifier for SkipCertificationVerification {
     fn verify_server_cert(
         &self,
-        _roots: &rustls::RootCertStore,
-        _presented_certs: &[rustls::Certificate],
-        _dns_name: webpki::DNSNameRef,
+        _end_entity: &Certificate,
+        _intermediates: &[Certificate],
+        _server_name: &ServerName,
+        _scts: &mut dyn Iterator<Item = &[u8]>,
         _ocsp_response: &[u8],
-    ) -> Result<rustls::ServerCertVerified, rustls::TLSError> {
+        _now: SystemTime,
+    ) -> Result<ServerCertVerified, Error> {
         Ok(ServerCertVerified::assertion())
     }
 }

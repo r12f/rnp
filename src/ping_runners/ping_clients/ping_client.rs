@@ -13,10 +13,10 @@ pub enum PingClientWarning {
 
 #[derive(thiserror::Error, Debug)]
 pub enum PingClientError {
-    #[error("{0}")]
+    #[error("Prepare to ping failed: {0}")]
     PreparationFailed(Box<dyn std::error::Error + Send>),
 
-    #[error("{0}")]
+    #[error("Ping failed: {0}")]
     PingFailed(Box<dyn std::error::Error + Send>),
 }
 

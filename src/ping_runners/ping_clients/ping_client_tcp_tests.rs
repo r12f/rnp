@@ -37,7 +37,7 @@ fn ping_client_tcp_should_fail_when_binding_unavailable_source_port() {
         let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
 
         let expected_result = ExpectedTestCaseResult::Failed(
-            "Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)",
+            "Prepare to ping failed: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)",
         );
         ping_client_should_fail_when_binding_unavailable_source_port(&mut ping_client, &server_address, &expected_result).await;
     });
@@ -140,7 +140,8 @@ fn ping_client_tcp_should_fail_when_binding_invalid_source_ip() {
         let config = create_ping_client_tcp_default_config();
         let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::TCP, &config, None);
 
-        let expected_result = ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)");
+        let expected_result =
+            ExpectedTestCaseResult::Failed("Prepare to ping failed: The requested address is not valid in its context. (os error 10049)");
         ping_client_should_fail_when_binding_invalid_source_ip(&mut ping_client, &expected_result).await;
     });
 }
