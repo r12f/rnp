@@ -38,6 +38,19 @@ Reaching TCP 8.8.8.8:443 from 192.168.50.153:8943 succeeded: RTT=12.43ms
   Src Port | Results ("X" = Fail, "-" = Not Tested)
 -----------+----0------1------2------3------4------5------6------7------8------9---
       8940 |  12.95  11.24  10.96  12.43    -      -      -      -      -      -
+      
+$ rnp.exe -m QUIC 142.250.217.78:443 --server-name google.com
+Rnp - r12f (r12f.com, github.com/r12f) - A simple layer 4 ping tool for cloud.
+
+Start testing QUIC 142.250.217.78:443:
+Reaching QUIC 142.250.217.78:443 from 0.0.0.0:24851 succeeded: RTT=20.07ms
+Reaching QUIC 142.250.217.78:443 from 0.0.0.0:24852 succeeded: RTT=17.86ms
+Reaching QUIC 142.250.217.78:443 from 0.0.0.0:24853 succeeded: RTT=17.78ms
+Reaching QUIC 142.250.217.78:443 from 0.0.0.0:24854 succeeded: RTT=18.82ms
+
+=== Connect statistics for QUIC 142.250.217.78:443 ===
+- Connects: Sent = 4, Succeeded = 4, Failed = 0 (0.00%).
+- Round trip time: Minimum = 17.78ms, Maximum = 20.07ms, Average = 18.63ms.
 ```
 
 ## Installation
@@ -220,7 +233,7 @@ OPTIONS:
             It is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.
             For latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-
             extensiontype-values.xhtml#alpn-protocol-ids
-            [default: h3-29]
+            [default: h3]
         --log-csv <csv-log-path>                  Log ping results a csv file. [alias: --oc]
         --log-json <json-log-path>                Log ping results to a json file. [alias: --oj]
     -b, --latency-buckets <latency-buckets>...

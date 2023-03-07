@@ -52,6 +52,8 @@ impl PingClientQuic {
         if let Some(alpn_protocol) = &self.config.alpn_protocol {
             let protocols = vec![alpn_protocol.as_bytes().to_vec()];
             client_crypto.alpn_protocols = protocols;
+        } else {
+            client_crypto.alpn_protocols = vec![b"h3".to_vec()];
         }
 
         // Key logger

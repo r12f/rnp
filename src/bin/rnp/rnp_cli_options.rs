@@ -140,7 +140,7 @@ pub struct RnpCliQuicPingOptions {
 
     #[structopt(
         long = "alpn",
-        default_value = "h3-29",
+        default_value = "h3",
         help = "ALPN protocol used in QUIC. Specify \"none\" to disable ALPN.\nIt is usually h3-<ver> for http/3 or hq-<ver> for specific version of QUIC.\nFor latest IDs, please check here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids"
     )]
     pub alpn_protocol: String,
@@ -289,7 +289,7 @@ mod tests {
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
-                    alpn_protocol: String::from("h3-29"),
+                    alpn_protocol: String::from("h3"),
                     use_timer_rtt: false,
                 },
                 output_options: RnpCliOutputOptions {
@@ -329,7 +329,7 @@ mod tests {
                 quic_options: RnpCliQuicPingOptions {
                     server_name: None,
                     log_tls_key: false,
-                    alpn_protocol: String::from("h3-29"),
+                    alpn_protocol: String::from("h3"),
                     use_timer_rtt: false,
                 },
                 output_options: RnpCliOutputOptions {
