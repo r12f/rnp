@@ -75,7 +75,7 @@ mod tests {
         assert_eq!(
             vec![
                 PingResultDto {
-                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),
@@ -92,7 +92,7 @@ mod tests {
                     disconnect_error: "".to_string(),
                 },
                 PingResultDto {
-                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),
@@ -109,7 +109,7 @@ mod tests {
                     disconnect_error: "".to_string(),
                 },
                 PingResultDto {
-                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),
@@ -126,7 +126,7 @@ mod tests {
                     disconnect_error: "".to_string(),
                 },
                 PingResultDto {
-                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),
@@ -143,7 +143,7 @@ mod tests {
                     disconnect_error: "disconnect timeout".to_string(),
                 },
                 PingResultDto {
-                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),
@@ -160,7 +160,7 @@ mod tests {
                     disconnect_error: "".to_string(),
                 },
                 PingResultDto {
-                    utc_time: Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+                    utc_time: Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12),
                     worker_id: 1,
                     protocol: "TCP".to_string(),
                     target_ip: "1.2.3.4".parse().unwrap(),

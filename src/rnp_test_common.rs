@@ -16,7 +16,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
     vec![
         // Succeeded + Warmup
         PingResult::new(
-            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            &(Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12)),
             1,
             "TCP",
             "1.2.3.4:443".parse().unwrap(),
@@ -30,7 +30,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
         ),
         // Timeout
         PingResult::new(
-            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            &(Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12)),
             1,
             "TCP",
             "1.2.3.4:443".parse().unwrap(),
@@ -44,7 +44,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
         ),
         // Reachable but got handshake failure
         PingResult::new(
-            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            &(Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12)),
             1,
             "TCP",
             "1.2.3.4:443".parse().unwrap(),
@@ -58,7 +58,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
         ),
         // Reachable but disconnect connection timed out
         PingResult::new(
-            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            &(Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12)),
             1,
             "TCP",
             "1.2.3.4:443".parse().unwrap(),
@@ -72,7 +72,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
         ),
         // Failed to reach remote
         PingResult::new(
-            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            &(Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12)),
             1,
             "TCP",
             "1.2.3.4:443".parse().unwrap(),
@@ -86,7 +86,7 @@ pub fn generate_ping_result_test_samples() -> Vec<PingResult> {
         ),
         // Failed to create local resources for ping, such as cannot bind address
         PingResult::new(
-            &Utc.ymd(2021, 7, 6).and_hms_milli(9, 10, 11, 12),
+            &(Utc.with_ymd_and_hms(2021, 7, 6, 9, 10, 11).unwrap() + chrono::Duration::milliseconds(12)),
             1,
             "TCP",
             "1.2.3.4:443".parse().unwrap(),
