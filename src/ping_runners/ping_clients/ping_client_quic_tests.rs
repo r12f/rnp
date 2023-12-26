@@ -37,7 +37,7 @@ fn ping_client_quic_should_fail_when_binding_invalid_source_ip() {
         let mut ping_client = ping_client_factory::new_ping_client(&RnpSupportedProtocol::QUIC, &config, None);
 
         let expected_result =
-            ExpectedTestCaseResult::Failed("failed to set up UDP socket: The requested address is not valid in its context. (os error 10049)");
+            ExpectedTestCaseResult::Failed("The requested address is not valid in its context. (os error 10049)");
         ping_client_should_fail_when_binding_invalid_source_ip(&mut ping_client, &expected_result).await;
     });
 }

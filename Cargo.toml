@@ -17,26 +17,26 @@ CompanyName = "r12f"
 LegalCopyright = "Copyright (c) 2021"
 
 [dependencies]
-log = "0.4.14"
-tracing = { version = "0.1.29", features = ["log"] }
-env_logger = "0.9.0"
-structopt = { version = "0.3.25", features = ["color", "suggestions", "wrap_help"] }
+log = "0.4"
+tracing = { version = "0.1", features = ["log"] }
+env_logger = "0.10"
+structopt = { version = "0.3", features = ["color", "suggestions", "wrap_help"] }
 ctrlc = "3.2.1"
-socket2 = "0.4.2"
-futures-intrusive = "0.4.0"
+socket2 = "0.5"
+futures-intrusive = "0.5.0"
 tokio = { version = "1.13.0", features = ["rt-multi-thread", "time", "sync", "macros", "net", "io-util"] }
 contracts = "0.6.2"
 chrono = { version = "0.4.19", features = ["serde", "rustc-serialize"] }
 rand = "0.8.4"
-thiserror = "1.0.30"
+thiserror = "1.0"
 async-trait = "0.1.51"
 serde = { version = "1.0.130", features = ["derive"] }
 num = "0.4.0"
 
 [target.'cfg(any(not(target_os = "windows"), not(target_arch = "aarch64")))'.dependencies]
-quinn = "0.7.2"
-rustls = { version = "0.19.1", features = ["dangerous_configuration", "quic"] }
-webpki = "0.21"
+quinn = "0.10"
+rustls = { version = "0.21.0", default-features = false, features = ["quic", "dangerous_configuration"] }
+webpki = "0.22"
 
 [build-dependencies]
 winres = "0.1.12"
